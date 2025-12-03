@@ -1,35 +1,51 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './contexts/ThemeContext';
+import Layout from './components/Layout/Layout';
+import HomePage from './pages/HomePage';
+import PortfolioPage from './pages/PortfolioPage';
+import PerformancePage from './pages/PerformancePage';
+import MCPFilesPage from './pages/MCPFilesPage';
+// 도메인 페이지들
+import UserDomain from './pages/domains/UserDomain';
+import BoardDomain from './pages/domains/BoardDomain';
+import CareDomain from './pages/domains/CareDomain';
+import MissingPetDomain from './pages/domains/MissingPetDomain';
+import LocationDomain from './pages/domains/LocationDomain';
+import MeetupDomain from './pages/domains/MeetupDomain';
+import ChatDomain from './pages/domains/ChatDomain';
+import './styles/global.css';
 
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <ThemeProvider>
+      <BrowserRouter basename="/makkong1-github.io">
+        <Layout>
+          <Routes>
+            {/* 메인 페이지 */}
+            <Route path="/" element={<HomePage />} />
+            
+            {/* 포트폴리오 페이지 */}
+            <Route path="/portfolio" element={<PortfolioPage />} />
+            
+            {/* 도메인 페이지들 */}
+            <Route path="/domains/user" element={<UserDomain />} />
+            <Route path="/domains/board" element={<BoardDomain />} />
+            <Route path="/domains/care" element={<CareDomain />} />
+            <Route path="/domains/missing-pet" element={<MissingPetDomain />} />
+            <Route path="/domains/location" element={<LocationDomain />} />
+            <Route path="/domains/meetup" element={<MeetupDomain />} />
+            <Route path="/domains/chat" element={<ChatDomain />} />
+            
+            {/* 성능 개선 페이지 */}
+            <Route path="/performance" element={<PerformancePage />} />
+            
+            {/* MCP 파일 링크 페이지 */}
+            <Route path="/docs" element={<MCPFilesPage />} />
+          </Routes>
+        </Layout>
+      </BrowserRouter>
+    </ThemeProvider>
+  );
 }
 
-export default App
+export default App;
