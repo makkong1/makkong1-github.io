@@ -19,7 +19,7 @@ function CareDomain() {
         <div style={{ 
           display: 'grid', 
           gap: '1.5rem',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))'
+          gridTemplateColumns: 'repeat(2, 1fr)'
         }}>
           <div style={{
             padding: '1.5rem',

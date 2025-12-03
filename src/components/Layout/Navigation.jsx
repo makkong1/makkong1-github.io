@@ -27,9 +27,6 @@ function Navigation() {
           <Link to="/portfolio" style={{ textDecoration: 'none', color: 'var(--text-color)' }}>
             포트폴리오
           </Link>
-          <Link to="/performance" style={{ textDecoration: 'none', color: 'var(--text-color)' }}>
-            성능 개선
-          </Link>
           <Link to="/docs" style={{ textDecoration: 'none', color: 'var(--text-color)' }}>
             문서
           </Link>
