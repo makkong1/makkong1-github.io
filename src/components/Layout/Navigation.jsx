@@ -35,25 +35,25 @@ function Navigation() {
           </Link>
           <span style={{ color: 'var(--text-muted)' }}>|</span>
           <Link to="/domains/user" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            유저 서비스
+            유저
           </Link>
           <Link to="/domains/board" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            게시판 서비스
+            게시판
           </Link>
           <Link to="/domains/care" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            케어
+            펫케어
           </Link>
           <Link to="/domains/missing-pet" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            실종 제보 
+            실종 신고
           </Link>
           <Link to="/domains/location" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            위치 기반 서비스
+            위치 서비스
           </Link>
           <Link to="/domains/meetup" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            만남 서비스
+            모임
           </Link>
           <Link to="/domains/chat" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            채팅 서비스
+            채팅
           </Link>
         </div>
         <button
