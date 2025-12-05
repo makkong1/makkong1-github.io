@@ -1,4 +1,67 @@
+import MermaidDiagram from '../../components/Common/MermaidDiagram';
+
 function UserDomain() {
+  const entityDiagram = `erDiagram
+    Users ||--o{ SocialUser : "has"
+    Users ||--o{ UserSanction : "has"
+    Users ||--o{ Pet : "owns"
+    Pet ||--o{ PetVaccination : "has"
+    
+    Users {
+        Long idx PK
+        String id
+        String username
+        String email
+        String phone
+        String password
+        Role role
+        String location
+        String petInfo
+        String refreshToken
+        LocalDateTime lastLoginAt
+        UserStatus status
+        Integer warningCount
+        LocalDateTime suspendedUntil
+        Boolean isDeleted
+    }
+    
+    Pet {
+        Long idx PK
+        Long user_idx FK
+        String name
+        String species
+        String breed
+        Integer age
+        String gender
+        String imageUrl
+        String description
+    }
+    
+    SocialUser {
+        Long idx PK
+        Long user_idx FK
+        String provider
+        String providerId
+    }
+    
+    UserSanction {
+        Long idx PK
+        Long user_idx FK
+        Long sanctionedBy_idx FK
+        SanctionType type
+        String reason
+        LocalDateTime startedAt
+        LocalDateTime endedAt
+    }
+    
+    PetVaccination {
+        Long idx PK
+        Long pet_idx FK
+        String vaccineName
+        LocalDate vaccinationDate
+        LocalDate nextDueDate
+    }`;
+
   return (
     <div style={{ padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>유저 도메인</h1>
@@ -110,114 +173,9 @@ function UserDomain() {
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. Users (사용자)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), id, username, email, phone</div>
-            <div>• password (암호화), role (USER/ADMIN)</div>
-            <div>• location, petInfo, refreshToken</div>
-            <div>• lastLoginAt, status, warningCount</div>
-            <div>• suspendedUntil, isDeleted (소프트 삭제)</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• OneToMany → SocialUser, UserSanction, Pet</div>
-          </div>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>2. Pet (반려동물)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), user (소유자), name, species, breed</div>
-            <div>• age, gender, imageUrl, description</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• ManyToOne → Users</div>
-            <div>• OneToMany → PetVaccination</div>
-          </div>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. SocialUser (소셜 로그인)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), user (연결된 사용자)</div>
-            <div>• provider (KAKAO/GOOGLE/NAVER), providerId</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• ManyToOne → Users</div>
-          </div>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. UserSanction (제재 이력)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), user (제재 대상)</div>
-            <div>• type (WARNING/SUSPENSION/BAN), reason</div>
-            <div>• startedAt, endedAt, sanctionedBy (제재 처리자)</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• ManyToOne → Users (제재 대상 및 처리자)</div>
-          </div>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
           border: '1px solid var(--nav-border)'
         }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>5. PetVaccination (백신 접종 이력)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), pet (대상 반려동물)</div>
-            <div>• vaccineName, vaccinationDate, nextDueDate</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• ManyToOne → Pet</div>
-          </div>
+          <MermaidDiagram chart={entityDiagram} />
         </div>
       </section>
 

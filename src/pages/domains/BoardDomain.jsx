@@ -1,4 +1,77 @@
+import MermaidDiagram from '../../components/Common/MermaidDiagram';
+
 function BoardDomain() {
+  const entityDiagram = `erDiagram
+    Users ||--o{ Board : "writes"
+    Board ||--o{ Comment : "has"
+    Board ||--o{ BoardReaction : "has"
+    Board ||--o{ BoardViewLog : "has"
+    Board ||--o{ BoardPopularitySnapshot : "has"
+    Comment ||--o{ CommentReaction : "has"
+    Users ||--o{ Comment : "writes"
+    Users ||--o{ BoardReaction : "reacts"
+    Users ||--o{ CommentReaction : "reacts"
+    Users ||--o{ BoardViewLog : "views"
+    
+    Board {
+        Long idx PK
+        Long user_idx FK
+        String title
+        String content
+        String category
+        ContentStatus status
+        LocalDateTime createdAt
+        Integer viewCount
+        Integer likeCount
+        Integer commentCount
+        LocalDateTime lastReactionAt
+        Boolean isDeleted
+    }
+    
+    Comment {
+        Long idx PK
+        Long board_idx FK
+        Long user_idx FK
+        String content
+        ContentStatus status
+        LocalDateTime createdAt
+        Boolean isDeleted
+    }
+    
+    BoardReaction {
+        Long idx PK
+        Long board_idx FK
+        Long user_idx FK
+        ReactionType type
+        LocalDateTime createdAt
+    }
+    
+    CommentReaction {
+        Long idx PK
+        Long comment_idx FK
+        Long user_idx FK
+        ReactionType type
+        LocalDateTime createdAt
+    }
+    
+    BoardViewLog {
+        Long idx PK
+        Long board_idx FK
+        Long user_idx FK
+        LocalDateTime viewedAt
+    }
+    
+    BoardPopularitySnapshot {
+        Long idx PK
+        Long board_idx FK
+        PopularityPeriodType periodType
+        LocalDate snapshotDate
+        Integer viewCount
+        Integer likeCount
+        Integer commentCount
+        Double popularityScore
+    }`;
+
   return (
     <div style={{ padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>게시판 도메인</h1>
@@ -108,6 +181,16 @@ function BoardDomain() {
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
           border: '1px solid var(--nav-border)',
+          marginBottom: '1.5rem'
+        }}>
+          <MermaidDiagram chart={entityDiagram} />
+        </div>
+
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
           marginBottom: '1rem'
         }}>
           <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. Board (게시글)</h3>
@@ -120,7 +203,7 @@ function BoardDomain() {
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
             <div>• idx (PK), user (작성자), title, content</div>
             <div>• category, status (ACTIVE/HIDDEN/DELETED)</div>
-            <div>• viewCount, likeCount, commentCount</div>
+            <div>• createdAt, viewCount, likeCount, commentCount</div>
             <div>• lastReactionAt, isDeleted</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
             <div>• ManyToOne → Users</div>
@@ -158,7 +241,30 @@ function BoardDomain() {
           border: '1px solid var(--nav-border)',
           marginBottom: '1rem'
         }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. BoardReaction (게시글 반응)</h3>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. CommentReaction (댓글 반응)</h3>
+          <div style={{ 
+            color: 'var(--text-secondary)',
+            lineHeight: '1.8',
+            fontFamily: 'monospace',
+            fontSize: '0.9rem'
+          }}>
+            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
+            <div>• idx (PK), comment (댓글), user (사용자), type (LIKE/DISLIKE)</div>
+            <div>• createdAt</div>
+            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
+            <div>• ManyToOne → Comment, Users</div>
+            <div>• Unique 제약: (comment_idx, user_idx)</div>
+          </div>
+        </div>
+
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
+          marginBottom: '1rem'
+        }}>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. BoardReaction (게시글 반응)</h3>
           <div style={{ 
             color: 'var(--text-secondary)',
             lineHeight: '1.8',
@@ -181,7 +287,7 @@ function BoardDomain() {
           border: '1px solid var(--nav-border)',
           marginBottom: '1rem'
         }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. BoardViewLog (조회 로그)</h3>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>5. BoardViewLog (조회 로그)</h3>
           <div style={{ 
             color: 'var(--text-secondary)',
             lineHeight: '1.8',
@@ -201,7 +307,7 @@ function BoardDomain() {
           borderRadius: '8px',
           border: '1px solid var(--nav-border)'
         }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>5. BoardPopularitySnapshot (인기글 스냅샷)</h3>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>6. BoardPopularitySnapshot (인기글 스냅샷)</h3>
           <div style={{ 
             color: 'var(--text-secondary)',
             lineHeight: '1.8',

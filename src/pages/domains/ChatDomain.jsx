@@ -1,4 +1,42 @@
+import MermaidDiagram from '../../components/Common/MermaidDiagram';
+
 function ChatDomain() {
+  const entityDiagram = `erDiagram
+    Conversation ||--o{ ConversationParticipant : "has"
+    Conversation ||--o{ Message : "has"
+    Users ||--o{ ConversationParticipant : "participates"
+    Users ||--o{ Message : "sends"
+    
+    Conversation {
+        Long idx PK
+        ConversationType conversationType
+        String relatedType
+        Long relatedIdx
+        String title
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    
+    ConversationParticipant {
+        Long idx PK
+        Long conversation_idx FK
+        Long user_idx FK
+        ParticipantRole role
+        ParticipantStatus status
+        Long lastReadMessageIdx
+        LocalDateTime lastReadAt
+        LocalDateTime joinedAt
+        LocalDateTime leftAt
+    }
+    
+    Message {
+        Long idx PK
+        Long conversation_idx FK
+        Long sender_idx FK
+        String content
+        LocalDateTime createdAt
+    }`;
+
   return (
     <div style={{ padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅 도메인</h1>
@@ -201,22 +239,77 @@ function ChatDomain() {
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
+          border: '1px solid var(--nav-border)',
+          marginBottom: '1.5rem'
         }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h3>
+          <MermaidDiagram chart={entityDiagram} />
+        </div>
+
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
+          marginBottom: '1rem'
+        }}>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. Conversation (채팅방)</h3>
           <div style={{ 
             color: 'var(--text-secondary)',
             lineHeight: '1.8',
             fontFamily: 'monospace',
             fontSize: '0.9rem'
           }}>
-            <div><strong style={{ color: 'var(--text-color)' }}>Conversation</strong>: 채팅방</div>
-            <div>• conversation_type, related_type, related_idx, title</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>ConversationParticipant</strong>: 참여자</div>
-            <div>• conversation, user, role (USER/ADMIN), status (ACTIVE/LEFT)</div>
-            <div>• lastReadMessageIdx, lastReadAt, joinedAt, leftAt</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Message</strong>: 메시지</div>
-            <div>• conversation, sender, content, createdAt</div>
+            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
+            <div>• idx (PK), conversationType (DIRECT/CARE_REQUEST/MISSING_PET/MEETUP)</div>
+            <div>• relatedType, relatedIdx, title</div>
+            <div>• createdAt, updatedAt</div>
+            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
+            <div>• OneToMany → ConversationParticipant, Message</div>
+          </div>
+        </div>
+
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
+          marginBottom: '1rem'
+        }}>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>2. ConversationParticipant (참여자)</h3>
+          <div style={{ 
+            color: 'var(--text-secondary)',
+            lineHeight: '1.8',
+            fontFamily: 'monospace',
+            fontSize: '0.9rem'
+          }}>
+            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
+            <div>• idx (PK), conversation (채팅방), user (참여자)</div>
+            <div>• role (USER/ADMIN), status (ACTIVE/LEFT)</div>
+            <div>• lastReadMessageIdx, lastReadAt</div>
+            <div>• joinedAt, leftAt</div>
+            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
+            <div>• ManyToOne → Conversation, Users</div>
+          </div>
+        </div>
+
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)'
+        }}>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. Message (메시지)</h3>
+          <div style={{ 
+            color: 'var(--text-secondary)',
+            lineHeight: '1.8',
+            fontFamily: 'monospace',
+            fontSize: '0.9rem'
+          }}>
+            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
+            <div>• idx (PK), conversation (채팅방), sender (발신자)</div>
+            <div>• content, createdAt</div>
+            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
+            <div>• ManyToOne → Conversation, Users</div>
           </div>
         </div>
       </section>

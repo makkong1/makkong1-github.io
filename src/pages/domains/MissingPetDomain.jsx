@@ -1,4 +1,40 @@
+import MermaidDiagram from '../../components/Common/MermaidDiagram';
+
 function MissingPetDomain() {
+  const entityDiagram = `erDiagram
+    Users ||--o{ MissingPetBoard : "reports"
+    MissingPetBoard ||--o{ MissingPetComment : "has"
+    
+    MissingPetBoard {
+        Long idx PK
+        Long user_idx FK
+        String title
+        String content
+        String petName
+        String species
+        String breed
+        MissingPetGender gender
+        String age
+        String color
+        LocalDate lostDate
+        String lostLocation
+        BigDecimal latitude
+        BigDecimal longitude
+        MissingPetStatus status
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+        Boolean isDeleted
+    }
+    
+    MissingPetComment {
+        Long idx PK
+        Long board_idx FK
+        Long user_idx FK
+        String content
+        LocalDateTime createdAt
+        Boolean isDeleted
+    }`;
+
   return (
     <div style={{ padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 신고 도메인</h1>
@@ -109,6 +145,16 @@ function MissingPetDomain() {
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
           border: '1px solid var(--nav-border)',
+          marginBottom: '1.5rem'
+        }}>
+          <MermaidDiagram chart={entityDiagram} />
+        </div>
+
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
           marginBottom: '1rem'
         }}>
           <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>MissingPetBoard (실종 동물 게시판)</h3>
@@ -122,7 +168,8 @@ function MissingPetDomain() {
             <div>• idx (PK), user (신고자), title, content</div>
             <div>• petName, species, breed, gender, age, color</div>
             <div>• lostDate, lostLocation, latitude, longitude</div>
-            <div>• status (MISSING/FOUND/CLOSED), isDeleted</div>
+            <div>• status (MISSING/FOUND/CLOSED)</div>
+            <div>• createdAt, updatedAt, isDeleted</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
             <div>• ManyToOne → Users</div>
             <div>• OneToMany → MissingPetComment, AttachmentFile</div>

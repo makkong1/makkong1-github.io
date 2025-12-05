@@ -1,4 +1,41 @@
+import MermaidDiagram from '../../components/Common/MermaidDiagram';
+
 function LocationDomain() {
+  const entityDiagram = `erDiagram
+    LocationService ||--o{ LocationServiceReview : "has"
+    Users ||--o{ LocationServiceReview : "writes"
+    
+    LocationService {
+        Long idx PK
+        String name
+        String category
+        String address
+        String detailAddress
+        Double latitude
+        Double longitude
+        Double rating
+        String phone
+        LocalTime openingTime
+        LocalTime closingTime
+        String imageUrl
+        String website
+        String description
+        Boolean petFriendly
+        String petPolicy
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    
+    LocationServiceReview {
+        Long idx PK
+        Long service_idx FK
+        Long user_idx FK
+        Integer rating
+        String comment
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }`;
+
   return (
     <div style={{ padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 서비스 도메인</h1>
@@ -85,6 +122,16 @@ function LocationDomain() {
       <section style={{ marginBottom: '3rem' }}>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
         
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
+          marginBottom: '1.5rem'
+        }}>
+          <MermaidDiagram chart={entityDiagram} />
+        </div>
+
         <div style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',

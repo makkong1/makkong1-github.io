@@ -1,4 +1,34 @@
+import MermaidDiagram from '../../components/Common/MermaidDiagram';
+
 function MeetupDomain() {
+  const entityDiagram = `erDiagram
+    Users ||--o{ Meetup : "organizes"
+    Meetup ||--o{ MeetupParticipants : "has"
+    Users ||--o{ MeetupParticipants : "participates"
+    
+    Meetup {
+        Long idx PK
+        String title
+        String description
+        String location
+        Double latitude
+        Double longitude
+        LocalDateTime date
+        Long organizer_idx FK
+        Integer maxParticipants
+        Integer currentParticipants
+        MeetupStatus status
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    
+    MeetupParticipants {
+        Long idx PK
+        Long meetup_idx FK
+        Long user_idx FK
+        LocalDateTime joinedAt
+    }`;
+
   return (
     <div style={{ padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>모임 도메인</h1>
@@ -110,6 +140,16 @@ function MeetupDomain() {
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
           border: '1px solid var(--nav-border)',
+          marginBottom: '1.5rem'
+        }}>
+          <MermaidDiagram chart={entityDiagram} />
+        </div>
+
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
           marginBottom: '1rem'
         }}>
           <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. Meetup (모임)</h3>
@@ -124,6 +164,7 @@ function MeetupDomain() {
             <div>• latitude, longitude, date (모임 일시)</div>
             <div>• organizer (주최자), maxParticipants, currentParticipants</div>
             <div>• status (RECRUITING/CONFIRMED/COMPLETED/CANCELLED)</div>
+            <div>• createdAt, updatedAt</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
             <div>• ManyToOne → Users (주최자)</div>
             <div>• OneToMany → MeetupParticipants</div>
@@ -222,7 +263,7 @@ function MeetupDomain() {
             color: 'var(--text-secondary)',
             lineHeight: '1.8'
           }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>최대 인원 제한</strong>: currentParticipants >= maxParticipants 시 참여 불가</li>
+            <li>• <strong style={{ color: 'var(--text-color)' }}>최대 인원 제한</strong>: currentParticipants&gt;= maxParticipants 시 참여 불가</li>
             <li>• <strong style={{ color: 'var(--text-color)' }}>중복 참여 방지</strong>: 같은 사용자가 같은 모임에 중복 참여 불가 (Unique 제약)</li>
             <li>• <strong style={{ color: 'var(--text-color)' }}>주최자 참여</strong>: 주최자는 자동으로 참여자 목록에 포함</li>
           </ul>
@@ -376,7 +417,7 @@ function MeetupDomain() {
           border: '1px solid var(--nav-border)'
         }}>
           <a 
-            href="https://github.com/makkong1/Petory/blob/main/docs/domains/meetup.md" 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/meetup.md" 
             target="_blank"
             rel="noopener noreferrer"
             style={{ 

@@ -1,4 +1,59 @@
+import MermaidDiagram from '../../components/Common/MermaidDiagram';
+
 function CareDomain() {
+  const entityDiagram = `erDiagram
+    Users ||--o{ CareRequest : "requests"
+    Pet ||--o{ CareRequest : "related"
+    CareRequest ||--o{ CareApplication : "has"
+    CareRequest ||--o{ CareRequestComment : "has"
+    CareRequest ||--|| CareReview : "has"
+    Users ||--o{ CareApplication : "applies"
+    Users ||--o{ CareRequestComment : "writes"
+    Users ||--o{ CareReview : "writes"
+    Users ||--o{ CareReview : "receives"
+    
+    CareRequest {
+        Long idx PK
+        Long user_idx FK
+        Long pet_idx FK
+        String title
+        String description
+        LocalDateTime date
+        CareRequestStatus status
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+        Boolean isDeleted
+    }
+    
+    CareApplication {
+        Long idx PK
+        Long careRequest_idx FK
+        Long applicant_idx FK
+        String message
+        CareApplicationStatus status
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
+    }
+    
+    CareRequestComment {
+        Long idx PK
+        Long careRequest_idx FK
+        Long user_idx FK
+        String content
+        LocalDateTime createdAt
+        Boolean isDeleted
+    }
+    
+    CareReview {
+        Long idx PK
+        Long careRequest_idx FK
+        Long reviewer_idx FK
+        Long reviewee_idx FK
+        Integer rating
+        String content
+        LocalDateTime createdAt
+    }`;
+
   return (
     <div style={{ padding: '2rem 0' }}>
       <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 도메인</h1>
@@ -105,6 +160,16 @@ function CareDomain() {
       <section style={{ marginBottom: '3rem' }}>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
         
+        <div style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
+          marginBottom: '1.5rem'
+        }}>
+          <MermaidDiagram chart={entityDiagram} />
+        </div>
+
         <div style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
