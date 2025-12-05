@@ -254,7 +254,7 @@ function ChatDomain() {
           border: '1px solid var(--nav-border)'
         }}>
           <a 
-            href="https://github.com/makkong1/Petory/blob/main/docs/architecture/채팅%20시스템%20설계.md" 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/architecture/채팅%20시스템%20설계.md" 
             target="_blank"
             rel="noopener noreferrer"
             style={{ 

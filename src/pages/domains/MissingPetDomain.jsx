@@ -274,7 +274,7 @@ function MissingPetDomain() {
           border: '1px solid var(--nav-border)'
         }}>
           <a 
-            href="https://github.com/makkong1/Petory/blob/main/docs/domains/missing-pet.md" 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/missing-pet.md" 
             target="_blank"
             rel="noopener noreferrer"
             style={{ 

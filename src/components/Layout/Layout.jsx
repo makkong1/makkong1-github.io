@@ -1,4 +1,5 @@
 import Navigation from './Navigation';
+import ScrollToTop from '../Common/ScrollToTop';
 
 function Layout({ children }) {
   return (
@@ -11,6 +12,7 @@ function Layout({ children }) {
       }}>
         {children}
       </main>
+      <ScrollToTop />
     </div>
   );
 }
