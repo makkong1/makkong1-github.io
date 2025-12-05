@@ -1,6 +1,15 @@
 import MermaidDiagram from '../../components/Common/MermaidDiagram';
+import TableOfContents from '../../components/Common/TableOfContents';
 
 function ChatDomain() {
+  const sections = [
+    { id: 'intro', title: '도메인 소개' },
+    { id: 'features', title: '주요 기능' },
+    { id: 'process', title: '채팅 프로세스' },
+    { id: 'implementation', title: '기술 구현' },
+    { id: 'relationships', title: '다른 도메인과의 연관관계' },
+    { id: 'docs', title: '관련 문서' }
+  ];
   const entityDiagram = `erDiagram
     Conversation ||--o{ ConversationParticipant : "has"
     Conversation ||--o{ Message : "has"
@@ -39,10 +48,12 @@ function ChatDomain() {
 
   return (
     <div style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅 도메인</h1>
-      
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
+      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅 도메인</h1>
+          
+          <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
         <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
           실시간 채팅 시스템으로, 다양한 채팅방 타입을 관리하는 도메인입니다.
         </p>
@@ -51,8 +62,8 @@ function ChatDomain() {
         </p>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
+          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
         
         <div style={{ 
           display: 'grid', 
@@ -141,8 +152,8 @@ function ChatDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅 프로세스</h2>
+          <section id="process" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅 프로세스</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -211,8 +222,8 @@ function ChatDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기술 구현</h2>
+          <section id="implementation" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기술 구현</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -314,8 +325,8 @@ function ChatDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
+          <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -338,8 +349,8 @@ function ChatDomain() {
         </div>
       </section>
 
-      <section>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
+          <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
         <div style={{
           padding: '1rem',
           backgroundColor: 'var(--card-bg)',
@@ -358,7 +369,10 @@ function ChatDomain() {
             → 채팅 시스템 설계 문서 보기
           </a>
         </div>
-      </section>
+          </section>
+        </div>
+        <TableOfContents sections={sections} />
+      </div>
     </div>
   );
 }

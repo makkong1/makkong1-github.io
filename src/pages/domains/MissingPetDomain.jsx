@@ -1,6 +1,17 @@
 import MermaidDiagram from '../../components/Common/MermaidDiagram';
+import TableOfContents from '../../components/Common/TableOfContents';
 
 function MissingPetDomain() {
+  const sections = [
+    { id: 'intro', title: '도메인 소개' },
+    { id: 'features', title: '주요 기능' },
+    { id: 'entities', title: 'Entity 구조' },
+    { id: 'services', title: 'Service 주요 기능' },
+    { id: 'location-search', title: '위치 기반 검색' },
+    { id: 'relationships', title: '다른 도메인과의 연관관계' },
+    { id: 'api', title: 'API 엔드포인트' },
+    { id: 'docs', title: '관련 문서' }
+  ];
   const entityDiagram = `erDiagram
     Users ||--o{ MissingPetBoard : "reports"
     MissingPetBoard ||--o{ MissingPetComment : "has"
@@ -37,10 +48,12 @@ function MissingPetDomain() {
 
   return (
     <div style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 신고 도메인</h1>
-      
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
+      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 신고 도메인</h1>
+          
+          <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
         <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
           실종 동물 신고 및 관리 시스템으로, 반려동물을 잃어버린 사용자가 신고하고 다른 사용자들이 정보를 제공할 수 있는 도메인입니다.
         </p>
@@ -49,8 +62,8 @@ function MissingPetDomain() {
         </p>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
+          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
         
         <div style={{ 
           display: 'grid', 
@@ -137,8 +150,8 @@ function MissingPetDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
+          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -198,8 +211,8 @@ function MissingPetDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Service 주요 기능</h2>
+          <section id="services" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Service 주요 기능</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -221,8 +234,8 @@ function MissingPetDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 기반 검색</h2>
+          <section id="location-search" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 기반 검색</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -262,8 +275,8 @@ function MissingPetDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
+          <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -286,8 +299,8 @@ function MissingPetDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
+          <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -312,8 +325,8 @@ function MissingPetDomain() {
         </div>
       </section>
 
-      <section>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
+          <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
         <div style={{
           padding: '1rem',
           backgroundColor: 'var(--card-bg)',
@@ -332,7 +345,10 @@ function MissingPetDomain() {
             → Missing Pet 도메인 상세 문서 보기
           </a>
         </div>
-      </section>
+          </section>
+        </div>
+        <TableOfContents sections={sections} />
+      </div>
     </div>
   );
 }

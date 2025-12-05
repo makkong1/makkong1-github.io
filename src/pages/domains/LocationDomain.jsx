@@ -1,6 +1,18 @@
 import MermaidDiagram from '../../components/Common/MermaidDiagram';
+import TableOfContents from '../../components/Common/TableOfContents';
 
 function LocationDomain() {
+  const sections = [
+    { id: 'intro', title: '도메인 소개' },
+    { id: 'features', title: '주요 기능' },
+    { id: 'entities', title: 'Entity 구조' },
+    { id: 'services', title: 'Service 주요 기능' },
+    { id: 'business', title: '비즈니스 로직' },
+    { id: 'performance', title: '성능 최적화' },
+    { id: 'relationships', title: '다른 도메인과의 연관관계' },
+    { id: 'api', title: 'API 엔드포인트' },
+    { id: 'docs', title: '관련 문서' }
+  ];
   const entityDiagram = `erDiagram
     LocationService ||--o{ LocationServiceReview : "has"
     Users ||--o{ LocationServiceReview : "writes"
@@ -38,10 +50,12 @@ function LocationDomain() {
 
   return (
     <div style={{ padding: '2rem 0' }}>
-      <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 서비스 도메인</h1>
-      
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
+      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 서비스 도메인</h1>
+          
+          <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
         <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
           위치 기반 서비스 (병원, 카페, 공원, 펫샵 등) 정보 제공 및 리뷰 관리 도메인입니다.
         </p>
@@ -50,8 +64,8 @@ function LocationDomain() {
         </p>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
+          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
         
         <div style={{ 
           display: 'grid', 
@@ -119,8 +133,8 @@ function LocationDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
+          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -180,8 +194,8 @@ function LocationDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Service 주요 기능</h2>
+          <section id="services" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Service 주요 기능</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -223,8 +237,8 @@ function LocationDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>비즈니스 로직</h2>
+          <section id="business" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>비즈니스 로직</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -241,8 +255,8 @@ function LocationDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화</h2>
+          <section id="performance" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -303,8 +317,8 @@ function LocationDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
+          <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -325,8 +339,8 @@ function LocationDomain() {
         </div>
       </section>
 
-      <section style={{ marginBottom: '3rem' }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
+          <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
         
         <div style={{
           padding: '1.5rem',
@@ -374,8 +388,8 @@ function LocationDomain() {
         </div>
       </section>
 
-      <section>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
+          <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
         <div style={{
           padding: '1rem',
           backgroundColor: 'var(--card-bg)',
@@ -394,7 +408,10 @@ function LocationDomain() {
             → Location 도메인 상세 문서 보기
           </a>
         </div>
-      </section>
+          </section>
+        </div>
+        <TableOfContents sections={sections} />
+      </div>
     </div>
   );
 }
