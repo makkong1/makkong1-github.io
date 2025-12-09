@@ -4,6 +4,7 @@ import TableOfContents from '../../components/Common/TableOfContents';
 function BoardDomain() {
   const sections = [
     { id: 'intro', title: '도메인 소개' },
+    { id: 'feature-demo', title: '기능 설명' },
     { id: 'features', title: '주요 기능' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'services', title: 'Service 주요 기능' },
@@ -92,13 +93,102 @@ function BoardDomain() {
           
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          커뮤니티 게시판, 댓글, 반응(좋아요/싫어요), 인기글 스냅샷 등을 관리하는 핵심 도메인입니다.
-        </p>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-          게시글 CRUD, 댓글 시스템, 좋아요/싫어요 반응, 조회수 관리, 인기글 스냅샷 기능을 제공합니다.
-        </p>
-      </section>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              커뮤니티 게시판, 댓글, 반응(좋아요/싫어요), 인기글 스냅샷 등을 관리하는 핵심 도메인입니다.
+            </p>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+              게시글 CRUD, 댓글 시스템, 좋아요/싫어요 반응, 조회수 관리, 인기글 스냅샷 기능을 제공합니다.
+            </p>
+          </section>
+
+          <section id="feature-demo" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기능 설명</h2>
+            
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1.1 도메인 개요</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>역할:</strong> 커뮤니티 게시판 시스템의 핵심 도메인으로, 게시글 작성/조회, 댓글, 좋아요/싫어요 반응, 인기글 관리 등을 담당합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>게시글 CRUD (생성, 조회, 수정, 삭제)</li>
+                  <li>카테고리별 게시글 필터링</li>
+                  <li>댓글 시스템</li>
+                  <li>좋아요/싫어요 반응 시스템</li>
+                  <li>조회수 관리 (중복 방지)</li>
+                  <li>인기글 스냅샷 (주간/월간)</li>
+                  <li>게시글 검색 (제목, 내용, 작성자)</li>
+                </ul>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1.2 주요 기능 1: 게시글 작성 및 조회</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>설명:</strong> 사용자가 게시글을 작성하고, 카테고리별로 필터링하여 조회할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>사용자가 게시글 작성 (제목, 내용, 카테고리 선택)</li>
+                  <li>이미지 첨부 가능</li>
+                  <li>카테고리별 필터링 (자유, 정보, 질문, 자랑 등)</li>
+                  <li>페이징 지원 (기본 20개씩)</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1.3 주요 기능 2: 댓글 및 반응 시스템</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>설명:</strong> 게시글에 댓글을 작성하고, 좋아요/싫어요를 누를 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>게시글 상세 조회 시 댓글 목록 표시</li>
+                  <li>댓글 작성 시 게시글 작성자에게 알림 발송</li>
+                  <li>좋아요/싫어요 클릭 시 실시간 카운트 업데이트</li>
+                  <li>같은 반응 재클릭 시 취소 (토글)</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1.4 주요 기능 3: 인기글 시스템</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>설명:</strong> 주간/월간 인기글을 미리 계산하여 스냅샷으로 저장하고 빠르게 조회합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>매일 18:30에 주간 인기글 스냅샷 자동 생성</li>
+                  <li>매주 월요일 18:30에 월간 인기글 스냅샷 자동 생성</li>
+                  <li>인기도 점수 = (좋아요 × 3) + (댓글 × 2) + 조회수</li>
+                  <li>상위 30개 게시글만 스냅샷 저장</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
+          </section>
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
