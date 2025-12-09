@@ -75,101 +75,92 @@ function CareDomain() {
           
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          펫케어 요청/지원 시스템으로, 반려동물 돌봄이 필요한 사용자한테 돌봄을 제공할 수 있는 펫시터를 연결해주는 도메인입니다.
-        </p>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-          펫케어 요청 생성, 지원 시스템, 댓글 기반 채팅 시작, 리뷰 작성 기능을 제공합니다.
-        </p>
-      </section>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              펫케어 요청/지원 시스템으로, 반려동물 돌봄이 필요한 사용자와 돌봄을 제공할 수 있는 사용자를 연결합니다.
+            </p>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+              펫케어 요청 생성/조회/수정/삭제, 펫케어 지원, 지원 승인/거절, 펫케어 상태 관리, 펫케어 리뷰 시스템, 날짜 지난 요청 자동 완료 기능을 제공합니다.
+            </p>
+          </section>
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
-        
-        <div style={{ 
-          display: 'grid', 
-          gap: '1.5rem',
-          gridTemplateColumns: 'repeat(2, 1fr)'
-        }}>
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>펫케어 요청</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 돌봄 필요 날짜, 상세 설명 작성</li>
-              <li>• 상태 관리 (OPEN, IN_PROGRESS, COMPLETED, CANCELLED)</li>
-              <li>• 관련 반려동물 정보 연결</li>
-              <li>• 날짜 지난 요청 자동 완료 (스케줄러)</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 요청 및 지원</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>사용자가 펫케어 요청을 생성하고, 다른 사용자들이 지원할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>펫케어 요청 생성 (제목, 설명, 날짜, 펫 정보)</li>
+                  <li>상태 관리 (OPEN → IN_PROGRESS → COMPLETED)</li>
+                  <li>여러 사용자가 지원 가능</li>
+                  <li>요청자가 1명만 승인</li>
+                  <li>승인 시 상태 변경 (OPEN → IN_PROGRESS)</li>
+                  <li>날짜 지난 요청 자동 완료 (스케줄러)</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>펫케어 요청 생성 (제목, 설명, 날짜, 펫 정보)</li>
+                  <li>여러 사용자가 지원</li>
+                  <li>요청자가 1명만 승인</li>
+                  <li>승인 시 상태 변경 (OPEN → IN_PROGRESS)</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>지원 시스템</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 펫시터가 요청에 지원</li>
-              <li>• 지원 상태 관리 (PENDING, ACCEPTED, REJECTED)</li>
-              <li>• 보호자가 지원자 선택 (1명만 승인)</li>
-              <li>• 지원 승인 시 요청 상태 자동 변경</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 리뷰 시스템</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>펫케어 완료 후 요청자가 돌봄 제공자에게 리뷰를 작성할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>펫케어 완료 (COMPLETED 상태) 후 리뷰 작성</li>
+                  <li>평점 및 후기 관리 (평점 1-5, 내용)</li>
+                  <li>평균 평점 계산 및 표시</li>
+                  <li>사용자별 평균 평점 캐싱</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>펫케어 완료 (COMPLETED 상태)</li>
+                  <li>요청자가 리뷰 작성 (평점 1-5, 내용)</li>
+                  <li>평균 평점 계산 및 표시</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>댓글 기반 채팅</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
             }}>
-              <li>• 댓글 작성으로 지원 의사 표현</li>
-              <li>• 댓글에서 "채팅하기" 버튼으로 1:1 채팅 시작</li>
-              <li>• 기존 채팅방이 있으면 재사용</li>
-            </ul>
-          </div>
-
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>리뷰 시스템</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
-            }}>
-              <li>• 서비스 완료 후 리뷰 작성</li>
-              <li>• 평점 및 후기 관리 (1-5점)</li>
-              <li>• 평균 평점 자동 계산</li>
-              <li>• 사용자별 평균 평점 캐싱</li>
-            </ul>
-          </div>
-        </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>댓글 기반 채팅</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>댓글 작성으로 지원 의사를 표현하고, 댓글에서 1:1 채팅을 시작할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>댓글 작성으로 지원 의사 표현</li>
+                  <li>댓글에서 "채팅하기" 버튼으로 1:1 채팅 시작</li>
+                  <li>기존 채팅방이 있으면 재사용</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
       </section>
 
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>

@@ -54,102 +54,83 @@ function ChatDomain() {
           
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          실시간 채팅 시스템으로, 다양한 채팅방 타입을 관리하는 도메인입니다.
-        </p>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-          WebSocket 기반 실시간 통신, 채팅방 타입별 관리, 메시지 읽음 처리 기능을 제공합니다.
-        </p>
-      </section>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              실시간 채팅 기능을 제공하는 도메인입니다. WebSocket(STOMP)을 사용하여 실시간 메시지 전송, 채팅방 관리, 읽지 않은 메시지 수 추적 등을 담당합니다.
+            </p>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+              실시간 채팅 (WebSocket 기반), 채팅방 생성 및 관리 (1:1, 그룹, 펫케어, 실종제보, 산책모임), 메시지 전송/조회/삭제, 읽지 않은 메시지 수 관리, 메시지 읽음 처리, 채팅방 참여/나가기 기능을 제공합니다.
+            </p>
+          </section>
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
-        
-        <div style={{ 
-          display: 'grid', 
-          gap: '1.5rem',
-          gridTemplateColumns: 'repeat(2, 1fr)'
-        }}>
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>실시간 채팅</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• WebSocket 기반 양방향 통신</li>
-              <li>• 실시간 메시지 전송/수신</li>
-              <li>• 연결 상태 관리</li>
-              <li>• STOMP 프로토콜 사용</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실시간 채팅</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>WebSocket(STOMP) 기반으로 실시간 양방향 메시지 통신을 제공합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>WebSocket 기반 양방향 통신</li>
+                  <li>실시간 메시지 전송/수신</li>
+                  <li>STOMP 프로토콜 사용</li>
+                  <li>연결 상태 관리</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>채팅방 타입</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• DIRECT: 1:1 일반 채팅</li>
-              <li>• CARE_REQUEST: 펫케어 요청 관련 채팅</li>
-              <li>• MISSING_PET: 실종 신고 관련 채팅</li>
-              <li>• MEETUP: 모임 관련 채팅 (그룹)</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅방 생성 및 관리</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>다양한 타입의 채팅방을 생성하고 관리할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>1:1 일반 채팅 (DIRECT)</li>
+                  <li>그룹 채팅 (MEETUP - 산책모임)</li>
+                  <li>펫케어 요청 관련 채팅 (CARE_REQUEST)</li>
+                  <li>실종제보 관련 채팅 (MISSING_PET)</li>
+                  <li>채팅방 참여/나가기</li>
+                  <li>참여자 관리 (추가/제거)</li>
+                  <li>참여 상태 관리 (ACTIVE/LEFT)</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>메시지 관리</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 메시지 읽음 처리</li>
-              <li>• 읽지 않은 메시지 수 집계</li>
-              <li>• 메시지 히스토리 조회</li>
-              <li>• 참여 시점 이후 메시지만 조회 (그룹 채팅)</li>
-            </ul>
-          </div>
-
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>참여자 관리</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
-            }}>
-              <li>• 채팅방 참여자 목록</li>
-              <li>• 참여자 추가/제거</li>
-              <li>• 참여 상태 관리 (ACTIVE/LEFT)</li>
-              <li>• 그룹 채팅 인원 수 표시</li>
-            </ul>
-          </div>
-        </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>메시지 관리</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>메시지를 전송하고 관리하며, 읽음 상태를 추적합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>메시지 전송/조회/삭제</li>
+                  <li>메시지 읽음 처리</li>
+                  <li>읽지 않은 메시지 수 관리</li>
+                  <li>메시지 히스토리 조회</li>
+                  <li>참여 시점 이후 메시지만 조회 (그룹 채팅)</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
       </section>
 
           <section id="process" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
@@ -358,7 +339,7 @@ function ChatDomain() {
           border: '1px solid var(--nav-border)'
         }}>
           <a 
-            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/architecture/채팅%20시스템%20설계.md" 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/chat.md" 
             target="_blank"
             rel="noopener noreferrer"
             style={{ 

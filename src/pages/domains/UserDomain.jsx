@@ -83,102 +83,120 @@ function UserDomain() {
           
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          사용자 관리, 인증/인가, 반려동물 등록, 제재 시스템을 담당하는 핵심 도메인입니다.
-        </p>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-          JWT 기반 인증, 소셜 로그인(OAuth2), 반려동물 프로필 관리, 사용자 제재 시스템을 제공합니다.
-        </p>
-      </section>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              사용자 인증/인가, 프로필 관리, 반려동물 등록, 사용자 제재 시스템을 담당하는 핵심 도메인입니다.
+            </p>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+              회원가입/로그인 (JWT 기반), 프로필 관리 (닉네임, 이메일, 전화번호, 위치), 반려동물 등록/관리, 사용자 제재 시스템 (경고, 이용제한, 영구 차단), 소프트 삭제 (회원 탈퇴) 기능을 제공합니다.
+            </p>
+          </section>
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
-        
-        <div style={{ 
-          display: 'grid', 
-          gap: '1.5rem',
-          gridTemplateColumns: 'repeat(2, 1fr)'
-        }}>
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>사용자 인증/인가</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• JWT 토큰 기반 인증</li>
-              <li>• 리프레시 토큰 관리</li>
-              <li>• 소셜 로그인 (카카오, 구글, 네이버)</li>
-              <li>• 비밀번호 암호화 (BCrypt)</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>회원가입 및 로그인</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>JWT 기반 인증 시스템으로 Access Token과 Refresh Token을 발급합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>회원가입 (ID, 비밀번호, 닉네임, 이메일)</li>
+                  <li>로그인 시 Access Token (15분) + Refresh Token (1일) 발급</li>
+                  <li>Refresh Token으로 Access Token 갱신</li>
+                  <li>제재 상태 확인 (정지/차단 시 로그인 불가)</li>
+                  <li>소셜 로그인 (카카오, 구글, 네이버)</li>
+                  <li>비밀번호 암호화 (BCrypt)</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>회원가입 (ID, 비밀번호, 닉네임, 이메일)</li>
+                  <li>로그인 시 Access Token (15분) + Refresh Token (1일) 발급</li>
+                  <li>Refresh Token으로 Access Token 갱신</li>
+                  <li>제재 상태 확인 (정지/차단 시 로그인 불가)</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>반려동물 관리</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 반려동물 등록/수정/삭제</li>
-              <li>• 품종, 나이, 성별 정보 관리</li>
-              <li>• 백신 접종 이력 관리</li>
-              <li>• 프로필 이미지 업로드</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>반려동물 등록</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>사용자가 반려동물 정보를 등록하고 관리할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>반려동물 등록 (이름, 종류, 품종, 성별, 나이 등)</li>
+                  <li>프로필 이미지 업로드</li>
+                  <li>반려동물 정보 수정/삭제</li>
+                  <li>백신 접종 이력 관리</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>반려동물 등록 (이름, 종류, 품종, 성별, 나이 등)</li>
+                  <li>프로필 이미지 업로드</li>
+                  <li>반려동물 정보 수정/삭제</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>프로필 관리</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 사용자 정보 수정</li>
-              <li>• 위치 정보 관리</li>
-              <li>• 소프트 삭제 (데이터 보존)</li>
-              <li>• 마지막 로그인 시간 추적</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>사용자 제재 시스템</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>관리자가 사용자에게 경고, 이용제한, 영구 차단을 부여할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>경고 부여 (3회 누적 시 자동 이용제한 3일 적용)</li>
+                  <li>이용제한 기간 만료 시 자동 해제 (스케줄러)</li>
+                  <li>영구 차단 시 로그인 불가</li>
+                  <li>제재 이력 영구 보관</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>경고 3회 누적 시 자동 이용제한 3일 적용</li>
+                  <li>이용제한 기간 만료 시 자동 해제 (스케줄러)</li>
+                  <li>영구 차단 시 로그인 불가</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>사용자 제재 시스템</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
             }}>
-              <li>• 경고 횟수 관리 (3회 누적 시 자동 정지)</li>
-              <li>• 일시 정지 (suspendedUntil)</li>
-              <li>• 영구 차단 (BANNED)</li>
-              <li>• 제재 이력 영구 보관</li>
-            </ul>
-          </div>
-        </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>프로필 관리</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>사용자 정보를 수정하고 관리할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>프로필 관리 (닉네임, 이메일, 전화번호, 위치)</li>
+                  <li>사용자 정보 수정</li>
+                  <li>소프트 삭제 (회원 탈퇴, 데이터 보존)</li>
+                  <li>마지막 로그인 시간 추적</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
       </section>
 
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>

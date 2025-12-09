@@ -54,100 +54,112 @@ function MissingPetDomain() {
           
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          실종 동물 신고 및 관리 시스템으로, 반려동물을 잃어버린 사용자가 신고하고 다른 사용자들이 정보를 제공할 수 있는 도메인입니다.
-        </p>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-          실종 신고 작성, 위치 기반 검색, 목격 정보 수집, 상태 관리 기능을 제공합니다.
-        </p>
-      </section>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              실종 동물 신고 및 관리 시스템으로, 반려동물을 잃어버린 사용자가 신고하고 다른 사용자들이 정보를 제공할 수 있습니다.
+            </p>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+              실종 동물 신고 생성/조회/수정, 위치 기반 검색 (반경 내), 실종 동물 상태 관리 (MISSING → FOUND → CLOSED), 목격 정보 댓글 기능을 제공합니다.
+            </p>
+          </section>
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
-        
-        <div style={{ 
-          display: 'grid', 
-          gap: '1.5rem',
-          gridTemplateColumns: 'repeat(2, 1fr)'
-        }}>
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>실종 신고 작성</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 반려동물 정보 (이름, 종, 품종, 나이, 성별, 색상)</li>
-              <li>• 실종 날짜 및 장소</li>
-              <li>• 위도/경도 좌표 저장</li>
-              <li>• 사진 첨부</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 동물 신고</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>사용자가 실종 동물 정보를 신고하고 사진을 첨부할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>실종 동물 신고 (이름, 종, 품종, 성별, 나이, 색상, 실종 날짜, 실종 장소)</li>
+                  <li>사진 첨부</li>
+                  <li>위치 정보 입력 (위도, 경도)</li>
+                  <li>다른 사용자들이 목격 정보 댓글 작성</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>실종 동물 신고 (이름, 종, 품종, 성별, 나이, 색상, 실종 날짜, 실종 장소)</li>
+                  <li>사진 첨부</li>
+                  <li>위치 정보 입력 (위도, 경도)</li>
+                  <li>다른 사용자들이 목격 정보 댓글 작성</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>위치 기반 검색</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 실종 장소 기준 주변 검색</li>
-              <li>• Haversine 공식으로 거리 계산</li>
-              <li>• MySQL Spatial Index 활용</li>
-              <li>• 지도 연동</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 기반 검색</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>내 위치 기준 반경 내 실종 동물을 검색할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>내 위치 확인</li>
+                  <li>반경 설정 (예: 5km)</li>
+                  <li>반경 내 실종 동물 목록 표시</li>
+                  <li>Haversine 공식으로 거리 계산</li>
+                  <li>MySQL Spatial Index 활용</li>
+                  <li>지도 연동</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>내 위치 확인</li>
+                  <li>반경 설정 (예: 5km)</li>
+                  <li>반경 내 실종 동물 목록 표시</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>목격 정보 수집</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 댓글로 목격 정보 제공</li>
-              <li>• 실종자와 소통</li>
-              <li>• "목격했어요" 버튼으로 채팅 시작</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>목격 정보 댓글</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>댓글로 목격 정보를 제공하고 실종자와 소통할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>댓글로 목격 정보 제공</li>
+                  <li>실종자와 소통</li>
+                  <li>"목격했어요" 버튼으로 채팅 시작</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>상태 관리</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
             }}>
-              <li>• MISSING (실종 중)</li>
-              <li>• FOUND (발견됨)</li>
-              <li>• CLOSED (종료)</li>
-            </ul>
-          </div>
-        </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 동물 상태 관리</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>실종 동물의 상태를 관리하여 실종 중, 발견됨, 종료 상태를 구분합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>MISSING (실종 중) - 신고 시 기본 상태</li>
+                  <li>FOUND (발견됨) - 찾음 처리</li>
+                  <li>CLOSED (종료) - 종료 처리</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
       </section>
 
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>

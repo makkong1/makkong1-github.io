@@ -56,81 +56,116 @@ function LocationDomain() {
           
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          위치 기반 서비스 (병원, 카페, 공원, 펫샵 등) 정보 제공 및 리뷰 관리 도메인입니다.
-        </p>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-          POI 검색, 리뷰 작성, 평점 관리, 위치 기반 검색 기능을 제공합니다.
-        </p>
-      </section>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              위치 기반 서비스 (병원, 카페, 공원, 펫샵 등) 정보 제공 및 리뷰 관리 도메인입니다.
+            </p>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+              지역 계층적 탐색, 카테고리별 서비스 검색, 거리 계산 (Haversine 공식), 위치 서비스 리뷰 시스템, 공공데이터 CSV 배치 임포트 기능을 제공합니다.
+            </p>
+          </section>
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
-        
-        <div style={{ 
-          display: 'grid', 
-          gap: '1.5rem',
-          gridTemplateColumns: 'repeat(2, 1fr)'
-        }}>
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>위치 서비스 정보</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 병원, 카페, 공원, 펫샵 등 POI 정보</li>
-              <li>• 주소, 좌표, 영업시간, 전화번호</li>
-              <li>• 반려동물 동반 가능 여부</li>
-              <li>• 반려동물 정책 정보</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>지역 계층적 탐색</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>지역을 계층적으로 선택하여 서비스를 검색합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>시도 선택 (전국 17개 시도)</li>
+                  <li>시군구 선택 (선택된 시도의 시군구)</li>
+                  <li>읍면동 선택 (선택된 시군구의 읍면동)</li>
+                  <li>도로명 선택 (선택된 읍면동의 도로명)</li>
+                  <li>해당 지역의 서비스 목록 표시</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>시도 선택 (전국 17개 시도)</li>
+                  <li>시군구 선택 (선택된 시도의 시군구)</li>
+                  <li>읍면동 선택 (선택된 시군구의 읍면동)</li>
+                  <li>도로명 선택 (선택된 읍면동의 도로명)</li>
+                  <li>해당 지역의 서비스 목록 표시</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>리뷰 시스템</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 평점 (1-5점) 및 후기 작성</li>
-              <li>• 평균 평점 자동 계산</li>
-              <li>• 리뷰 수 집계</li>
-              <li>• 리뷰 작성 시 평균 평점 자동 업데이트</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>거리 계산 및 길찾기</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>내 위치에서 각 서비스까지의 거리를 계산하고 네이버맵 길찾기로 연결합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>내 위치 확인 (GPS 또는 수동 입력)</li>
+                  <li>각 서비스까지의 거리 표시 (Haversine 공식)</li>
+                  <li>길찾기 버튼 클릭 → 네이버맵 길찾기 연동</li>
+                  <li>위도/경도 기반 지도 표시</li>
+                  <li>주변 서비스 검색 (반경 내)</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>내 위치 확인 (GPS 또는 수동 입력)</li>
+                  <li>각 서비스까지의 거리 표시 (Haversine 공식)</li>
+                  <li>길찾기 버튼 클릭 → 네이버맵 길찾기 연동</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>지도 연동</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 위도/경도 기반 지도 표시</li>
-              <li>• 주변 서비스 검색</li>
-              <li>• Spatial Index 활용</li>
-            </ul>
-          </div>
-        </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 서비스 정보</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>병원, 카페, 공원, 펫샵 등 다양한 위치 서비스 정보를 제공합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>병원, 카페, 공원, 펫샵 등 POI 정보</li>
+                  <li>주소, 좌표, 영업시간, 전화번호</li>
+                  <li>반려동물 동반 가능 여부</li>
+                  <li>반려동물 정책 정보</li>
+                  <li>카테고리별 서비스 검색</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
+
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 서비스 리뷰 시스템</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>사용자가 위치 서비스에 대한 리뷰를 작성하고 평점을 관리할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>평점 (1-5점) 및 후기 작성</li>
+                  <li>평균 평점 자동 계산</li>
+                  <li>리뷰 수 집계</li>
+                  <li>리뷰 작성 시 평균 평점 자동 업데이트</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
       </section>
 
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>

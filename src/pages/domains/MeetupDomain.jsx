@@ -50,101 +50,87 @@ function MeetupDomain() {
           
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-          오프라인 반려동물 모임 생성 및 참여 관리 도메인입니다.
-        </p>
-        <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-          모임 생성, 참여자 관리, 최대 인원 제한, 위치 기반 검색 기능을 제공합니다.
-        </p>
-      </section>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              오프라인 반려동물 모임 생성 및 참여 관리 도메인입니다.
+            </p>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+              모임 생성/조회/수정/취소, 모임 참여/참여 취소, 최대 인원 제한, 모임 상태 관리 (RECRUITING → CONFIRMED → COMPLETED), 위치 기반 모임 검색 기능을 제공합니다.
+            </p>
+          </section>
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
-        
-        <div style={{ 
-          display: 'grid', 
-          gap: '1.5rem',
-          gridTemplateColumns: 'repeat(2, 1fr)'
-        }}>
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>모임 생성</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 모임 제목, 설명, 장소, 일시</li>
-              <li>• 최대 인원 설정</li>
-              <li>• 주최자 정보</li>
-              <li>• 위도/경도 좌표 저장</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>모임 생성 및 참여</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>사용자가 모임을 생성하고 다른 사용자들이 참여할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>모임 생성 (제목, 설명, 장소, 일시, 최대 인원)</li>
+                  <li>여러 사용자가 참여</li>
+                  <li>최대 인원 도달 시 참여 불가</li>
+                  <li>모임 참여/취소</li>
+                  <li>현재 참여자 수 관리</li>
+                  <li>중복 참여 방지 (Unique 제약)</li>
+                  <li>모임 일시 지남 → 자동 완료</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>모임 생성 (제목, 설명, 장소, 일시, 최대 인원)</li>
+                  <li>여러 사용자가 참여</li>
+                  <li>최대 인원 도달 시 참여 불가</li>
+                  <li>모임 일시 지남 → 자동 완료</li>
+                </ol>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>참여자 관리</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
-              <li>• 모임 참여/취소</li>
-              <li>• 현재 참여자 수 관리</li>
-              <li>• 최대 인원 초과 방지</li>
-              <li>• 중복 참여 방지 (Unique 제약)</li>
-            </ul>
-          </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>모임 상태 관리</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>모임의 상태를 관리하여 모집 중, 확정, 완료, 취소 상태를 구분합니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>RECRUITING (모집 중) - 모임 생성 시 기본 상태</li>
+                  <li>CONFIRMED (확정) - 최소 인원 도달 시 자동 변경</li>
+                  <li>COMPLETED (완료) - 모임 일시 지남 시 자동 완료</li>
+                  <li>CANCELLED (취소) - 주최자가 취소</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
 
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>상태 관리</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
             }}>
-              <li>• RECRUITING (모집 중)</li>
-              <li>• CONFIRMED (확정)</li>
-              <li>• COMPLETED (완료)</li>
-              <li>• CANCELLED (취소)</li>
-            </ul>
-          </div>
-
-          <div style={{
-            padding: '1.5rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--nav-border)'
-          }}>
-            <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>동시성 제어</h3>
-            <ul style={{ 
-              listStyle: 'none', 
-              padding: 0,
-              color: 'var(--text-secondary)',
-              lineHeight: '1.8'
-            }}>
-              <li>• 최대 인원 초과 방지</li>
-              <li>• 낙관적/비관적 락 고려</li>
-              <li>• UPDATE 쿼리 + 조건</li>
-            </ul>
-          </div>
-        </div>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 기반 모임 검색</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>내 위치 기반으로 주변 모임을 검색할 수 있습니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>위치 기반 모임 검색 (반경 내)</li>
+                  <li>위도/경도 좌표 기반 거리 계산</li>
+                  <li>Spatial Index 활용</li>
+                </ul>
+                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
+              </div>
+            </div>
       </section>
 
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
