@@ -19,7 +19,7 @@
 - **ORM**: Spring Data JPA (Hibernate)
 - **Database**: MySQL
 - **Security**: Spring Security + JWT
-- **Cache**: Spring Cache
+- **Cache**: Redis(Spring Cache 연동)
 - **Scheduling**: Spring Scheduler
 
 ### 핵심 기능

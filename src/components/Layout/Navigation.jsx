@@ -15,7 +15,7 @@ function Navigation() {
         maxWidth: '1200px',
         margin: '0 auto',
         display: 'flex',
-        gap: '1.5rem',
+        gap: '1.5rem', 
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between'
@@ -25,10 +25,10 @@ function Navigation() {
             홈
           </Link>
           <Link to="/portfolio" style={{ textDecoration: 'none', color: 'var(--text-color)' }}>
-            포트폴리오
+            포트폴리오(트러블슈팅할거구 준비중)
           </Link>
           <Link to="/docs" style={{ textDecoration: 'none', color: 'var(--text-color)' }}>
-            문서
+            문서(docs 폴더 안의 md 파일들)
           </Link>
           <span style={{ color: 'var(--text-muted)' }}>|</span>
           <Link to="/domains/user" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
