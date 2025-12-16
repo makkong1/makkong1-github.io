@@ -6,10 +6,12 @@
 - **역할**: 사용자 인증/인가, 프로필 관리, 반려동물 등록, 사용자 제재 시스템을 담당하는 핵심 도메인입니다.
 - **주요 기능**: 
   - 회원가입/로그인 (JWT 기반)
+  - 소셜 로그인 (Google, Naver) - OAuth2 기반, JWT 토큰 발급
   - 프로필 관리 (닉네임, 이메일, 전화번호, 위치)
   - 반려동물 등록/관리
   - 사용자 제재 시스템 (경고, 이용제한, 영구 차단)
   - 소프트 삭제 (회원 탈퇴)
+  - **이메일 인증 시스템**: 비밀번호 변경, 펫케어/모임 서비스 이용을 위한 인증
 
 ### 1.2 기능 시연
 > **스크린샷/영상 링크**: [기능 작동 영상 또는 스크린샷 추가]
@@ -21,6 +23,18 @@
   2. 로그인 시 Access Token (15분) + Refresh Token (1일) 발급
   3. Refresh Token으로 Access Token 갱신
   4. 제재 상태 확인 (정지/차단 시 로그인 불가)
+- **스크린샷/영상**:
+
+#### 주요 기능 1-1: 소셜 로그인 (Google, Naver)
+- **설명**: OAuth2 기반 소셜 로그인으로 Google/Naver 계정으로 간편 로그인 및 회원가입이 가능합니다. 소셜 로그인 성공 시 일반 로그인과 동일하게 JWT 토큰을 발급합니다.
+- **사용자 시나리오**:
+  1. 소셜 로그인 버튼 클릭 (Google 또는 Naver)
+  2. 소셜 제공자 인증 완료
+  3. 기존 사용자: 자동 로그인 및 JWT 토큰 발급
+  4. 신규 사용자: 자동 회원가입 후 로그인 및 JWT 토큰 발급
+  5. 이메일이 동일한 기존 사용자: 소셜 계정 자동 연결
+  6. 닉네임이 없는 경우: 닉네임 설정 페이지로 리다이렉트
+  7. 토큰은 쿼리 파라미터로 프론트엔드에 전달
 - **스크린샷/영상**: 
 
 #### 주요 기능 2: 반려동물 등록
@@ -29,6 +43,7 @@
   1. 반려동물 등록 (이름, 종류, 품종, 성별, 나이 등)
   2. 프로필 이미지 업로드
   3. 반려동물 정보 수정/삭제
+  4. 예방접종 기록 관리
 - **스크린샷/영상**: 
 
 #### 주요 기능 3: 사용자 제재 시스템
@@ -37,6 +52,21 @@
   1. 경고 3회 누적 시 자동 이용제한 3일 적용
   2. 이용제한 기간 만료 시 자동 해제 (스케줄러)
   3. 영구 차단 시 로그인 불가
+- **스크린샷/영상**: 
+
+#### 주요 기능 4: 이메일 인증 시스템
+- **설명**: 단일 이메일 인증 시스템으로 비밀번호 변경, 펫케어/모임 서비스 이용을 위한 인증을 제공합니다. 소셜 로그인 사용자는 자동으로 이메일 인증이 완료되며, 일반 회원가입 사용자는 이메일 인증 링크를 통해 인증을 완료합니다.
+- **사용자 시나리오**:
+  1. **소셜 로그인**: Google/Naver 로그인 시 자동으로 `emailVerified = true` 설정
+  2. **일반 회원가입**: 
+     - 회원가입 전 이메일 인증 가능 (Redis에 임시 저장)
+     - 회원가입 시 이메일 인증 메일 발송 → 링크 클릭 시 인증 완료
+  3. **비밀번호 변경**: 비밀번호 재설정 전 이메일 인증 필수 확인
+  4. **펫케어 서비스**: 펫케어 요청/지원 시 이메일 인증 확인 → 미인증 시 예외 발생
+  5. **모임 서비스**: 모임 생성/참여 시 이메일 인증 확인 → 미인증 시 예외 발생
+- **권한 제어**:
+  - 인증 안 된 사용자: 주변 서비스, 커뮤니티는 조회 가능, 펫케어/모임은 이용 불가
+  - 인증 완료 후: 모든 서비스 이용 가능
 - **스크린샷/영상**: 
 
 ---
@@ -97,6 +127,88 @@ public TokenResponse login(String id, String password) {
   - 이용제한 만료 시 자동 해제
 - **보안**: Refresh Token은 DB에 저장하여 무효화 가능
 
+#### 로직 1-1: OAuth2 소셜 로그인 처리
+```java
+// OAuth2Service.java
+@Transactional
+public TokenResponse processOAuth2Login(OAuth2User oauth2User, Provider provider) {
+    // Provider별로 사용자 정보 추출 (표준화된 형태)
+    String providerId = extractProviderId(oauth2User, provider);
+    String email = extractEmail(oauth2User, provider);
+    String name = extractName(oauth2User, provider);
+    
+    // SocialUser 조회 (기존 소셜 로그인 사용자 확인)
+    Optional<SocialUser> socialUserOpt = 
+        socialUserRepository.findByProviderAndProviderId(provider, providerId);
+    
+    Users user;
+    if (socialUserOpt.isPresent()) {
+        // 기존 소셜 로그인 사용자
+        user = socialUserOpt.get().getUser();
+    } else {
+        // 신규 소셜 로그인 사용자 - 회원가입 처리
+        user = createOrLinkUser(oauth2User, provider, providerId, email, name);
+    }
+    
+    // 제재 상태 확인 (일반 로그인과 동일)
+    if (user.getStatus() == UserStatus.BANNED) {
+        throw new RuntimeException("영구 차단된 계정입니다.");
+    }
+    
+    // Access Token 생성 (15분) - 일반 로그인과 동일
+    String accessToken = jwtUtil.createAccessToken(user.getId());
+    
+    // Refresh Token 생성 (1일) - 일반 로그인과 동일
+    String refreshToken = jwtUtil.createRefreshToken();
+    
+    // DB에 refresh token 저장
+    user.setRefreshToken(refreshToken);
+    user.setRefreshExpiration(LocalDateTime.now().plusDays(1));
+    user.setLastLoginAt(LocalDateTime.now());
+    usersRepository.save(user);
+    
+    return TokenResponse.builder()
+        .accessToken(accessToken)
+        .refreshToken(refreshToken)
+        .user(userDTO)
+        .build();
+}
+
+// OAuth2SuccessHandler.java
+public void onAuthenticationSuccess(...) {
+    // OAuth2 로그인 처리
+    TokenResponse tokenResponse = oAuth2Service.processOAuth2Login(oAuth2User, provider);
+    
+    // 닉네임이 없으면 닉네임 설정 페이지로 리다이렉트
+    boolean needsNickname = tokenResponse.getUser().getNickname() == null ||
+            tokenResponse.getUser().getNickname().trim().isEmpty();
+    
+    String targetUrl = UriComponentsBuilder.fromUriString(redirectUri)
+        .queryParam("accessToken", URLEncoder.encode(tokenResponse.getAccessToken(), ...))
+        .queryParam("refreshToken", URLEncoder.encode(tokenResponse.getRefreshToken(), ...))
+        .queryParam("success", "true")
+        .queryParam("needsNickname", needsNickname ? "true" : null)
+        .build()
+        .toUriString();
+    
+    getRedirectStrategy().sendRedirect(request, response, targetUrl);
+}
+```
+
+**설명**:
+- **처리 흐름**: OAuth2 인증 → 사용자 정보 추출 → 기존 사용자 확인/신규 생성 → 제재 상태 확인 → JWT 토큰 발급 → 프론트엔드 리다이렉트
+- **주요 판단 기준**: 
+  - SocialUser 조회로 기존 소셜 로그인 사용자 확인
+  - 이메일로 기존 사용자 확인 (소셜 계정 연결)
+  - 제재 상태 확인 (일반 로그인과 동일)
+  - 닉네임 존재 여부 확인
+- **특징**: 
+  - Provider별 사용자 정보 표준화 (Google: sub, Naver: id)
+  - Naver는 커스텀 TokenResponseClient 사용 (표준 OAuth2와 다른 응답 형식)
+  - Google은 기본 클라이언트 사용
+  - 일반 로그인과 동일한 JWT 토큰 발급 방식
+  - 소셜 로그인 사용자는 닉네임이 없을 수 있음 (추가 설정 필요)
+
 #### 로직 2: 경고 누적 시 자동 이용제한
 ```java
 // UserSanctionService.java
@@ -114,9 +226,11 @@ public UserSanction addWarning(Long userId, String reason, Long adminId, Long re
         .build();
     sanctionRepository.save(warning);
     
-    // 경고 횟수 증가
-    user.setWarningCount(user.getWarningCount() + 1);
-    usersRepository.save(user);
+    // 경고 횟수 원자적 증가 (동시성 문제 해결)
+    usersRepository.incrementWarningCount(userId);
+    
+    // 업데이트된 사용자 정보 다시 조회
+    user = usersRepository.findById(userId).orElseThrow();
     
     // 경고 3회 이상이면 자동 이용제한
     if (user.getWarningCount() >= WARNING_THRESHOLD) {
@@ -130,11 +244,106 @@ public UserSanction addWarning(Long userId, String reason, Long adminId, Long re
 ```
 
 **설명**:
-- **처리 흐름**: 경고 추가 → 경고 횟수 증가 → 3회 도달 시 자동 이용제한
+- **처리 흐름**: 경고 추가 → 경고 횟수 원자적 증가 → 3회 도달 시 자동 이용제한
 - **주요 판단 기준**: 경고 횟수 >= 3회
+- **동시성 처리**: `incrementWarningCount()` 메서드로 원자적 증가 보장
 - **자동화**: 스케줄러로 만료된 이용제한 자동 해제
 
-#### 로직 3: 프로필 수정 시 중복 체크
+#### 로직 3: 이메일 인증 시스템
+```java
+// EmailVerificationService.java
+@Transactional
+public void sendVerificationEmail(String userId, EmailVerificationPurpose purpose) {
+    Users user = usersRepository.findByIdString(userId).orElseThrow();
+    
+    // 이미 인증된 경우 스킵
+    if (Boolean.TRUE.equals(user.getEmailVerified())) {
+        return;
+    }
+    
+    // 인증 토큰 생성 (JWT 기반, purpose 포함)
+    String token = jwtUtil.createEmailVerificationToken(userId, purpose);
+    
+    // 이메일 발송 (비동기)
+    emailService.sendVerificationEmail(user.getEmail(), token, purpose);
+}
+
+// 회원가입 전 이메일 인증 (Redis 사용)
+public void sendPreRegistrationVerificationEmail(String email) {
+    // 이미 가입된 이메일 확인
+    usersRepository.findByEmail(email)
+        .ifPresent(existingUser -> {
+            throw new RuntimeException("이미 사용 중인 이메일입니다.");
+        });
+    
+    // 인증 토큰 생성 (이메일 기반)
+    String token = jwtUtil.createEmailVerificationTokenByEmail(email, EmailVerificationPurpose.REGISTRATION);
+    
+    // 이메일 발송
+    emailService.sendVerificationEmail(email, token, EmailVerificationPurpose.REGISTRATION);
+}
+
+@Transactional
+public EmailVerificationPurpose verifyEmail(String token) {
+    // 토큰 검증 및 사용자 ID, purpose 추출
+    String email = jwtUtil.extractEmailFromEmailToken(token);
+    
+    if (email != null) {
+        // 회원가입 전 인증인 경우 Redis에 저장
+        String redisKey = PRE_REGISTRATION_VERIFICATION_KEY_PREFIX + email;
+        stringRedisTemplate.opsValue().set(redisKey, "verified", 
+            PRE_REGISTRATION_VERIFICATION_EXPIRE_HOURS, TimeUnit.HOURS);
+        return EmailVerificationPurpose.REGISTRATION;
+    }
+    
+    // 기존 사용자 인증 처리
+    String userId = jwtUtil.extractUserIdFromEmailToken(token);
+    EmailVerificationPurpose purpose = jwtUtil.extractPurposeFromEmailToken(token);
+    
+    Users user = usersRepository.findByIdString(userId).orElseThrow();
+    
+    // 이메일 인증 완료 (용도 무관, 단일 인증 상태로 업데이트)
+    user.setEmailVerified(true);
+    usersRepository.save(user);
+    
+    return purpose;
+}
+
+// 서비스 레벨 권한 체크 예시 (CareRequestService.java)
+@PreAuthorize("isAuthenticated()")
+public CareRequestDTO createCareRequest(CareRequestDTO dto) {
+    String userId = getCurrentUserId();
+    Users user = usersRepository.findByIdString(userId).orElseThrow();
+    
+    // 이메일 인증 확인
+    if (user.getEmailVerified() == null || !user.getEmailVerified()) {
+        throw new EmailVerificationRequiredException("이메일 인증이 필요합니다.");
+    }
+    
+    // 펫케어 요청 생성 로직...
+}
+```
+
+**설명**:
+- **핵심 원칙**: 이메일 인증은 **하나의 통합 시스템**으로 구현, 용도(purpose)만 분리
+- **처리 흐름**: 
+  1. 인증 토큰 생성 (JWT 기반, purpose 포함)
+  2. 이메일 발송 (비동기)
+  3. 링크 클릭 시 토큰 검증
+  4. `emailVerified = true` 업데이트 (용도 무관) 또는 Redis에 저장 (회원가입 전)
+  5. 용도별 후속 처리 (리다이렉트 등)
+- **주요 판단 기준**: 
+  - 소셜 로그인: 자동 인증 (Google: `email_verified`, Naver: 기본 `true`)
+  - 일반 회원가입: 수동 인증 (이메일 링크 클릭)
+  - 회원가입 전 인증: Redis에 임시 저장 (24시간 유효)
+- **권한 제어**: 서비스 레벨에서 `emailVerified` 필드 확인
+- **특징**: 
+  - 단일 인증 상태 (`emailVerified` 필드 하나로 관리)
+  - 용도는 토큰에만 포함 (인증 완료 후 용도 무관)
+  - 서비스별 독립적인 권한 체크
+  - 회원가입 전 이메일 인증 지원 (Redis 활용)
+
+#### 로직 4: 프로필 수정 시 중복 체크
 ```java
 // UsersService.java
 public UsersDTO updateMyProfile(String userId, UsersDTO dto) {
@@ -181,13 +390,34 @@ public UsersDTO updateMyProfile(String userId, UsersDTO dto) {
 | `logout()` | 로그아웃 | Refresh Token 제거 |
 | `validateRefreshToken()` | Refresh Token 검증 | JWT 검증 + DB 확인 |
 
+#### OAuth2Service
+| 메서드 | 설명 | 주요 로직 |
+|--------|------|-----------|
+| `processOAuth2Login()` | 소셜 로그인 처리 | 사용자 정보 추출, 기존 사용자 확인/신규 생성, 제재 상태 확인, JWT 토큰 발급 |
+| `extractProviderId()` | Provider별 ID 추출 | Google: sub, Naver: id |
+| `extractEmail()` | 이메일 추출 | 표준화된 attributes에서 추출 |
+| `extractName()` | 이름 추출 | 표준화된 attributes에서 추출 |
+| `createOrLinkUser()` | 사용자 생성/연결 | 이메일로 기존 사용자 확인, 신규 생성 또는 소셜 계정 연결 |
+
 #### UsersService
 | 메서드 | 설명 | 주요 로직 |
 |--------|------|-----------|
-| `createUser()` | 회원가입 | 비밀번호 암호화, 사용자 저장 |
+| `createUser()` | 회원가입 | 비밀번호 암호화, 사용자 저장, 이메일 인증 메일 발송 |
 | `updateMyProfile()` | 프로필 수정 | 중복 체크, 필드 업데이트 |
-| `changePassword()` | 비밀번호 변경 | 현재 비밀번호 확인, 새 비밀번호 암호화 |
+| `changePassword()` | 비밀번호 변경 | 이메일 인증 확인, 현재 비밀번호 확인, 새 비밀번호 암호화 |
 | `deleteUser()` | 회원 탈퇴 | 소프트 삭제 (isDeleted = true) |
+| `checkIdAvailability()` | 아이디 중복 검사 | 아이디 사용 가능 여부 확인 |
+| `checkNicknameAvailability()` | 닉네임 중복 검사 | 닉네임 사용 가능 여부 확인 |
+| `setNickname()` | 닉네임 설정 | 소셜 로그인 사용자용 닉네임 설정 |
+
+#### EmailVerificationService
+| 메서드 | 설명 | 주요 로직 |
+|--------|------|-----------|
+| `sendVerificationEmail()` | 인증 메일 발송 | 인증 토큰 생성, 이메일 발송 (비동기) |
+| `sendPreRegistrationVerificationEmail()` | 회원가입 전 인증 메일 발송 | 이메일 기반 토큰 생성, 이메일 발송 |
+| `verifyEmail()` | 이메일 인증 처리 | 토큰 검증, `emailVerified = true` 업데이트 또는 Redis 저장 |
+| `verifyPreRegistrationEmail()` | 회원가입 전 인증 처리 | 토큰 검증, Redis에 인증 상태 저장 |
+| `checkEmailVerification()` | 인증 상태 확인 | 사용자의 이메일 인증 여부 확인 |
 
 #### PetService
 | 메서드 | 설명 | 주요 로직 |
@@ -195,11 +425,12 @@ public UsersDTO updateMyProfile(String userId, UsersDTO dto) {
 | `createPet()` | 반려동물 등록 | ETC 타입 검증, 이미지 업로드 |
 | `updatePet()` | 반려동물 수정 | 필드 업데이트, 이미지 동기화 |
 | `deletePet()` | 반려동물 삭제 | 소프트 삭제 |
+| `getPetsByUserId()` | 사용자별 반려동물 조회 | 삭제되지 않은 펫만 조회 |
 
 #### UserSanctionService
 | 메서드 | 설명 | 주요 로직 |
 |--------|------|-----------|
-| `addWarning()` | 경고 부여 | 경고 추가, 경고 횟수 증가, 3회 시 자동 이용제한 |
+| `addWarning()` | 경고 부여 | 경고 추가, 경고 횟수 원자적 증가, 3회 시 자동 이용제한 |
 | `addSuspension()` | 이용제한 부여 | 이용제한 추가, 상태 변경 |
 | `addBan()` | 영구 차단 | 영구 차단 추가, 상태 변경 |
 | `releaseExpiredSuspensions()` | 만료된 이용제한 해제 | 스케줄러로 자동 실행 |
@@ -215,6 +446,7 @@ public UsersDTO updateMyProfile(String userId, UsersDTO dto) {
 - **처리하는 예외**: 
   - `RuntimeException`: 사용자를 찾을 수 없는 경우, 중복 체크 실패
   - `IllegalArgumentException`: 잘못된 파라미터
+  - `EmailVerificationRequiredException`: 이메일 인증이 필요한 경우
 - **예외 처리 전략**: 
   - Service 레이어에서 예외 발생 시 Controller로 전파
   - GlobalExceptionHandler에서 통합 처리
@@ -229,25 +461,58 @@ domain/user/
   ├── controller/
   │   ├── AuthController.java          # 인증 API
   │   ├── UsersController.java          # 사용자 API
+  │   ├── UserProfileController.java    # 사용자 프로필 API
+  │   ├── PetController.java            # 반려동물 API
   │   └── AdminUserManagementController.java  # 관리자 사용자 관리 API
   ├── service/
   │   ├── AuthService.java             # 인증 비즈니스 로직
   │   ├── UsersService.java            # 사용자 비즈니스 로직
   │   ├── PetService.java              # 반려동물 비즈니스 로직
-  │   └── UserSanctionService.java     # 제재 비즈니스 로직
+  │   ├── UserSanctionService.java     # 제재 비즈니스 로직
+  │   ├── OAuth2Service.java           # 소셜 로그인 비즈니스 로직
+  │   ├── EmailVerificationService.java # 이메일 인증 비즈니스 로직
+  │   ├── EmailService.java            # 이메일 발송 서비스
+  │   ├── GoogleOAuth2UserService.java # Google OAuth2 사용자 서비스
+  │   ├── NaverOAuth2UserService.java  # Naver OAuth2 사용자 서비스
+  │   ├── OAuth2UserProviderRouter.java # Provider별 라우터
+  │   ├── NaverOAuth2TokenResponseClient.java # Naver 토큰 응답 클라이언트
+  │   ├── ConditionalOAuth2TokenResponseClient.java # 조건부 토큰 응답 클라이언트
+  │   └── OAuth2DataCollector.java     # OAuth2 데이터 수집기
+  ├── handler/
+  │   ├── OAuth2SuccessHandler.java    # 소셜 로그인 성공 핸들러
+  │   └── OAuth2FailureHandler.java    # 소셜 로그인 실패 핸들러
   ├── repository/
   │   ├── UsersRepository.java
   │   ├── PetRepository.java
-  │   └── UserSanctionRepository.java
+  │   ├── PetVaccinationRepository.java
+  │   ├── UserSanctionRepository.java
+  │   └── SocialUserRepository.java
   ├── entity/
   │   ├── Users.java
   │   ├── Pet.java
+  │   ├── PetVaccination.java
   │   ├── UserSanction.java
-  │   └── SocialUser.java
-  └── dto/
-      ├── UsersDTO.java
-      ├── PetDTO.java
-      └── TokenResponse.java
+  │   ├── SocialUser.java
+  │   ├── Provider.java               # 소셜 로그인 제공자 (GOOGLE, NAVER)
+  │   ├── UserStatus.java             # 사용자 상태 (ACTIVE, SUSPENDED, BANNED)
+  │   ├── Role.java                   # 역할 (USER, ADMIN, MASTER)
+  │   └── EmailVerificationPurpose.java # 이메일 인증 용도
+  ├── converter/
+  │   ├── UsersConverter.java
+  │   ├── PetConverter.java
+  │   ├── PetVaccinationConverter.java
+  │   └── SocialUserConverter.java
+  ├── dto/
+  │   ├── UsersDTO.java
+  │   ├── PetDTO.java
+  │   ├── PetVaccinationDTO.java
+  │   ├── TokenResponse.java
+  │   ├── LoginRequest.java
+  │   └── UserPageResponseDTO.java
+  ├── exception/
+  │   └── EmailVerificationRequiredException.java
+  └── scheduler/
+      └── UserSanctionScheduler.java  # 제재 만료 자동 해제 스케줄러
 ```
 
 ### 3.2 엔티티 구조
@@ -259,11 +524,16 @@ domain/user/
 public class Users {
     private Long idx;
     private String id;                     // 로그인용 아이디 (UNIQUE)
-    private String username;                // 닉네임 (UNIQUE)
+    private String username;                // 사용자명 (UNIQUE)
+    private String nickname;                // 닉네임 (UNIQUE, 소셜 로그인 사용자 필수)
     private String email;                  // 이메일 (UNIQUE)
     private String phone;                  // 전화번호
     private String password;               // 비밀번호 (암호화)
-    private Role role;                     // 역할 (USER, ADMIN)
+    private String profileImage;           // 프로필 이미지 URL (소셜 로그인)
+    private String birthDate;              // 생년월일 (소셜 로그인)
+    private String gender;                 // 성별 (소셜 로그인)
+    private Boolean emailVerified;         // 이메일 인증 여부
+    private Role role;                     // 역할 (USER, ADMIN, MASTER)
     private String location;               // 위치
     private String petInfo;                // 반려동물 정보
     private String refreshToken;           // Refresh Token
@@ -329,16 +599,29 @@ public class UserSanction {
 #### SocialUser (소셜 로그인)
 ```java
 @Entity
-@Table(name = "social_user")
+@Table(name = "socialuser")
 public class SocialUser {
     private Long idx;
     private Users user;                    // 사용자
-    private String provider;                // 제공자 (KAKAO, NAVER, GOOGLE)
-    private String providerId;             // 제공자 ID
-    private String email;                  // 이메일
+    private Provider provider;             // 제공자 (GOOGLE, NAVER)
+    private String providerId;             // 제공자 ID (Google: sub, Naver: id)
+    private String providerData;           // Provider별 원본 데이터 JSON
+    private String providerProfileImage;    // Provider별 프로필 이미지 URL
+    private String providerName;           // Provider별 이름
+    private String providerPhone;          // Provider별 전화번호
+    private String providerAgeRange;        // Provider별 나이대
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
 ```
+
+**설명**:
+- **역할**: 소셜 로그인 사용자와 제공자 간의 연결 정보 저장
+- **관계**: Users와 Many-to-One 관계
+- **특징**: 
+  - 하나의 사용자가 여러 소셜 계정 연결 가능
+  - provider + providerId로 기존 소셜 로그인 사용자 식별
+  - Provider별 원본 데이터를 JSON으로 저장하여 추후 활용 가능
 
 ### 3.3 엔티티 관계도 (ERD)
 ```mermaid
@@ -349,6 +632,7 @@ erDiagram
     Users ||--o{ Board : "작성"
     Users ||--o{ Comment : "작성"
     Users ||--o{ CareRequest : "요청"
+    Pet ||--o{ PetVaccination : "예방접종"
 ```
 
 ### 3.4 API 설계
@@ -358,18 +642,39 @@ erDiagram
 | `/api/auth/register` | POST | 회원가입 | `UsersDTO` → `UsersDTO` |
 | `/api/auth/refresh` | POST | 토큰 갱신 | `refreshToken` → `TokenResponse` |
 | `/api/auth/logout` | POST | 로그아웃 | - → `204 No Content` |
+| `/api/auth/validate` | POST | 토큰 검증 | `Authorization Header` → `{valid: boolean, user: UsersDTO}` |
+| `/oauth2/authorization/google` | GET | Google 소셜 로그인 시작 | - → 리다이렉트 |
+| `/oauth2/authorization/naver` | GET | Naver 소셜 로그인 시작 | - → 리다이렉트 |
+| `/oauth2/callback` | GET | 소셜 로그인 콜백 | - → 리다이렉트 (토큰 포함) |
 | `/api/users/profile` | GET | 내 프로필 조회 | - → `UsersDTO` |
 | `/api/users/profile` | PUT | 프로필 수정 | `UsersDTO` → `UsersDTO` |
+| `/api/users/nickname` | POST | 닉네임 설정 | `nickname` → `UsersDTO` |
 | `/api/users/pets` | GET | 내 반려동물 목록 | - → `List<PetDTO>` |
 | `/api/users/pets` | POST | 반려동물 등록 | `PetDTO` → `PetDTO` |
+| `/api/users/pets/{petIdx}` | PUT | 반려동물 수정 | `PetDTO` → `PetDTO` |
+| `/api/users/pets/{petIdx}` | DELETE | 반려동물 삭제 | - → `204 No Content` |
+| `/api/users/id/check` | GET | 아이디 중복 검사 | `id` → `{available: boolean}` |
+| `/api/users/nickname/check` | GET | 닉네임 중복 검사 | `nickname` → `{available: boolean}` |
+| `/api/users/email/verify` | POST | 이메일 인증 메일 발송 | `purpose` → `204 No Content` |
+| `/api/users/email/verify/pre-registration` | POST | 회원가입 전 이메일 인증 메일 발송 | `email` → `204 No Content` |
+| `/api/users/email/verify/{token}` | GET | 이메일 인증 처리 | - → 리다이렉트 |
 | `/api/admin/users` | GET | 사용자 목록 (관리자) | `page`, `size` → `UserPageResponseDTO` |
 | `/api/admin/users/{id}/warn` | POST | 경고 부여 | `reason` → `UserSanction` |
 | `/api/admin/users/{id}/suspend` | POST | 이용제한 부여 | `days`, `reason` → `UserSanction` |
 | `/api/admin/users/{id}/ban` | POST | 영구 차단 | `reason` → `UserSanction` |
 
+**소셜 로그인 플로우**:
+1. 사용자가 `/oauth2/authorization/{provider}` 접근
+2. Spring Security가 소셜 제공자로 리다이렉트
+3. 사용자가 소셜 제공자에서 인증 완료
+4. 소셜 제공자가 `/oauth2/callback`으로 리다이렉트 (인증 코드 포함)
+5. `OAuth2SuccessHandler`에서 `OAuth2Service.processOAuth2Login()` 호출
+6. JWT 토큰 발급 후 프론트엔드로 리다이렉트 (쿼리 파라미터로 토큰 전달)
+7. 닉네임이 없으면 `needsNickname=true` 파라미터와 함께 리다이렉트
+
 ### 3.5 다른 도메인과의 연관관계
 - **Board 도메인**: Users가 게시글/댓글 작성
-- **Care 도메인**: Users가 펫케어 요청 생성/지원
+- **Care 도메인**: Users가 펫케어 요청 생성/지원 (이메일 인증 필수)
 - **Report 도메인**: Users가 신고 접수, 제재 부여
 - **Notification 도메인**: Users에게 알림 전송
 - **File 도메인**: Users 프로필 이미지, Pet 프로필 이미지
@@ -389,6 +694,42 @@ erDiagram
 
 ## 4. 트러블슈팅
 
+### 4.1 제재 시스템 동시성 문제
+**가정 상황**: 여러 관리자가 동시에 같은 사용자에게 경고 부여
+**문제 발생 위치**: `UserSanctionService.addWarning()` 메서드에서 경고 횟수 증가 시
+**문제 내용**: 
+- 여러 스레드가 동시에 `user.getWarningCount()`를 읽고 증가시키면 Lost Update 발생
+- 예: 경고 2회 상태에서 3명이 동시에 경고 부여 시, 예상값 5가 아닌 3~4로 누락 가능
+- 경고 3회 도달 판단이 부정확해져 자동 이용제한이 누락되거나 중복 적용될 수 있음
+**해결 방법**: DB 레벨에서 원자적 증가 쿼리 사용
+```java
+// UsersRepository.java
+@Modifying
+@Query("UPDATE Users u SET u.warningCount = u.warningCount + 1 WHERE u.idx = :userId")
+void incrementWarningCount(@Param("userId") Long userId);
+```
+**효과**: 동시 요청 시에도 경고 횟수가 정확하게 증가하며, 경고 3회 도달 시 자동 이용제한이 정확히 한 번만 적용됨
+
+### 4.2 소셜 로그인 동시성 문제
+**가정 상황**: 같은 소셜 계정(같은 provider + providerId 또는 같은 email)으로 동시에 여러 번 로그인 시도
+**문제 발생 위치**: `OAuth2Service.createOrLinkUser()` 메서드에서 사용자 생성/연결 시
+**문제 내용**:
+- 여러 스레드가 동시에 `findByEmail()` 또는 `findByProviderAndProviderId()` 조회 시 모두 null 반환
+- 각 스레드가 신규 사용자로 판단하여 중복 계정 생성 가능 (Race Condition)
+- 같은 이메일로 여러 Users 엔티티가 생성되거나, 같은 provider+providerId로 여러 SocialUser가 생성될 수 있음
+**해결 방법**: DB UNIQUE 제약조건 + 트랜잭션 격리 수준 활용
+- `Users.email` UNIQUE 제약조건: 같은 이메일로 중복 계정 생성 방지
+- `SocialUser.provider + providerId` UNIQUE 제약조건: 같은 소셜 계정으로 중복 SocialUser 생성 방지
+- `@Transactional`: 트랜잭션 내에서 일관성 보장
+- 중복 생성 시도 시 DB 제약조건 위반 예외 발생 → 트랜잭션 롤백
+**효과**: 동시 요청 시에도 하나의 사용자 계정만 생성되며, 기존 계정과의 연결도 정확하게 처리됨
+
+### 4.3 소셜 로그인 Provider별 데이터 표준화
+**문제**: Google과 Naver의 OAuth2 응답 형식이 다름
+**해결**: Provider별 OAuth2UserService에서 표준화된 형태로 변환
+- Google: `sub`, `email`, `name`, `picture`, `email_verified`
+- Naver: `id`, `email`, `name`, `profile_image`, `birthyear`, `birthday`, `gender`
+
 ---
 
 ## 5. 성능 최적화
@@ -403,6 +744,9 @@ CREATE UNIQUE INDEX idx_users_id ON users(id);
 -- 닉네임 조회
 CREATE UNIQUE INDEX idx_users_username ON users(username);
 
+-- 닉네임 조회 (별도 필드)
+CREATE UNIQUE INDEX idx_users_nickname ON users(nickname);
+
 -- 이메일 조회
 CREATE UNIQUE INDEX idx_users_email ON users(email);
 
@@ -414,13 +758,9 @@ CREATE INDEX idx_users_refresh_token ON users(refresh_token);
 ```
 
 **선정 이유**:
-- 자주 조회되는 컬럼 (id, username, email)
+- 자주 조회되는 컬럼 (id, username, nickname, email)
 - UNIQUE 제약조건으로 중복 방지
 - 제재 상태 필터링 최적화
-
-**효과**:
-- 로그인: 인덱스 사용으로 쿼리 실행 시간 50% 감소
-- 프로필 조회: 인덱스 사용으로 쿼리 실행 시간 70% 감소
 
 #### 쿼리 최적화
 ```sql
@@ -476,26 +816,22 @@ public void deleteUser(long idx) {
 - 데이터 복구 가능
 - 연관 데이터 보존 (게시글, 댓글 등)
 
+#### 이메일 인증 Redis 활용
+**회원가입 전 이메일 인증**: Redis에 임시 저장하여 회원가입 전 인증 상태 관리
+- TTL: 24시간
+- 키 형식: `email_verification:pre_registration:{email}`
+
 ---
 
 ## 6. 핵심 포인트 요약
 
 ### 기술적 하이라이트
 1. **JWT 기반 인증**: Access Token + Refresh Token 패턴
-2. **제재 시스템**: 경고 누적 시 자동 이용제한
-3. **소프트 삭제**: 데이터 복구 가능
-4. **비밀번호 암호화**: BCryptPasswordEncoder 사용
-5. **동시성 제어**: 쿼리로 직접 증가하여 Lost Update 방지
+2. **OAuth2 소셜 로그인**: Google, Naver 지원, 일반 로그인과 동일한 JWT 토큰 발급
+3. **Provider별 표준화**: 각 소셜 제공자의 다른 응답 형식을 표준화하여 일관된 처리
+4. **제재 시스템**: 경고 누적 시 자동 이용제한, 동시성 문제 해결
+5. **소프트 삭제**: 데이터 복구 가능
+6. **비밀번호 암호화**: BCryptPasswordEncoder 사용
+7. **이메일 인증 시스템**: 단일 통합 시스템으로 모든 용도 처리, 회원가입 전 인증 지원 (Redis)
 
-### 학습한 점
-- JWT 토큰 관리 전략 (Access Token + Refresh Token)
-- 제재 시스템 자동화 (경고 누적 → 자동 이용제한)
-- 소프트 삭제 패턴 (데이터 보존)
-- 비밀번호 암호화 (BCrypt)
-- 동시성 제어 방법 (쿼리 직접 증가)
 
-### 개선 가능한 부분
-- Redis 세션 관리: Refresh Token을 Redis에 저장
-- 2단계 인증 (2FA): 보안 강화
-- 로그인 이력 추적: 비정상 로그인 감지
-- 비밀번호 찾기: 이메일 인증
