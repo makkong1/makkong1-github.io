@@ -46,7 +46,11 @@ export const AuthProvider = ({ children }) => {
         } else if (token) {
           // Access Token이 있으면 검증
           try {
-            const response = await authApi.validateToken();
+            const response = await authApi.validateToken().catch(err => {
+              // 모킹 모드에서는 에러를 무시하고 기본값 반환
+              console.warn('토큰 검증 실패 (데모 모드):', err);
+              return { valid: false };
+            });
             if (isMounted) {
               if (response.valid) {
                 setUser(response.user);

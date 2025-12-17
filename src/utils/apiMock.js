@@ -22,15 +22,3 @@ export const simulateDelay = (ms = 300) => {
   return new Promise(resolve => setTimeout(resolve, ms));
 };
 
-// 더미데이터 로더
-export const loadMockData = async (dataPath) => {
-  try {
-    const module = await import(dataPath);
-    await simulateDelay(200); // 로딩 시뮬레이션
-    return module.default || module;
-  } catch (error) {
-    console.error(`더미데이터 로드 실패: ${dataPath}`, error);
-    return null;
-  }
-};
-

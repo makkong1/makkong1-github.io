@@ -20,7 +20,7 @@ const generateLocationServices = (count = 40) => {
   }));
 };
 
-const allLocationServices = generateLocationServices(60);
+const allLocationServices = generateLocationServices(200);
 
 export const getLocationServicesList = (page = 0, size = 20) => {
   const start = page * size;
@@ -35,6 +35,34 @@ export const getLocationServicesList = (page = 0, size = 20) => {
       totalElements: allLocationServices.length,
       totalPages: Math.ceil(allLocationServices.length / size)
     }
+  };
+};
+
+export const searchLocationServices = (params = {}) => {
+  let filtered = [...allLocationServices];
+  
+  // 지역 필터링
+  if (params.sido) {
+    filtered = filtered.filter(s => s.address.includes(params.sido));
+  }
+  if (params.sigungu) {
+    filtered = filtered.filter(s => s.address.includes(params.sigungu));
+  }
+  if (params.eupmyeondong) {
+    filtered = filtered.filter(s => s.address.includes(params.eupmyeondong));
+  }
+  
+  // 카테고리 필터링
+  if (params.category) {
+    filtered = filtered.filter(s => s.type === params.category);
+  }
+  
+  const size = params.size || 500;
+  const services = filtered.slice(0, size);
+  
+  // LocationServiceMap이 response.data?.services를 기대하므로
+  return {
+    services: services
   };
 };
 

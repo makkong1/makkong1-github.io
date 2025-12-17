@@ -23,28 +23,17 @@ const generateCareRequests = (count = 30) => {
       latitude: 37.4979 + (Math.random() - 0.5) * 0.1,
       longitude: 127.0276 + (Math.random() - 0.5) * 0.1
     },
-    status: ['PENDING', 'ACCEPTED', 'IN_PROGRESS', 'COMPLETED'][Math.floor(Math.random() * 4)],
+    status: ['OPEN', 'IN_PROGRESS', 'COMPLETED'][Math.floor(Math.random() * 3)],
     applicantCount: Math.floor(Math.random() * 10),
     createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString()
   }));
 };
 
-const allCareRequests = generateCareRequests(50);
+const allCareRequests = generateCareRequests(100);
 
 export const getCareRequestsList = (page = 0, size = 20) => {
-  const start = page * size;
-  const end = start + size;
-  const requests = allCareRequests.slice(start, end);
-  
-  return {
-    content: requests,
-    page: {
-      number: page,
-      size: size,
-      totalElements: allCareRequests.length,
-      totalPages: Math.ceil(allCareRequests.length / size)
-    }
-  };
+  // 컴포넌트가 배열을 직접 기대하므로 배열로 반환
+  return allCareRequests;
 };
 
 export const getCareRequestDetail = (id) => {
@@ -52,7 +41,7 @@ export const getCareRequestDetail = (id) => {
   if (!request) {
     return null;
   }
-  
+
   return {
     ...request,
     applicants: Array.from({ length: request.applicantCount }, (_, i) => ({

@@ -8,7 +8,8 @@ const COORD_EPSILON = 0.00001;
 
 // 네이버맵 API 키 (환경변수에서 가져오거나 직접 설정)
 // 최신 버전에서는 ncpKeyId를 사용합니다
-const NAVER_MAPS_KEY_ID = process.env.REACT_APP_NAVER_MAPS_KEY_ID || process.env.REACT_APP_NAVER_MAPS_CLIENT_ID || '';
+// Vite에서는 import.meta.env를 사용하고, VITE_ 접두사 필요
+const NAVER_MAPS_KEY_ID = import.meta.env.VITE_NAVER_MAPS_KEY_ID || import.meta.env.VITE_NAVER_MAPS_CLIENT_ID || '';
 
 /**
  * 범용 지도 컨테이너 컴포넌트
@@ -180,7 +181,7 @@ const MapContainer = React.forwardRef(
     // 네이버맵 스크립트 로드
     useEffect(() => {
       if (!NAVER_MAPS_KEY_ID) {
-        console.error('네이버맵 Key ID가 설정되지 않았습니다. .env 파일에 REACT_APP_NAVER_MAPS_KEY_ID를 확인하세요.');
+        console.error('네이버맵 Key ID가 설정되지 않았습니다. .env 파일에 VITE_NAVER_MAPS_KEY_ID를 확인하세요.');
         return;
       }
 

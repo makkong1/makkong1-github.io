@@ -31,6 +31,14 @@ export const ThemeProvider = ({ children }) => {
   useEffect(() => {
     document.body.style.backgroundColor = theme.colors.background;
     document.body.style.color = theme.colors.text;
+    // 전역 CSS 변수도 데모 테마와 동기화
+    document.documentElement.style.setProperty('--bg-color', theme.colors.background);
+    document.documentElement.style.setProperty('--text-color', theme.colors.text);
+    document.documentElement.style.setProperty('--nav-bg', theme.colors.surface);
+    document.documentElement.style.setProperty('--nav-border', theme.colors.border);
+    document.documentElement.style.setProperty('--card-bg', theme.colors.surface);
+    document.documentElement.style.setProperty('--text-secondary', theme.colors.textSecondary);
+    document.documentElement.style.setProperty('--text-muted', theme.colors.textLight);
   }, [theme]);
 
   return (

@@ -43,7 +43,7 @@ function DemoPage() {
       <DemoBanner />
       <DemoThemeProvider>
         <AuthProvider>
-          <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color, #f5f5f5)' }}>
+          <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color, #ffffff)' }}>
             <Navigation 
               activeTab={activeTab} 
               setActiveTab={setActiveTab}

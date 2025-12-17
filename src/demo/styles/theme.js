@@ -6,18 +6,18 @@ export const lightTheme = {
     primaryLight: '#FF9558',
     secondary: '#4A90E2',
     background: '#FFFFFF',
-    surface: '#F8F9FA',
-    surfaceHover: '#F1F3F4',
-    text: '#212121',
-    textSecondary: '#757575',
+    surface: '#FAFAFA', // 약간 더 부드러운 회색
+    surfaceHover: '#F5F5F5', // 호버 시 약간 더 진한 회색
+    text: '#1A1A1A', // 약간 더 부드러운 검정 (가독성 향상)
+    textSecondary: '#6B6B6B', // 더 읽기 쉬운 회색
     textLight: '#9E9E9E',
-    border: '#E0E0E0',
-    borderLight: '#F5F5F5',
+    border: '#E5E5E5', // 더 부드러운 테두리
+    borderLight: '#F0F0F0',
     success: '#4CAF50',
     warning: '#FF9800',
     error: '#F44336',
-    shadow: 'rgba(0, 0, 0, 0.1)',
-    shadowHover: 'rgba(0, 0, 0, 0.15)',
+    shadow: 'rgba(0, 0, 0, 0.08)', // 더 부드러운 그림자
+    shadowHover: 'rgba(0, 0, 0, 0.12)',
     gradient: 'linear-gradient(135deg, #FF7E36 0%, #FF9558 100%)',
   },
   spacing: {

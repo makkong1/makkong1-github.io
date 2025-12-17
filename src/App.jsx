@@ -15,14 +15,10 @@ import MissingPetDomain from './pages/domains/MissingPetDomain';
 import LocationDomain from './pages/domains/LocationDomain';
 import MeetupDomain from './pages/domains/MeetupDomain';
 import ChatDomain from './pages/domains/ChatDomain';
-import { setupMockInterceptor } from './api/mockInterceptor';
 import './styles/global.css';
 
 function App() {
-  // API 모킹 인터셉터 초기화
-  useEffect(() => {
-    setupMockInterceptor();
-  }, []);
+  // 모킹은 main.jsx에서 이미 초기화됨
 
   return (
     <ThemeProvider>
