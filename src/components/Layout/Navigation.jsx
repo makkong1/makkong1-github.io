@@ -25,7 +25,10 @@ function Navigation() {
             홈
           </Link>
           <Link to="/portfolio" style={{ textDecoration: 'none', color: 'var(--text-color)' }}>
-            포트폴리오(트러블슈팅할거구 준비중)
+            프로젝트 설명
+          </Link>
+          <Link to="/demo" style={{ textDecoration: 'none', color: 'var(--text-color)', fontWeight: 'bold' }}>
+            🎮 라이브 데모
           </Link>
           <Link to="/docs" style={{ textDecoration: 'none', color: 'var(--text-color)' }}>
             문서(docs 폴더 안의 md 파일들)

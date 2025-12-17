@@ -1,10 +1,12 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { useEffect } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout/Layout';
 import HomePage from './pages/HomePage';
 import PortfolioPage from './pages/PortfolioPage';
 import PerformancePage from './pages/PerformancePage';
 import MCPFilesPage from './pages/MCPFilesPage';
+import DemoPage from './pages/DemoPage';
 // 도메인 페이지들
 import UserDomain from './pages/domains/UserDomain';
 import BoardDomain from './pages/domains/BoardDomain';
@@ -13,9 +15,15 @@ import MissingPetDomain from './pages/domains/MissingPetDomain';
 import LocationDomain from './pages/domains/LocationDomain';
 import MeetupDomain from './pages/domains/MeetupDomain';
 import ChatDomain from './pages/domains/ChatDomain';
+import { setupMockInterceptor } from './api/mockInterceptor';
 import './styles/global.css';
 
 function App() {
+  // API 모킹 인터셉터 초기화
+  useEffect(() => {
+    setupMockInterceptor();
+  }, []);
+
   return (
     <ThemeProvider>
       <BrowserRouter basename="/makkong1-github.io">
@@ -26,6 +34,9 @@ function App() {
             
             {/* 포트폴리오 페이지 */}
             <Route path="/portfolio" element={<PortfolioPage />} />
+            
+            {/* 라이브 데모 페이지 */}
+            <Route path="/demo" element={<DemoPage />} />
             
             {/* 도메인 페이지들 */}
             <Route path="/domains/user" element={<UserDomain />} />
