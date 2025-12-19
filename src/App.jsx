@@ -3,7 +3,6 @@ import { useEffect } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout/Layout';
 import HomePage from './pages/HomePage';
-import PortfolioPage from './pages/PortfolioPage';
 import PerformancePage from './pages/PerformancePage';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
@@ -27,9 +26,6 @@ function App() {
           <Routes>
             {/* 메인 페이지 */}
             <Route path="/" element={<HomePage />} />
-            
-            {/* 포트폴리오 페이지 */}
-            <Route path="/portfolio" element={<PortfolioPage />} />
             
             {/* 라이브 데모 페이지 */}
             <Route path="/demo" element={<DemoPage />} />

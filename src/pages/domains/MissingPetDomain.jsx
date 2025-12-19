@@ -4,10 +4,14 @@ import TableOfContents from '../../components/Common/TableOfContents';
 function MissingPetDomain() {
   const sections = [
     { id: 'intro', title: '도메인 소개' },
-    { id: 'features', title: '주요 기능' },
+    { id: 'problem', title: '가정한 문제 상황' },
+    { id: 'test-design', title: '문제 재현 방식' },
+    { id: 'before', title: '성능 측정 결과 (개선 전)' },
+    { id: 'optimization', title: '성능 최적화 및 동시성 제어' },
+    { id: 'after', title: '성능 개선 결과 (개선 후)' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'services', title: 'Service 주요 기능' },
-    { id: 'location-search', title: '위치 기반 검색' },
+    { id: 'security', title: '보안 및 권한 체계' },
     { id: 'relationships', title: '다른 도메인과의 연관관계' },
     { id: 'api', title: 'API 엔드포인트' },
     { id: 'docs', title: '관련 문서' }
@@ -52,17 +56,124 @@ function MissingPetDomain() {
         <div style={{ flex: 1 }}>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 신고 도메인</h1>
           
+          {/* 1. 도메인 소개 */}
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              실종 동물 신고 및 관리 시스템으로, 반려동물을 잃어버린 사용자가 신고하고 다른 사용자들이 정보를 제공할 수 있습니다.
-            </p>
-            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-              실종 동물 신고 생성/조회/수정, 위치 기반 검색 (반경 내), 실종 동물 상태 관리 (MISSING → FOUND → CLOSED), 목격 정보 댓글 기능을 제공합니다.
-            </p>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                MissingPet 도메인은 실종 동물 신고 및 관리 시스템을 담당합니다.
+              </p>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+                반려동물을 잃어버린 사용자가 신고하고 다른 사용자들이 정보를 제공할 수 있습니다.
+              </p>
+            </div>
           </section>
 
-          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+          {/* 2. 가정한 문제 상황 */}
+          <section id="problem" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>가정한 문제 상황</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 3. 문제 재현 방식 (테스트 설계) */}
+          <section id="test-design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 재현 방식 (테스트 설계)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 4. 성능 측정 결과 (개선 전) */}
+          <section id="before" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 측정 결과 (개선 전)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 5. 성능 최적화 및 동시성 제어 */}
+          <section id="optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 및 동시성 제어</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>현재 구현된 최적화</h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>위치 기반 검색</strong>: Haversine 공식으로 거리 계산</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>MySQL Spatial Index</strong>: ST_Distance_Sphere 함수 사용</li>
+              </ul>
+            </div>
+          </section>
+
+          {/* 6. 성능 개선 결과 (개선 후) */}
+          <section id="after" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과 (개선 후)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 7. 얻은 교훈 / 설계 인사이트 */}
+          <section id="insights" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>얻은 교훈 / 설계 인사이트</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 8. Entity 구조 */}
+          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
             
             <div style={{
@@ -246,47 +357,28 @@ function MissingPetDomain() {
         </div>
       </section>
 
-          <section id="location-search" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 기반 검색</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Haversine 공식</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>두 좌표 간 거리 계산 (km)</div>
-            <div style={{ marginTop: '0.5rem' }}>지구 반경 6371km 기준</div>
-          </div>
-        </div>
+          {/* 10. 보안 및 권한 체계 */}
+          <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>작성자만 수정/삭제 가능</strong>: 신고 작성자만 본인 신고 수정/삭제 가능</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>소프트 삭제</strong>: isDeleted 플래그로 논리 삭제</li>
+              </ul>
+            </div>
+          </section>
 
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>MySQL Spatial Index</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>ST_Distance_Sphere 함수 사용</div>
-            <div>반경 내 실종 신고 조회 성능 향상</div>
-          </div>
-        </div>
-      </section>
-
+          {/* 11. 다른 도메인과의 연관관계 */}
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         

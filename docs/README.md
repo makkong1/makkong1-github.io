@@ -10,7 +10,7 @@
 
 ## 프로젝트 개요
 
-**Petory**는 반려동물 커뮤니티 플랫폼으로, 게시판, 펫케어 요청, 실종 동물 찾기, 오프라인 모임 등 다양한 기능을 제공합니다.
+**Petory**는 반려동물 통합 플랫폼으로, 게시판, 펫케어 요청, 실종 동물 찾기, 오프라인 모임 등 다양한 기능을 제공합니다.
 
 ### 기술 스택
 
@@ -19,7 +19,7 @@
 - **ORM**: Spring Data JPA (Hibernate)
 - **Database**: MySQL
 - **Security**: Spring Security + JWT
-- **Cache**: Redis(Spring Cache 연동)
+- **Cache**: Spring Cache
 - **Scheduling**: Spring Scheduler
 
 ### 핵심 기능

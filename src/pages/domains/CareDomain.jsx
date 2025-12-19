@@ -4,12 +4,14 @@ import TableOfContents from '../../components/Common/TableOfContents';
 function CareDomain() {
   const sections = [
     { id: 'intro', title: '도메인 소개' },
-    { id: 'features', title: '주요 기능' },
+    { id: 'problem', title: '가정한 문제 상황' },
+    { id: 'test-design', title: '문제 재현 방식' },
+    { id: 'before', title: '성능 측정 결과 (개선 전)' },
+    { id: 'optimization', title: '성능 최적화 및 동시성 제어' },
+    { id: 'after', title: '성능 개선 결과 (개선 후)' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'services', title: 'Service 주요 기능' },
-    { id: 'business', title: '비즈니스 로직' },
-    { id: 'performance', title: '성능 최적화' },
-    { id: 'concurrency', title: '동시성 제어' },
+    { id: 'security', title: '보안 및 권한 체계' },
     { id: 'relationships', title: '다른 도메인과의 연관관계' },
     { id: 'api', title: 'API 엔드포인트' },
     { id: 'docs', title: '관련 문서' }
@@ -73,17 +75,142 @@ function CareDomain() {
         <div style={{ flex: 1 }}>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 도메인</h1>
           
+          {/* 1. 도메인 소개 */}
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              펫케어 요청/지원 시스템으로, 반려동물 돌봄이 필요한 사용자와 돌봄을 제공할 수 있는 사용자를 연결합니다.
-            </p>
-            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-              펫케어 요청 생성/조회/수정/삭제, 펫케어 지원, 지원 승인/거절, 펫케어 상태 관리, 펫케어 리뷰 시스템, 날짜 지난 요청 자동 완료 기능을 제공합니다.
-            </p>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Care 도메인은 펫케어 요청/지원 시스템을 담당합니다.
+              </p>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+                반려동물 돌봄이 필요한 사용자와 돌봄을 제공할 수 있는 사용자를 연결합니다.
+              </p>
+            </div>
           </section>
 
-          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+          {/* 2. 가정한 문제 상황 */}
+          <section id="problem" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>가정한 문제 상황</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 3. 문제 재현 방식 (테스트 설계) */}
+          <section id="test-design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 재현 방식 (테스트 설계)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 4. 성능 측정 결과 (개선 전) */}
+          <section id="before" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 측정 결과 (개선 전)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 5. 성능 최적화 및 동시성 제어 */}
+          <section id="optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 및 동시성 제어</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>현재 구현된 최적화</h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join</strong>: 요청자, 펫 정보를 함께 조회</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>배치 조회</strong>: 지원자 수를 배치로 조회 (IN 절)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>캐싱</strong>: 사용자별 평균 평점 캐싱</li>
+              </ul>
+            </div>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>동시성 제어</h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>지원 승인 동시 처리</strong>: 트랜잭션 + 상태 체크로 1명만 승인 보장</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>스케줄러 중복 실행 방지</strong>: ShedLock 사용 (분산 환경)</li>
+              </ul>
+            </div>
+          </section>
+
+          {/* 6. 성능 개선 결과 (개선 후) */}
+          <section id="after" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과 (개선 후)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 7. 얻은 교훈 / 설계 인사이트 */}
+          <section id="insights" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>얻은 교훈 / 설계 인사이트</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 8. Entity 구조 */}
+          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
             
             <div style={{
@@ -337,156 +464,27 @@ function CareDomain() {
         </div>
       </section>
 
-          <section id="business" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>비즈니스 로직</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 요청 생애주기</h3>
-          <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-            <div><strong style={{ color: 'var(--text-color)' }}>1. OPEN (모집 중)</strong></div>
-            <div>• 사용자가 요청 생성, 다른 사용자들이 지원 가능, 요청자가 지원자 승인</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>2. IN_PROGRESS (진행 중)</strong></div>
-            <div>• 지원자 승인 후 상태 변경, 다른 지원 불가, 돌봄 진행</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>3. COMPLETED (완료)</strong></div>
-            <div>• 요청자가 수동 완료 처리 또는 날짜 지나면 자동 완료 (스케줄러), 리뷰 작성 가능</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>4. CANCELLED (취소)</strong></div>
-            <div>• 요청자가 취소, 모든 지원 자동 거절</div>
-          </div>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>지원 승인 규칙</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>1명만 승인 가능</strong>: 이미 승인된 지원이 있으면 다른 지원 승인 불가</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>요청자만 승인/거절 가능</strong>: 본인 요청에만 승인/거절 가능</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>승인 후 취소 불가</strong>: 승인된 지원은 취소 불가, 요청 전체를 취소해야 함</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>승인 시 상태 변경</strong>: 요청 상태를 IN_PROGRESS로 자동 변경</li>
-          </ul>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>리뷰 작성 규칙</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>COMPLETED 상태에서만 작성 가능</strong></li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>요청자만 리뷰 작성 가능</strong> (돌봄 제공자 평가)</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>1개 요청당 1개 리뷰만</strong> (OneToOne)</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>평점 1-5점</strong></li>
-          </ul>
-        </div>
-      </section>
-
-          <section id="performance" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>목록 조회 최적화</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join</strong>: 요청자, 펫 정보를 함께 조회</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>배치 조회</strong>: 지원자 수를 배치로 조회 (IN 절)</li>
-          </ul>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>캐싱</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>사용자별 평균 평점 캐싱</strong>: @Cacheable로 조회 성능 향상</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>캐시 무효화</strong>: 리뷰 작성 시 자동 무효화</li>
-          </ul>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>스케줄러</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>매 시간 정각</strong>: 날짜 지난 요청 자동 완료</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>매일 자정</strong>: 일일 상태 업데이트</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>로직</strong>: 날짜가 지났고 OPEN 또는 IN_PROGRESS 상태인 요청을 COMPLETED로 변경</li>
-          </ul>
-        </div>
-      </section>
-
-          <section id="concurrency" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>동시성 제어</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>지원 승인 동시 처리</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>문제</strong>: 여러 지원을 동시에 승인하려 할 때 1명만 승인되어야 함</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>해결책 1</strong>: 트랜잭션 + 상태 체크</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>해결책 2</strong>: 비관적 락 (@Lock PESSIMISTIC_WRITE)</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>해결책 3</strong>: 유니크 제약 조건 (부분 인덱스)</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>스케줄러 중복 실행 방지</strong>: ShedLock 사용 (분산 환경)</li>
-          </ul>
-        </div>
-      </section>
+          {/* 10. 보안 및 권한 체계 */}
+          <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>작성자만 수정/삭제 가능</strong>: 요청자만 본인 요청 수정/삭제 가능</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>승인 권한</strong>: 요청자만 지원 승인/거절 가능</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>리뷰 작성 권한</strong>: 요청자만 리뷰 작성 가능</li>
+              </ul>
+            </div>
+          </section>
 
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>

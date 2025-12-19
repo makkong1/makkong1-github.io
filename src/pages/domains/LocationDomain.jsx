@@ -4,11 +4,14 @@ import TableOfContents from '../../components/Common/TableOfContents';
 function LocationDomain() {
   const sections = [
     { id: 'intro', title: '도메인 소개' },
-    { id: 'features', title: '주요 기능' },
+    { id: 'problem', title: '가정한 문제 상황' },
+    { id: 'test-design', title: '문제 재현 방식' },
+    { id: 'before', title: '성능 측정 결과 (개선 전)' },
+    { id: 'optimization', title: '성능 최적화 및 동시성 제어' },
+    { id: 'after', title: '성능 개선 결과 (개선 후)' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'services', title: 'Service 주요 기능' },
-    { id: 'business', title: '비즈니스 로직' },
-    { id: 'performance', title: '성능 최적화' },
+    { id: 'security', title: '보안 및 권한 체계' },
     { id: 'relationships', title: '다른 도메인과의 연관관계' },
     { id: 'api', title: 'API 엔드포인트' },
     { id: 'docs', title: '관련 문서' }
@@ -54,17 +57,125 @@ function LocationDomain() {
         <div style={{ flex: 1 }}>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 서비스 도메인</h1>
           
+          {/* 1. 도메인 소개 */}
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              위치 기반 서비스 (병원, 카페, 공원, 펫샵 등) 정보 제공 및 리뷰 관리 도메인입니다.
-            </p>
-            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-              지역 계층적 탐색, 카테고리별 서비스 검색, 거리 계산 (Haversine 공식), 위치 서비스 리뷰 시스템, 공공데이터 CSV 배치 임포트 기능을 제공합니다.
-            </p>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Location 도메인은 위치 기반 서비스 정보 제공 및 리뷰 관리를 담당합니다.
+              </p>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+                병원, 카페, 공원, 펫샵 등 다양한 위치 서비스 정보를 제공합니다.
+              </p>
+            </div>
           </section>
 
-          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+          {/* 2. 가정한 문제 상황 */}
+          <section id="problem" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>가정한 문제 상황</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 3. 문제 재현 방식 (테스트 설계) */}
+          <section id="test-design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 재현 방식 (테스트 설계)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 4. 성능 측정 결과 (개선 전) */}
+          <section id="before" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 측정 결과 (개선 전)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 5. 성능 최적화 및 동시성 제어 */}
+          <section id="optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 및 동시성 제어</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>현재 구현된 최적화</h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>인덱싱</strong>: Spatial Index, 카테고리별 조회 인덱스, 평점 정렬 인덱스</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join</strong>: 리뷰와 작성자 정보를 함께 조회</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>캐싱</strong>: 인기 위치 서비스 캐싱</li>
+              </ul>
+            </div>
+          </section>
+
+          {/* 6. 성능 개선 결과 (개선 후) */}
+          <section id="after" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과 (개선 후)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 7. 얻은 교훈 / 설계 인사이트 */}
+          <section id="insights" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>얻은 교훈 / 설계 인사이트</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 8. Entity 구조 */}
+          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
             
             <div style={{
@@ -272,86 +383,28 @@ function LocationDomain() {
         </div>
       </section>
 
-          <section id="business" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>비즈니스 로직</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>평균 평점 계산</h3>
-          <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-            <div>리뷰 작성/수정/삭제 시 자동 업데이트</div>
-            <div style={{ marginTop: '0.5rem' }}>AVG(rating) 쿼리로 계산</div>
-            <div style={{ marginTop: '0.5rem' }}>LocationService의 rating 필드에 저장</div>
-          </div>
-        </div>
-      </section>
+          {/* 10. 보안 및 권한 체계 */}
+          <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>리뷰 작성 권한</strong>: 일반 사용자만 리뷰 작성 가능</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>서비스 관리 권한</strong>: 관리자만 위치 서비스 생성/수정/삭제 가능</li>
+              </ul>
+            </div>
+          </section>
 
-          <section id="performance" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인덱싱</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <li>• Spatial Index: 위치 기반 검색</li>
-            <li>• 카테고리별 조회 인덱스</li>
-            <li>• 평점 정렬 인덱스</li>
-            <li>• 리뷰 조회 인덱스 (서비스별, 사용자별)</li>
-          </ul>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>캐싱</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>인기 위치 서비스 캐싱</strong>: 카테고리별 인기 서비스 목록</li>
-          </ul>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>N+1 문제 해결</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join</strong>: 리뷰와 작성자 정보를 함께 조회</li>
-          </ul>
-        </div>
-      </section>
-
+          {/* 11. 다른 도메인과의 연관관계 */}
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         

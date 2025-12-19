@@ -24,9 +24,6 @@ function Navigation() {
           <Link to="/" style={{ textDecoration: 'none', color: 'var(--text-color)', fontWeight: 'bold' }}>
             홈
           </Link>
-          <Link to="/portfolio" style={{ textDecoration: 'none', color: 'var(--text-color)' }}>
-            프로젝트 설명
-          </Link>
           <Link to="/demo" style={{ textDecoration: 'none', color: 'var(--text-color)', fontWeight: 'bold' }}>
             🎮 라이브 데모
           </Link>

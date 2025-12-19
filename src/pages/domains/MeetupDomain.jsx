@@ -4,12 +4,14 @@ import TableOfContents from '../../components/Common/TableOfContents';
 function MeetupDomain() {
   const sections = [
     { id: 'intro', title: '도메인 소개' },
-    { id: 'features', title: '주요 기능' },
+    { id: 'problem', title: '가정한 문제 상황' },
+    { id: 'test-design', title: '문제 재현 방식' },
+    { id: 'before', title: '성능 측정 결과 (개선 전)' },
+    { id: 'optimization', title: '성능 최적화 및 동시성 제어' },
+    { id: 'after', title: '성능 개선 결과 (개선 후)' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'services', title: 'Service 주요 기능' },
-    { id: 'business', title: '비즈니스 로직' },
-    { id: 'concurrency', title: '동시성 제어' },
-    { id: 'performance', title: '성능 최적화' },
+    { id: 'security', title: '보안 및 권한 체계' },
     { id: 'relationships', title: '다른 도메인과의 연관관계' },
     { id: 'api', title: 'API 엔드포인트' },
     { id: 'docs', title: '관련 문서' }
@@ -48,17 +50,141 @@ function MeetupDomain() {
         <div style={{ flex: 1 }}>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>모임 도메인</h1>
           
+          {/* 1. 도메인 소개 */}
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-              오프라인 반려동물 모임 생성 및 참여 관리 도메인입니다.
-            </p>
-            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
-              모임 생성/조회/수정/취소, 모임 참여/참여 취소, 최대 인원 제한, 모임 상태 관리 (RECRUITING → CONFIRMED → COMPLETED), 위치 기반 모임 검색 기능을 제공합니다.
-            </p>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Meetup 도메인은 오프라인 반려동물 모임 생성 및 참여 관리를 담당합니다.
+              </p>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
+                사용자가 모임을 생성하고 다른 사용자들이 참여할 수 있습니다.
+              </p>
+            </div>
           </section>
 
-          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+          {/* 2. 가정한 문제 상황 */}
+          <section id="problem" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>가정한 문제 상황</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 3. 문제 재현 방식 (테스트 설계) */}
+          <section id="test-design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 재현 방식 (테스트 설계)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 4. 성능 측정 결과 (개선 전) */}
+          <section id="before" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 측정 결과 (개선 전)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 5. 성능 최적화 및 동시성 제어 */}
+          <section id="optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 및 동시성 제어</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>현재 구현된 최적화</h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>인덱싱</strong>: 모임 상태별 조회 인덱스, 주최자별 모임 인덱스, 위치 기반 검색 (Spatial Index)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join</strong>: 참여자와 사용자 정보를 함께 조회</li>
+              </ul>
+            </div>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>동시성 제어</h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>최대 인원 초과 참여 방지</strong>: 비관적 락 또는 UPDATE 쿼리 + 조건으로 원자적 연산</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>중복 참여 방지</strong>: Unique 제약 조건 (meetup_idx, user_idx)</li>
+              </ul>
+            </div>
+          </section>
+
+          {/* 6. 성능 개선 결과 (개선 후) */}
+          <section id="after" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과 (개선 후)</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 7. 얻은 교훈 / 설계 인사이트 */}
+          <section id="insights" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>얻은 교훈 / 설계 인사이트</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
+                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 8. Entity 구조 */}
+          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
             
             <div style={{
@@ -228,117 +354,28 @@ function MeetupDomain() {
         </div>
       </section>
 
-          <section id="business" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>비즈니스 로직</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>모임 생애주기</h3>
-          <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-            <div><strong style={{ color: 'var(--text-color)' }}>1. RECRUITING (모집 중)</strong></div>
-            <div>• 모임 생성 시 기본 상태, 참여자 모집 중, 주최자가 수정/취소 가능</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>2. CONFIRMED (확정)</strong></div>
-            <div>• 최소 인원 도달 시 자동 변경 또는 주최자가 수동 확정, 참여자 추가 가능 (최대 인원까지)</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>3. COMPLETED (완료)</strong></div>
-            <div>• 모임 일시가 지나면 자동 완료 또는 주최자가 수동 완료, 더 이상 참여 불가</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>4. CANCELLED (취소)</strong></div>
-            <div>• 주최자가 취소, 모든 참여자에게 알림 발송, 참여자 목록은 유지 (이력)</div>
-          </div>
-        </div>
+          {/* 10. 보안 및 권한 체계 */}
+          <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8'
+              }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>주최자만 수정/취소 가능</strong>: 모임 주최자만 본인 모임 수정/취소 가능</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>참여 권한</strong>: 모든 사용자가 모임 참여 가능 (최대 인원 제한 내)</li>
+              </ul>
+            </div>
+          </section>
 
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>참여 규칙</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>최대 인원 제한</strong>: currentParticipants&gt;= maxParticipants 시 참여 불가</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>중복 참여 방지</strong>: 같은 사용자가 같은 모임에 중복 참여 불가 (Unique 제약)</li>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>주최자 참여</strong>: 주최자는 자동으로 참여자 목록에 포함</li>
-          </ul>
-        </div>
-      </section>
-
-          <section id="concurrency" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>동시성 제어</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>최대 인원 초과 참여 방지</h3>
-          <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong></div>
-            <div>모임 최대 인원: 10명, 현재 인원: 9명일 때 사용자 A, B가 동시에 참여 시도 → 11명 (기대값: 10명)</div>
-            <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결책 1: 비관적 락</strong></div>
-            <div>@Lock(LockModeType.PESSIMISTIC_WRITE)로 모임 조회</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결책 2: 낙관적 락</strong></div>
-            <div>@Version으로 버전 관리, OptimisticLockException 처리</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결책 3: UPDATE 쿼리 + 조건</strong></div>
-            <div>UPDATE 쿼리에서 currentParticipants < maxParticipants 조건으로 원자적 연산></maxParticipants></div>
-          </div>
-        </div>
-      </section>
-
-          <section id="performance" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화</h2>
-        
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인덱싱</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <li>• 모임 상태별 조회 인덱스</li>
-            <li>• 주최자별 모임 인덱스</li>
-            <li>• 위치 기반 검색 (Spatial Index)</li>
-            <li>• 참여자 조회 인덱스</li>
-            <li>• 중복 참여 방지 (Unique Index)</li>
-          </ul>
-        </div>
-
-        <div style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>N+1 문제 해결</h3>
-          <ul style={{ 
-            listStyle: 'none', 
-            padding: 0,
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8'
-          }}>
-            <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join</strong>: 참여자와 사용자 정보를 함께 조회</li>
-          </ul>
-        </div>
-      </section>
-
+          {/* 11. 다른 도메인과의 연관관계 */}
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         
