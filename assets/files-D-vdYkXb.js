@@ -1,0 +1,1 @@
+const a=()=>{const e=Math.floor(Math.random()*1e4);return{id:e,url:`https://via.placeholder.com/800x600?text=Uploaded+Image+${e}`,originalName:`image_${e}.jpg`,size:Math.floor(Math.random()*5e6)+1e5,mimeType:"image/jpeg",uploadedAt:new Date().toISOString()}};export{a as uploadResponse};
