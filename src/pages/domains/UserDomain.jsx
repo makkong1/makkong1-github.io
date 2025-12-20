@@ -193,6 +193,43 @@ function UserDomain() {
                   <li>• 모든 메시지를 메모리에 로드하여 메모리 부하 발생</li>
                 </ul>
               </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>해결 방법</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8'
+                }}>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>배치 조회 패턴</strong>: 채팅방 ID 목록을 IN 절로 한 번에 조회</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join 활용</strong>: 참여자 조회 시 Users 엔티티도 함께 조회하여 추가 쿼리 방지</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>최신 메시지만 조회</strong>: 모든 메시지 대신 최신 메시지만 조회하여 메모리 사용량 감소</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>메모리에서 매핑</strong>: 조회한 데이터를 Map으로 변환하여 빠르게 매핑</li>
+                </ul>
+              </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>개선 결과</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8'
+                }}>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>쿼리 수</strong>: 21개 → 4개 (80.95% 감소)</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>실행 시간</strong>: 305ms → 55ms (81.97% 단축)</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>메모리 사용량</strong>: 0.58MB → 0.13MB (77.24% 감소)</li>
+                </ul>
+              </div>
             </div>
           </section>
 

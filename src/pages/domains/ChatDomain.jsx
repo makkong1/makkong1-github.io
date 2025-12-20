@@ -85,9 +85,64 @@ function ChatDomain() {
               borderRadius: '8px',
               border: '1px solid var(--nav-border)'
             }}>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                메시지 읽음 처리 시 <strong style={{ color: 'var(--text-color)' }}>전체 메시지 조회 및 프론트엔드 빈번한 호출</strong>로 인한 성능 저하가 발생했습니다.
               </p>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 문제점</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8'
+                }}>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>비효율적인 전체 메시지 조회</strong>: 채팅방의 모든 메시지를 조회하고 Java에서 필터링</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>프론트엔드에서 빈번한 호출</strong>: 메시지 조회 후, WebSocket 수신 시, 메시지 전송 후 등 여러 시점에 호출</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>불필요한 로직</strong>: MessageReadStatus 기록 로직이 있지만 실제로 사용하지 않음</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>트랜잭션 범위가 넓음</strong>: 불필요한 로직 포함으로 Lock 유지 시간 증가</li>
+                </ul>
+              </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>해결 방법</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8'
+                }}>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>불필요한 로직 제거</strong>: 전체 메시지 조회 및 MessageReadStatus 기록 로직 완전 제거</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>읽음 처리 단순화</strong>: 참여자의 unreadCount와 lastReadMessage 업데이트만 수행</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>프론트엔드 최적화</strong>: 디바운싱 적용으로 호출 빈도 감소 (초당 최대 1회)</li>
+                </ul>
+              </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>개선 결과</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8'
+                }}>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>메시지 조회 제거</strong>: 메시지 7,000건 기준 → 쿼리 1개 제거, 메모리 사용량 대폭 감소</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>코드 단순화</strong>: 불필요한 로직 제거로 유지보수성 향상</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>트랜잭션 범위 축소</strong>: 필수 로직만 실행하여 Lock 유지 시간 단축</li>
+                </ul>
+              </div>
             </div>
           </section>
 

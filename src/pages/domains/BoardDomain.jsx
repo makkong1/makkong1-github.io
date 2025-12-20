@@ -121,9 +121,65 @@ function BoardDomain() {
               borderRadius: '8px',
               border: '1px solid var(--nav-border)'
             }}>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                게시글 매핑 로직에서 <strong style={{ color: 'var(--text-color)' }}>코드 중복과 일관성 부족</strong> 문제가 발생했습니다.
               </p>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 문제점</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8'
+                }}>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>Object[] 파싱 로직 중복</strong>: 단일 조회와 배치 조회에서 동일한 파싱 로직 반복</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>반응 카운트 설정 로직 중복</strong>: DTO에 반응 카운트를 설정하는 로직이 여러 곳에 분산</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>첨부파일 설정 로직 중복</strong>: 첨부파일 조회 및 설정 로직이 중복</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>단일/배치 조회 분리</strong>: 단일 조회와 배치 조회가 완전히 다른 방식으로 구현</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>메모리 필터링</strong>: 관리자 조회에서 1000개를 조회한 후 메모리에서 필터링</li>
+                </ul>
+              </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>해결 방법</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8'
+                }}>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>공통 로직 추출</strong>: Object[] 파싱, 반응 카운트 적용, 첨부파일 적용 로직을 공통 메서드로 추출</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>단일/배치 조회 통합</strong>: 단일 조회도 배치 조회 메서드를 활용하도록 변경</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>DB 레벨 필터링</strong>: Specification 패턴을 사용하여 DB 레벨에서 필터링 및 페이징 처리</li>
+                </ul>
+              </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>개선 결과</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8'
+                }}>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>코드 중복</strong>: 약 30-40줄 감소, 공통 메서드 4개 추가</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>일관성</strong>: 단일 조회도 배치 조회 방식으로 통합</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>유지보수성</strong>: 로직 변경 시 한 곳만 수정하면 됨</li>
+                </ul>
+              </div>
             </div>
           </section>
 
