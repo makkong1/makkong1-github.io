@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import DemoBanner from '../components/Portfolio/DemoBanner';
 import { AuthProvider } from '../demo/contexts/AuthContext';
 import { ThemeProvider as DemoThemeProvider } from '../demo/contexts/ThemeContext';
@@ -14,6 +14,22 @@ import AdminPanel from '../demo/components/Admin/AdminPanel';
 
 function DemoPage() {
   const [activeTab, setActiveTab] = useState('home');
+
+  // 데모 페이지 마운트 시 포트폴리오 테마 상태 저장
+  useEffect(() => {
+    // 포트폴리오의 data-theme 속성 저장
+    const portfolioTheme = document.documentElement.getAttribute('data-theme');
+    sessionStorage.setItem('portfolio-theme-backup', portfolioTheme || 'light');
+    
+    // cleanup: 언마운트 시 포트폴리오 테마 복원
+    return () => {
+      const savedTheme = sessionStorage.getItem('portfolio-theme-backup');
+      if (savedTheme) {
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        sessionStorage.removeItem('portfolio-theme-backup');
+      }
+    };
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -43,7 +59,13 @@ function DemoPage() {
       <DemoBanner />
       <DemoThemeProvider>
         <AuthProvider>
-          <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg-color, #ffffff)' }}>
+          <div 
+            data-demo-container
+            style={{ 
+              minHeight: '100vh',
+              isolation: 'isolate' // 데모 컨테이너를 별도 스택킹 컨텍스트로 분리
+            }}
+          >
             <Navigation 
               activeTab={activeTab} 
               setActiveTab={setActiveTab}

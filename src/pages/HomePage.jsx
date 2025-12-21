@@ -563,13 +563,27 @@ function HomePage() {
             <div>
               <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>쿼리 수</div>
               <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>
-                2001개 → 3개
+                301개 → 3개
               </div>
-              <div style={{ fontSize: '0.85rem', color: 'var(--link-color)' }}>99.8% 감소</div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--link-color)' }}>99.00% 감소</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>실행 시간</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>
+                745ms → 30ms
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--link-color)' }}>24.83배 개선</div>
+            </div>
+            <div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>메모리 사용량</div>
+              <div style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>
+                22.50 MB → 2 MB
+              </div>
+              <div style={{ fontSize: '0.85rem', color: 'var(--link-color)' }}>91% 감소</div>
             </div>
           </div>
           <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
-            게시글 목록 조회 시 반응 수 조회에서 발생한 N+1 문제를 배치 조회로 해결
+            게시글 목록 조회 시 발생한 N+1 문제를 배치 조회와 Fetch Join으로 해결
           </p>
           <Link
             to="/domains/board"

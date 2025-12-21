@@ -43,6 +43,21 @@
   --text-muted: rgba(255, 255, 255, 0.5);
 }
 
+/* 데모 컨테이너는 포트폴리오 테마와 독립적으로 동작 */
+[data-demo-container] {
+  /* 포트폴리오 CSS 변수 상속 차단 */
+  --bg-color: initial;
+  --text-color: initial;
+  --nav-bg: initial;
+  --nav-border: initial;
+  --link-color: initial;
+  --link-hover: initial;
+  --card-bg: initial;
+  --code-bg: initial;
+  --text-secondary: initial;
+  --text-muted: initial;
+}
+
 :root {
   color: var(--text-color);
   background-color: var(--bg-color);

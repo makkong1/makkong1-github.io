@@ -29,18 +29,44 @@ export const ThemeProvider = ({ children }) => {
   const theme = isDarkMode ? darkTheme : lightTheme;
 
   useEffect(() => {
-    document.body.style.backgroundColor = theme.colors.background;
-    document.body.style.color = theme.colors.text;
-    // 전역 CSS 변수도 데모 테마와 동기화 (포트폴리오와 일치)
-    document.documentElement.style.setProperty('--bg-color', theme.colors.background);
-    document.documentElement.style.setProperty('--text-color', theme.colors.text);
-    document.documentElement.style.setProperty('--nav-bg', theme.colors.navBg || theme.colors.surface);
-    document.documentElement.style.setProperty('--nav-border', theme.colors.border);
-    document.documentElement.style.setProperty('--card-bg', theme.colors.surface);
-    document.documentElement.style.setProperty('--text-secondary', theme.colors.textSecondary);
-    document.documentElement.style.setProperty('--text-muted', theme.colors.textLight);
-    document.documentElement.style.setProperty('--link-color', theme.colors.primary);
-    document.documentElement.style.setProperty('--link-hover', theme.colors.primaryDark);
+    // 데모 컨테이너 내부에서만 CSS 변수 설정 (전역 CSS 변수는 수정하지 않음)
+    const demoContainer = document.querySelector('[data-demo-container]');
+    if (demoContainer) {
+      // 데모 컨테이너 내부에서만 CSS 변수 설정
+      demoContainer.style.setProperty('--demo-bg-color', theme.colors.background);
+      demoContainer.style.setProperty('--demo-text-color', theme.colors.text);
+      demoContainer.style.setProperty('--demo-nav-bg', theme.colors.navBg || theme.colors.surface);
+      demoContainer.style.setProperty('--demo-nav-border', theme.colors.border);
+      demoContainer.style.setProperty('--demo-card-bg', theme.colors.surface);
+      demoContainer.style.setProperty('--demo-text-secondary', theme.colors.textSecondary);
+      demoContainer.style.setProperty('--demo-text-muted', theme.colors.textLight);
+      demoContainer.style.setProperty('--demo-link-color', theme.colors.primary);
+      demoContainer.style.setProperty('--demo-link-hover', theme.colors.primaryDark);
+      
+      // 배경색과 텍스트 색상도 직접 설정
+      demoContainer.style.backgroundColor = theme.colors.background;
+      demoContainer.style.color = theme.colors.text;
+    }
+    
+    // cleanup 함수: 언마운트 시 원래 상태로 복원
+    return () => {
+      if (demoContainer) {
+        // CSS 변수 제거
+        demoContainer.style.removeProperty('--demo-bg-color');
+        demoContainer.style.removeProperty('--demo-text-color');
+        demoContainer.style.removeProperty('--demo-nav-bg');
+        demoContainer.style.removeProperty('--demo-nav-border');
+        demoContainer.style.removeProperty('--demo-card-bg');
+        demoContainer.style.removeProperty('--demo-text-secondary');
+        demoContainer.style.removeProperty('--demo-text-muted');
+        demoContainer.style.removeProperty('--demo-link-color');
+        demoContainer.style.removeProperty('--demo-link-hover');
+        
+        // 인라인 스타일 제거
+        demoContainer.style.backgroundColor = '';
+        demoContainer.style.color = '';
+      }
+    };
   }, [theme]);
 
   return (

@@ -44,6 +44,80 @@ function MeetupDomain() {
         LocalDateTime joinedAt
     }`;
 
+  const meetupJoinSequenceDiagram = `sequenceDiagram
+    participant User1 as 사용자1
+    participant User2 as 사용자2
+    participant User3 as 사용자3
+    participant Frontend as Frontend
+    participant MeetupService as MeetupService
+    participant MeetupRepo as MeetupRepository
+    participant DB as MySQL
+    
+    Note over User1,User3: 동시에 3명이 참가 요청
+    User1->>Frontend: 참가 요청
+    User2->>Frontend: 참가 요청
+    User3->>Frontend: 참가 요청
+    
+    Frontend->>MeetupService: joinMeetup() (동시 3개 요청)
+    
+    Note over MeetupService,DB: Race Condition 발생
+    par 사용자1
+        MeetupService->>MeetupRepo: findById() (1)
+        MeetupRepo->>DB: 모임 조회 (currentParticipants=1)
+        Note over MeetupService: 체크: 1 < 3 (통과)
+    and 사용자2
+        MeetupService->>MeetupRepo: findById() (2)
+        MeetupRepo->>DB: 모임 조회 (currentParticipants=1)
+        Note over MeetupService: 체크: 1 < 3 (통과)
+    and 사용자3
+        MeetupService->>MeetupRepo: findById() (3)
+        MeetupRepo->>DB: 모임 조회 (currentParticipants=1)
+        Note over MeetupService: 체크: 1 < 3 (통과)
+    end
+    
+    par 사용자1
+        MeetupService->>MeetupRepo: save() (currentParticipants=2)
+    and 사용자2
+        MeetupService->>MeetupRepo: save() (currentParticipants=2)
+    and 사용자3
+        MeetupService->>MeetupRepo: save() (currentParticipants=2)
+    end
+    
+    Note over DB: 최종 결과: currentParticipants=4 (최대 3명 초과!)`;
+
+  const optimizedMeetupJoinSequenceDiagram = `sequenceDiagram
+    participant User1 as 사용자1
+    participant User2 as 사용자2
+    participant User3 as 사용자3
+    participant Frontend as Frontend
+    participant MeetupService as MeetupService
+    participant MeetupRepo as MeetupRepository
+    participant DB as MySQL
+    
+    Note over User1,User3: 동시에 3명이 참가 요청
+    User1->>Frontend: 참가 요청
+    User2->>Frontend: 참가 요청
+    User3->>Frontend: 참가 요청
+    
+    Frontend->>MeetupService: joinMeetup() (동시 3개 요청)
+    
+    Note over MeetupService,DB: 원자적 UPDATE 쿼리
+    par 사용자1
+        MeetupService->>MeetupRepo: incrementParticipantsIfAvailable()
+        MeetupRepo->>DB: UPDATE ... WHERE currentParticipants < maxParticipants (1)
+        DB-->>MeetupRepo: updated=1 (성공)
+    and 사용자2
+        MeetupService->>MeetupRepo: incrementParticipantsIfAvailable()
+        MeetupRepo->>DB: UPDATE ... WHERE currentParticipants < maxParticipants (2)
+        DB-->>MeetupRepo: updated=1 (성공)
+    and 사용자3
+        MeetupService->>MeetupRepo: incrementParticipantsIfAvailable()
+        MeetupRepo->>DB: UPDATE ... WHERE currentParticipants < maxParticipants (3)
+        DB-->>MeetupRepo: updated=0 (실패 - 이미 3명 도달)
+    end
+    
+    Note over DB: 최종 결과: currentParticipants=3 (정상)`;
+
   return (
     <div style={{ padding: '2rem 0' }}>
       <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
@@ -180,6 +254,16 @@ meetupRepository.save(meetup);`}
                   <li>• 각 요청의 성공/실패 여부와 최종 참가자 수 확인</li>
                 </ul>
               </div>
+            </div>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginTop: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>시퀀스 다이어그램 (최적화 전)</h3>
+              <MermaidDiagram chart={meetupJoinSequenceDiagram} />
             </div>
           </section>
 
@@ -464,6 +548,16 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
                   <li>• <strong style={{ color: 'var(--text-color)' }}>After:</strong> 2명 성공, 1명 실패 → 실제 3명 참가 (정상)</li>
                 </ul>
               </div>
+            </div>
+            <div style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginTop: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>시퀀스 다이어그램 (최적화 후)</h3>
+              <MermaidDiagram chart={optimizedMeetupJoinSequenceDiagram} />
             </div>
           </section>
 

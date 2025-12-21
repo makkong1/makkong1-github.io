@@ -82,10 +82,48 @@ for (ChatMessage message : unreadMessages) {
 
 ### 2.1 불필요한 로직 제거
 
-**현재**: MessageReadStatus 기록 로직이 있지만 주석 처리되어 사용 안 함
+**Before (문제 코드)**:
+```java
+@Transactional
+public void markAsRead(Long conversationIdx, Long userId, Long lastMessageIdx) {
+    // 참여자 확인
+    ConversationParticipant participant = participantRepository
+            .findByConversationIdxAndUserIdx(conversationIdx, userId)
+            .orElseThrow(() -> new IllegalArgumentException("채팅방 참여자가 아닙니다."));
 
-**개선**: 해당 로직 완전 제거
+    // ⚠️ 문제: 채팅방의 모든 메시지를 조회하고 Java에서 필터링
+    List<ChatMessage> unreadMessages = chatMessageRepository
+            .findByConversationIdxOrderByCreatedAtDesc(conversationIdx)  // 전체 조회!
+            .stream()
+            .filter(m -> m.getCreatedAt().isBefore(
+                    chatMessageRepository.findById(lastMessageIdx)
+                        .map(ChatMessage::getCreatedAt)
+                        .orElse(LocalDateTime.now()))
+                && !m.getSender().getIdx().equals(userId))
+            .collect(Collectors.toList());
 
+    // ⚠️ 문제: MessageReadStatus 기록 로직 (실제로는 사용 안 함 - 주석 처리됨)
+    for (ChatMessage message : unreadMessages) {
+        if (!readStatusRepository.existsByMessageAndUser(message, user)) {
+            // readStatusRepository.save(...); // 주석 처리됨
+        }
+    }
+
+    // 읽지 않은 메시지 수 초기화
+    participant.setUnreadCount(0);
+    if (lastMessageIdx != null) {
+        ChatMessage lastMessage = chatMessageRepository.findById(lastMessageIdx)
+                .orElse(null);
+        if (lastMessage != null) {
+            participant.setLastReadMessage(lastMessage);
+            participant.setLastReadAt(LocalDateTime.now());
+        }
+    }
+    participantRepository.save(participant);
+}
+```
+
+**After (개선된 코드)**:
 ```java
 @Transactional
 public void markAsRead(Long conversationIdx, Long userId, Long lastMessageIdx) {
@@ -108,7 +146,10 @@ public void markAsRead(Long conversationIdx, Long userId, Long lastMessageIdx) {
     
     participantRepository.save(participant);
     
-    // ⚠️ 제거: MessageReadStatus 기록 로직 (사용 안 함)
+    // ✅ 제거됨: 불필요한 전체 메시지 조회 및 MessageReadStatus 기록 로직
+    // - 전체 메시지 조회는 성능 문제를 일으킴 (수천~수만 건 조회)
+    // - MessageReadStatus 기록 로직은 실제로 사용되지 않음
+    // - 참여자의 unreadCount와 lastReadMessage 업데이트만으로 충분함
 }
 ```
 
