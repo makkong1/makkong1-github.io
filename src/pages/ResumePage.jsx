@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 
-function HomePage() {
+function ResumePage() {
   return (
     <div style={{ padding: '2rem 0', maxWidth: '900px', margin: '0 auto' }}>
       {/* 페이지 헤더 */}
@@ -27,13 +27,12 @@ function HomePage() {
       </div>
 
       {/* 개인 정보 섹션 */}
-      <section id="personal-info" style={{
+      <section style={{
         padding: '2rem',
         backgroundColor: 'var(--card-bg)',
         borderRadius: '8px',
         border: '1px solid var(--nav-border)',
-        marginBottom: '2rem',
-        scrollMarginTop: '80px'
+        marginBottom: '2rem'
       }}>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>개인 정보</h2>
         <p style={{ color: 'var(--text-secondary)' }}>
@@ -42,13 +41,12 @@ function HomePage() {
       </section>
 
       {/* 경력 섹션 */}
-      <section id="career" style={{
+      <section style={{
         padding: '2rem',
         backgroundColor: 'var(--card-bg)',
         borderRadius: '8px',
         border: '1px solid var(--nav-border)',
-        marginBottom: '2rem',
-        scrollMarginTop: '80px'
+        marginBottom: '2rem'
       }}>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>경력</h2>
         <p style={{ color: 'var(--text-secondary)' }}>
@@ -57,13 +55,12 @@ function HomePage() {
       </section>
 
       {/* 기술 스택 섹션 */}
-      <section id="tech-stack" style={{
+      <section style={{
         padding: '2rem',
         backgroundColor: 'var(--card-bg)',
         borderRadius: '8px',
         border: '1px solid var(--nav-border)',
-        marginBottom: '2rem',
-        scrollMarginTop: '80px'
+        marginBottom: '2rem'
       }}>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기술 스택</h2>
         <p style={{ color: 'var(--text-secondary)' }}>
@@ -71,23 +68,52 @@ function HomePage() {
         </p>
       </section>
 
-      {/* 포트폴리오 링크 */}
+      {/* 네비게이션 링크 */}
       <div style={{
         textAlign: 'center',
         marginTop: '3rem',
         paddingTop: '2rem',
-        borderTop: '2px solid var(--nav-border)'
+        borderTop: '2px solid var(--nav-border)',
+        display: 'flex',
+        gap: '1rem',
+        justifyContent: 'center',
+        flexWrap: 'wrap'
       }}>
+        <Link
+          to="/"
+          style={{
+            display: 'inline-block',
+            padding: '0.75rem 1.5rem',
+            backgroundColor: 'var(--card-bg)',
+            color: 'var(--text-color)',
+            borderRadius: '8px',
+            textDecoration: 'none',
+            fontSize: '0.9rem',
+            fontWeight: '500',
+            border: '1px solid var(--nav-border)',
+            transition: 'all 0.2s ease'
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.borderColor = 'var(--link-color)';
+            e.currentTarget.style.transform = 'translateY(-2px)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.borderColor = 'var(--nav-border)';
+            e.currentTarget.style.transform = 'translateY(0)';
+          }}
+        >
+          ← 홈으로
+        </Link>
         <Link
           to="/portfolio"
           style={{
             display: 'inline-block',
-            padding: '1rem 2rem',
+            padding: '0.75rem 1.5rem',
             backgroundColor: 'var(--link-color)',
             color: 'white',
             borderRadius: '8px',
             textDecoration: 'none',
-            fontSize: '1rem',
+            fontSize: '0.9rem',
             fontWeight: '500',
             transition: 'all 0.2s ease'
           }}
@@ -107,4 +133,5 @@ function HomePage() {
   );
 }
 
-export default HomePage;
+export default ResumePage;
+
