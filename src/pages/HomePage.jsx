@@ -4,105 +4,66 @@ function HomePage() {
   return (
     <div style={{ padding: '2rem 0', maxWidth: '900px', margin: '0 auto' }}>
       {/* 페이지 헤더 */}
-      <div style={{
-        textAlign: 'center',
-        marginBottom: '3rem',
-        paddingBottom: '2rem',
-        borderBottom: '2px solid var(--nav-border)'
-      }}>
-        <h1 style={{
-          fontSize: '2.5rem',
-          marginBottom: '0.5rem',
-          color: 'var(--text-color)',
-          fontWeight: 'bold'
-        }}>
-          이력서
-        </h1>
-        <p style={{
-          fontSize: '1rem',
-          color: 'var(--text-secondary)'
-        }}>
-          Resume
-        </p>
+      <div className="page-header">
+        <h1>이력서</h1>
+        <p>Resume</p>
       </div>
 
       {/* 개인 정보 섹션 */}
-      <section id="personal-info" style={{
-        padding: '2rem',
-        backgroundColor: 'var(--card-bg)',
-        borderRadius: '8px',
-        border: '1px solid var(--nav-border)',
-        marginBottom: '2rem',
-        scrollMarginTop: '80px'
-      }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>개인 정보</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          내용을 입력해주세요
-        </p>
+      <section id="personal-info" className="section-card">
+        <h2>개인 정보</h2>
+        <p>내용을 입력해주세요</p>
       </section>
 
-      {/* 경력 섹션 */}
-      <section id="career" style={{
-        padding: '2rem',
-        backgroundColor: 'var(--card-bg)',
-        borderRadius: '8px',
-        border: '1px solid var(--nav-border)',
-        marginBottom: '2rem',
-        scrollMarginTop: '80px'
-      }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>경력</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          내용을 입력해주세요
-        </p>
+      {/* 프로젝트 포트폴리오 섹션 */}
+      <section id="portfolio" className="section-card">
+        <h2>프로젝트</h2>
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+          gap: '1.5rem',
+          marginTop: '1.5rem'
+        }}>
+          <Link
+            to="/portfolio/petory"
+            className="project-card"
+          >
+            <h3>Petory</h3>
+            <p className="project-description">
+              반려동물 통합 플랫폼
+            </p>
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem'
+            }}>
+              <span className="tech-badge">Spring Boot</span>
+              <span className="tech-badge">React</span>
+              <span className="tech-badge">MySQL</span>
+              <span className="tech-badge">Redis</span>
+            </div>
+          </Link>
+          <Link
+            to="/portfolio/linkup"
+            className="project-card"
+          >
+            <h3>LinkUp</h3>
+            <p className="project-description">
+              게시판 + 노션 스타일 콘텐츠 + 실시간 알림 + 소셜 로그인을 지원하는 커뮤니티 플랫폼
+            </p>
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.5rem'
+            }}>
+              <span className="tech-badge">Spring Boot</span>
+              <span className="tech-badge">Java 17</span>
+              <span className="tech-badge">MySQL</span>
+              <span className="tech-badge">Redis</span>
+            </div>
+          </Link>
+        </div>
       </section>
-
-      {/* 기술 스택 섹션 */}
-      <section id="tech-stack" style={{
-        padding: '2rem',
-        backgroundColor: 'var(--card-bg)',
-        borderRadius: '8px',
-        border: '1px solid var(--nav-border)',
-        marginBottom: '2rem',
-        scrollMarginTop: '80px'
-      }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기술 스택</h2>
-        <p style={{ color: 'var(--text-secondary)' }}>
-          내용을 입력해주세요
-        </p>
-      </section>
-
-      {/* 포트폴리오 링크 */}
-      <div style={{
-        textAlign: 'center',
-        marginTop: '3rem',
-        paddingTop: '2rem',
-        borderTop: '2px solid var(--nav-border)'
-      }}>
-        <Link
-          to="/portfolio"
-          style={{
-            display: 'inline-block',
-            padding: '1rem 2rem',
-            backgroundColor: 'var(--link-color)',
-            color: 'white',
-            borderRadius: '8px',
-            textDecoration: 'none',
-            fontSize: '1rem',
-            fontWeight: '500',
-            transition: 'all 0.2s ease'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = '0.9';
-            e.currentTarget.style.transform = 'translateY(-2px)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = '1';
-            e.currentTarget.style.transform = 'translateY(0)';
-          }}
-        >
-          포트폴리오 보기 →
-        </Link>
-      </div>
     </div>
   );
 }

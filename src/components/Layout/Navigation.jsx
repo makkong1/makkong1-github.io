@@ -8,7 +8,6 @@ function Navigation() {
 
   // 경로별 네비게이션 결정
   const isHome = path === '/';
-  const isResume = path === '/resume';
   const isPortfolio = path === '/portfolio';
   const isPetoryProject = path === '/portfolio/petory';
   const isLinkupProject = path === '/portfolio/linkup';
@@ -34,11 +33,8 @@ function Navigation() {
           <a href="#personal-info" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
             개인 정보
           </a>
-          <a href="#career" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            경력
-          </a>
-          <a href="#tech-stack" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
-            기술 스택
+          <a href="#portfolio" style={{ textDecoration: 'none', color: 'var(--text-secondary)' }}>
+            포트폴리오
           </a>
         </>
       )}
@@ -164,7 +160,7 @@ function Navigation() {
       }}>
         <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
           {renderMainNav()}
-          {(isResume || isPortfolio) && (
+          {isPortfolio && (
             <>
               <span style={{ color: 'var(--text-muted)' }}>|</span>
               {renderDefaultNav()}

@@ -12,7 +12,6 @@ function PetoryProjectPage() {
     { id: 'features', title: '주요 기능' },
     { id: 'tech-stack', title: '기술 스택' },
     { id: 'domains', title: '도메인별 상세' },
-    { id: 'deployment', title: '배포 전략' },
     { id: 'links', title: '관련 링크' }
   ];
 
@@ -204,43 +203,25 @@ function PetoryProjectPage() {
         <div style={{ flex: 1 }}>
           {/* Hero Section */}
           <section id="hero" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
-        <div style={{
-          textAlign: 'center',
-          padding: '3rem 2rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '12px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '2rem'
-        }}>
-          <h1 style={{
-            fontSize: '3.5rem',
-            marginBottom: '1rem',
-            color: 'var(--text-color)',
-            fontWeight: 'bold'
-          }}>
-            Petory
-          </h1>
-          <p style={{
-            fontSize: '1.5rem',
-            color: 'var(--text-secondary)',
-            marginBottom: '2rem'
-          }}>
-            반려동물 통합 플랫폼
-          </p>
-          <p style={{
-            fontSize: '1.1rem',
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            maxWidth: '800px',
-            margin: '0 auto'
-          }}>
-            본 프로젝트는 기능 구현 이후,
-            도메인별로 발생 가능성이 높은 성능·동시성 문제를 가정하고
-            테스트 코드 기반으로 이를 의도적으로 재현한 뒤
-            측정 → 개선 → 재검증 과정을 반복하는 방식으로 진행되었습니다.
-          </p>
-        </div>
-      </section>
+            <div className="project-hero">
+              <h1>Petory</h1>
+              <p className="subtitle">반려동물 통합 플랫폼</p>
+              <p className="description">
+                본 프로젝트는 기능 구현 이후,
+                도메인별로 발생 가능성이 높은 성능·동시성 문제를 가정하고
+                테스트 코드 기반으로 이를 의도적으로 재현한 뒤
+                측정 → 개선 → 재검증 과정을 반복하는 방식으로 진행되었습니다.
+              </p>
+              <a
+                href="https://github.com/makkong1/Petory"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="github-link"
+              >
+                GitHub 저장소 →
+              </a>
+            </div>
+          </section>
           
           {/* 성과 숫자 카드 - 대표 지표 */}
           <section id="achievements" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
@@ -845,75 +826,6 @@ function PetoryProjectPage() {
           </div>
         </div>
       </section>
-
-      {/* 기술 스택 요약 */}
-      <div style={{
-        padding: '2rem',
-        backgroundColor: 'var(--card-bg)',
-        borderRadius: '8px',
-        border: '1px solid var(--nav-border)',
-        marginBottom: '2rem',
-        textAlign: 'center'
-      }}>
-        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기술 스택</h2>
-        <div style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.75rem',
-          justifyContent: 'center',
-          marginBottom: '1.5rem'
-        }}>
-          <span style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: 'var(--bg-color)',
-            borderRadius: '20px',
-            fontSize: '0.9rem',
-            color: 'var(--text-secondary)'
-          }}>Spring Boot</span>
-          <span style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: 'var(--bg-color)',
-            borderRadius: '20px',
-            fontSize: '0.9rem',
-            color: 'var(--text-secondary)'
-          }}>Java 17</span>
-          <span style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: 'var(--bg-color)',
-            borderRadius: '20px',
-            fontSize: '0.9rem',
-            color: 'var(--text-secondary)'
-          }}>React</span>
-          <span style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: 'var(--bg-color)',
-            borderRadius: '20px',
-            fontSize: '0.9rem',
-            color: 'var(--text-secondary)'
-          }}>MySQL</span>
-          <span style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: 'var(--bg-color)',
-            borderRadius: '20px',
-            fontSize: '0.9rem',
-            color: 'var(--text-secondary)'
-          }}>Redis</span>
-          <span style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: 'var(--bg-color)',
-            borderRadius: '20px',
-            fontSize: '0.9rem',
-            color: 'var(--text-secondary)'
-          }}>JWT</span>
-          <span style={{
-            padding: '0.5rem 1rem',
-            backgroundColor: 'var(--bg-color)',
-            borderRadius: '20px',
-            fontSize: '0.9rem',
-            color: 'var(--text-secondary)'
-          }}>WebSocket</span>
-        </div>
-      </div>
 
       {/* 도메인 빠른 링크 */}
       <section id="domains" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>

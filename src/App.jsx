@@ -3,11 +3,9 @@ import { useEffect } from 'react';
 import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout/Layout';
 import HomePage from './pages/HomePage';
-import ResumePage from './pages/ResumePage';
 import PortfolioPage from './pages/PortfolioPage';
 import PetoryProjectPage from './pages/projects/PetoryProjectPage';
 import LinkupProjectPage from './pages/projects/LinkupProjectPage';
-import PerformancePage from './pages/PerformancePage';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
 // 도메인 페이지들
@@ -28,11 +26,8 @@ function App() {
       <BrowserRouter basename="/makkong1-github.io">
         <Layout>
           <Routes>
-            {/* 메인 페이지 */}
+            {/* 메인 페이지 (이력서) */}
             <Route path="/" element={<HomePage />} />
-            
-            {/* 이력서 페이지 */}
-            <Route path="/resume" element={<ResumePage />} />
             
             {/* 포트폴리오 페이지 */}
             <Route path="/portfolio" element={<PortfolioPage />} />
@@ -50,9 +45,6 @@ function App() {
             <Route path="/domains/location" element={<LocationDomain />} />
             <Route path="/domains/meetup" element={<MeetupDomain />} />
             <Route path="/domains/chat" element={<ChatDomain />} />
-            
-            {/* 성능 개선 페이지 */}
-            <Route path="/performance" element={<PerformancePage />} />
             
             {/* MCP 파일 링크 페이지 */}
             <Route path="/docs" element={<MCPFilesPage />} />

@@ -125,29 +125,9 @@ function LinkupProjectPage() {
         <div style={{ flex: 1 }}>
           {/* Hero Section */}
           <section id="hero" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
-            <div style={{
-              textAlign: 'center',
-              padding: '3rem 2rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '12px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '2rem'
-            }}>
-              <h1 style={{
-                fontSize: '3.5rem',
-                marginBottom: '1rem',
-                color: 'var(--text-color)',
-                fontWeight: 'bold'
-              }}>
-                LinkUp
-              </h1>
-              <p style={{
-                fontSize: '1.5rem',
-                color: 'var(--text-secondary)',
-                marginBottom: '2rem'
-              }}>
-                게시판 + 노션 스타일 콘텐츠 + 실시간 알림 + 소셜 로그인을 지원하는 커뮤니티 플랫폼
-              </p>
+            <div className="project-hero">
+              <h1>LinkUp</h1>
+              <p className="subtitle">게시판 + 노션 스타일 콘텐츠 + 실시간 알림 + 소셜 로그인을 지원하는 커뮤니티 플랫폼</p>
               <div style={{
                 display: 'flex',
                 flexWrap: 'wrap',
@@ -155,58 +135,16 @@ function LinkupProjectPage() {
                 justifyContent: 'center',
                 marginBottom: '2rem'
               }}>
-                <span style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '20px',
-                  fontSize: '0.9rem',
-                  color: 'var(--text-secondary)'
-                }}>Spring Boot 3.3.4</span>
-                <span style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '20px',
-                  fontSize: '0.9rem',
-                  color: 'var(--text-secondary)'
-                }}>Java 17</span>
-                <span style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '20px',
-                  fontSize: '0.9rem',
-                  color: 'var(--text-secondary)'
-                }}>MySQL 8.0</span>
-                <span style={{
-                  padding: '0.5rem 1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '20px',
-                  fontSize: '0.9rem',
-                  color: 'var(--text-secondary)'
-                }}>Redis 7.0</span>
+                <span className="tech-badge">Spring Boot 3.3.4</span>
+                <span className="tech-badge">Java 17</span>
+                <span className="tech-badge">MySQL 8.0</span>
+                <span className="tech-badge">Redis 7.0</span>
               </div>
               <a
                 href="https://github.com/makkong1/LinkUpProject"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: 'inline-block',
-                  padding: '0.75rem 1.5rem',
-                  backgroundColor: 'var(--link-color)',
-                  color: 'white',
-                  borderRadius: '8px',
-                  textDecoration: 'none',
-                  fontSize: '1rem',
-                  fontWeight: '500',
-                  transition: 'all 0.2s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.opacity = '0.9';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.opacity = '1';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                }}
+                className="github-link"
               >
                 GitHub 저장소 →
               </a>
