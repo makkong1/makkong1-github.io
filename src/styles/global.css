@@ -633,3 +633,29 @@ code {
 
 / *   G l a s s m o r p h i s m   S t y l e s   a d d e d   * /  
  
+/* --- Mobile Responsive Enhancements --- */
+@media (max-width: 768px) {
+  .layout-main { padding: 1rem 0.5rem; }
+  h1 { font-size: 2rem; }
+  h2 { font-size: 1.75rem; }
+  h3 { font-size: 1.25rem; }
+  p { font-size: 0.95rem; }
+  .project-hero { padding: 2rem 1rem; border-radius: 12px; }
+  .project-hero h1 { font-size: 2.25rem; }
+  .project-hero .subtitle { font-size: 1.1rem; margin-bottom: 1.5rem; }
+  .project-hero .description { font-size: 0.95rem; padding: 0 0.5rem; }
+  .buttons-wrapper { flex-direction: column; width: 100%; }
+  .primary-button, .project-hero .demo-link, .project-hero .github-link { width: 100%; margin: 0 0 0.75rem 0 !important; text-align: center; box-sizing: border-box; }
+  .nav-container { flex-direction: column; align-items: flex-start; gap: 1rem; }
+  .nav-links-group { width: 100%; justify-content: flex-start; overflow-x: auto; padding-bottom: 0.5rem; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+  .nav-link { padding: 0.5rem 0; }
+  .glass-card, .project-card, .section-card, .content-card, .domain-card { padding: 1.25rem; border-radius: 12px; }
+  .feature-grid, .portfolio-grid { grid-template-columns: 1fr; gap: 1rem; }
+  .tech-stack-wrapper { justify-content: flex-start; }
+  .mermaid { overflow-x: auto; }
+  .toc-container { display: none; }
+}
+@media (max-width: 480px) {
+  h1 { font-size: 1.75rem; }
+  .project-hero h1 { font-size: 2rem; }
+}
