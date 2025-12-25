@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../components/Common/MermaidDiagram';
-import TableOfContents from '../../components/Common/TableOfContents';
+import MermaidDiagram from '../../../components/Common/MermaidDiagram';
+import TableOfContents from '../../../components/Common/TableOfContents';
 
 function LinkupProjectPage() {
   const sections = [
@@ -140,14 +140,22 @@ function LinkupProjectPage() {
                 <span className="tech-badge">MySQL 8.0</span>
                 <span className="tech-badge">Redis 7.0</span>
               </div>
-              <a
-                href="https://github.com/makkong1/LinkUpProject"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="github-link"
-              >
-                GitHub 저장소 →
-              </a>
+              <div className="buttons-wrapper">
+                <Link
+                  to="/demo?project=linkup"
+                  className="demo-link"
+                >
+                  🖼️ 스크린샷 갤러리
+                </Link>
+                <a
+                  href="https://github.com/makkong1/LinkUpProject"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="github-link"
+                >
+                  GitHub 저장소 →
+                </a>
+              </div>
             </div>
           </section>
 
@@ -249,7 +257,7 @@ function LinkupProjectPage() {
 
           {/* 프로젝트 목적 및 배경 */}
           <section id="purpose" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -263,7 +271,7 @@ function LinkupProjectPage() {
               </p>
             </div>
 
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -279,7 +287,7 @@ function LinkupProjectPage() {
               </ul>
             </div>
 
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -300,7 +308,7 @@ function LinkupProjectPage() {
             <h2 style={{ marginBottom: '2rem', color: 'var(--text-color)' }}>주요 기능</h2>
 
             {/* 1. 일반/소셜 로그인 */}
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -328,7 +336,7 @@ function LinkupProjectPage() {
             </div>
 
             {/* 2. 노션 스타일 에디터 */}
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -342,7 +350,7 @@ function LinkupProjectPage() {
             </div>
 
             {/* 3. 게시판 CRUD */}
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -370,7 +378,7 @@ function LinkupProjectPage() {
             </div>
 
             {/* 4. 비동기 좋아요/싫어요 */}
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -398,7 +406,7 @@ function LinkupProjectPage() {
             </div>
 
             {/* 5. 실시간 알림 */}
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -423,7 +431,7 @@ function LinkupProjectPage() {
             </div>
 
             {/* 6. 관리자 기능 */}
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -445,12 +453,7 @@ function LinkupProjectPage() {
               gap: '1.5rem',
               marginBottom: '2rem'
             }}>
-              <div style={{
-                padding: '1.5rem',
-                backgroundColor: 'var(--card-bg)',
-                borderRadius: '8px',
-                border: '1px solid var(--nav-border)'
-              }}>
+              <div className='project-card' >
                 <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Backend</h3>
                 <ul style={{
                   listStyle: 'none',
@@ -466,12 +469,7 @@ function LinkupProjectPage() {
                   <li>• OAuth2 Client</li>
                 </ul>
               </div>
-              <div style={{
-                padding: '1.5rem',
-                backgroundColor: 'var(--card-bg)',
-                borderRadius: '8px',
-                border: '1px solid var(--nav-border)'
-              }}>
+              <div className='project-card' >
                 <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Database & Cache</h3>
                 <ul style={{
                   listStyle: 'none',
@@ -483,12 +481,7 @@ function LinkupProjectPage() {
                   <li>• Redis 7.0 (Lettuce)</li>
                 </ul>
               </div>
-              <div style={{
-                padding: '1.5rem',
-                backgroundColor: 'var(--card-bg)',
-                borderRadius: '8px',
-                border: '1px solid var(--nav-border)'
-              }}>
+              <div className='project-card' >
                 <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Frontend</h3>
                 <ul style={{
                   listStyle: 'none',
@@ -501,12 +494,7 @@ function LinkupProjectPage() {
                   <li>• AJAX</li>
                 </ul>
               </div>
-              <div style={{
-                padding: '1.5rem',
-                backgroundColor: 'var(--card-bg)',
-                borderRadius: '8px',
-                border: '1px solid var(--nav-border)'
-              }}>
+              <div className='project-card' >
                 <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Async & Monitoring</h3>
                 <ul style={{
                   listStyle: 'none',
@@ -529,18 +517,12 @@ function LinkupProjectPage() {
           <section id="architecture" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '2rem', color: 'var(--text-color)' }}>시스템 아키텍처</h2>
             
-            <div style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '2rem'
-            }}>
+            <div className='project-card' style={{ marginBottom: '2rem'}} >
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>전체 시스템 아키텍처</h3>
               <MermaidDiagram chart={architectureDiagram} />
             </div>
 
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -569,7 +551,7 @@ function LinkupProjectPage() {
           <section id="performance" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '2rem', color: 'var(--text-color)' }}>성능 최적화</h2>
 
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -584,7 +566,7 @@ function LinkupProjectPage() {
               </ul>
             </div>
 
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -604,7 +586,7 @@ function LinkupProjectPage() {
           <section id="security" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '2rem', color: 'var(--text-color)' }}>보안 구현</h2>
 
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -620,7 +602,7 @@ function LinkupProjectPage() {
               </ul>
             </div>
 
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -638,25 +620,11 @@ function LinkupProjectPage() {
           {/* 관련 링크 */}
           <section id="links" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '2rem', color: 'var(--text-color)' }}>관련 링크</h2>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '1.5rem'
-            }}>
+            <div className='project-card' >
               <a
                 href="https://github.com/makkong1/LinkUpProject"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{
-                  display: 'block',
-                  padding: '1.5rem',
-                  backgroundColor: 'var(--card-bg)',
-                  borderRadius: '8px',
-                  border: '1px solid var(--nav-border)',
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  transition: 'all 0.2s ease'
-                }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = 'var(--link-color)';
                   e.currentTarget.style.transform = 'translateY(-2px)';

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../components/Common/MermaidDiagram';
-import TableOfContents from '../../components/Common/TableOfContents';
+import MermaidDiagram from '../../../components/Common/MermaidDiagram';
+import TableOfContents from '../../../components/Common/TableOfContents';
 
 function PetoryProjectPage() {
   const sections = [
@@ -212,14 +212,22 @@ function PetoryProjectPage() {
                 테스트 코드 기반으로 이를 의도적으로 재현한 뒤
                 측정 → 개선 → 재검증 과정을 반복하는 방식으로 진행되었습니다.
               </p>
-              <a
-                href="https://github.com/makkong1/Petory"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="github-link"
-              >
-                GitHub 저장소 →
-              </a>
+              <div className="buttons-wrapper">
+                <Link
+                  to="/demo?project=petory"
+                  className="demo-link"
+                >
+                  🎮 Live Demo
+                </Link>
+                <a
+                  href="https://github.com/makkong1/Petory"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="github-link"
+                >
+                  GitHub 저장소 →
+                </a>
+              </div>
             </div>
           </section>
           
@@ -329,7 +337,7 @@ function PetoryProjectPage() {
 
           {/* 왜 이걸 했는가 */}
           <section id="why" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -359,7 +367,7 @@ function PetoryProjectPage() {
             <h2 style={{ marginBottom: '2rem', color: 'var(--text-color)' }}>아키텍처</h2>
             
             {/* 설계 근거 요약 */}
-            <div style={{
+            <div className='project-card' style={{
               padding: '2rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -395,7 +403,7 @@ function PetoryProjectPage() {
         </div>
 
         {/* 전체 시스템 아키텍처 다이어그램 */}
-        <div style={{
+        <div className='project-card' style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -407,7 +415,7 @@ function PetoryProjectPage() {
         </div>
 
         {/* 레이어드 아키텍처 설명 */}
-        <div style={{
+        <div className='project-card' style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -432,7 +440,7 @@ function PetoryProjectPage() {
         </div>
 
         {/* DDD 설명 */}
-        <div style={{
+        <div className='project-card' style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -454,7 +462,7 @@ function PetoryProjectPage() {
         </div>
 
         {/* 도메인 간 연관관계 다이어그램 */}
-        <div style={{
+        <div className='project-card' style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -681,7 +689,7 @@ function PetoryProjectPage() {
       </section>
 
       {/* 주요 기능 요약 */}
-      <div style={{
+      <div className='project-card' style={{
         padding: '2rem',
         backgroundColor: 'var(--card-bg)',
         borderRadius: '8px',
@@ -1089,7 +1097,7 @@ function PetoryProjectPage() {
       {/* 관련 링크 */}
       <section id="links" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
         <h2 style={{ marginBottom: '2rem', color: 'var(--text-color)' }}>관련 링크</h2>
-        <div style={{
+        <div className='project-card' style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: '1.5rem'

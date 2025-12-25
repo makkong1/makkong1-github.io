@@ -1,5 +1,5 @@
-import MermaidDiagram from '../../components/Common/MermaidDiagram';
-import TableOfContents from '../../components/Common/TableOfContents';
+import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
+import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function CareDomain() {
   const sections = [

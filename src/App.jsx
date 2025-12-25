@@ -4,18 +4,18 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout/Layout';
 import HomePage from './pages/HomePage';
 import PortfolioPage from './pages/PortfolioPage';
-import PetoryProjectPage from './pages/projects/PetoryProjectPage';
-import LinkupProjectPage from './pages/projects/LinkupProjectPage';
+import PetoryProjectPage from './pages/projects/petory/PetoryProjectPage';
+import LinkupProjectPage from './pages/projects/linkup/LinkupProjectPage';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
 // 도메인 페이지들
-import UserDomain from './pages/domains/UserDomain';
-import BoardDomain from './pages/domains/BoardDomain';
-import CareDomain from './pages/domains/CareDomain';
-import MissingPetDomain from './pages/domains/MissingPetDomain';
-import LocationDomain from './pages/domains/LocationDomain';
-import MeetupDomain from './pages/domains/MeetupDomain';
-import ChatDomain from './pages/domains/ChatDomain';
+import UserDomain from './pages/projects/petory/domains/UserDomain';
+import BoardDomain from './pages/projects/petory/domains/BoardDomain';
+import CareDomain from './pages/projects/petory/domains/CareDomain';
+import MissingPetDomain from './pages/projects/petory/domains/MissingPetDomain';
+import LocationDomain from './pages/projects/petory/domains/LocationDomain';
+import MeetupDomain from './pages/projects/petory/domains/MeetupDomain';
+import ChatDomain from './pages/projects/petory/domains/ChatDomain';
 import './styles/global.css';
 
 function App() {

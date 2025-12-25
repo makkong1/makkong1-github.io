@@ -199,8 +199,57 @@ code {
   opacity: 0.95;
 }
 
+
 .project-hero .github-link:active {
   transform: translateY(-1px);
+}
+
+.project-hero .demo-link {
+  display: inline-block;
+  padding: 0.875rem 2rem;
+  background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%); /* Green for Live Demo */
+  color: white;
+  border-radius: 10px;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.25);
+  position: relative;
+  overflow: hidden;
+  margin-right: 1rem; /* Space between buttons */
+}
+
+.project-hero .demo-link::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.project-hero .demo-link:hover::before {
+  left: 100%;
+}
+
+.project-hero .demo-link:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(46, 204, 113, 0.35);
+  opacity: 0.95;
+}
+
+.project-hero .demo-link:active {
+  transform: translateY(-1px);
+}
+
+.project-hero .buttons-wrapper {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
 }
 
 @media (max-width: 768px) {
@@ -436,3 +485,151 @@ code {
   }
 }
 
+/* =========================================
+   Layout & Navigation (Refactored from Inline)
+   ========================================= */
+
+/* Navigation */
+.nav {
+  padding: 1rem;
+  background-color: var(--nav-bg);
+  border-bottom: 1px solid var(--nav-border);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.nav-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.nav-links-group {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.nav-link {
+  text-decoration: none;
+  font-weight: 500;
+  color: var(--text-secondary);
+  transition: color 0.2s ease;
+}
+
+.nav-link:hover {
+  color: var(--link-hover);
+}
+
+.nav-link.active {
+  color: var(--link-color);
+  font-weight: 600;
+}
+
+.nav-link.brand {
+  color: var(--text-color);
+  font-weight: bold;
+}
+
+.nav-separator {
+  color: var(--text-muted);
+}
+
+.nav-arrow {
+  color: var(--text-muted);
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--nav-border);
+  border-radius: 6px;
+  background-color: var(--card-bg);
+  color: var(--text-color);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+  border-color: var(--nav-border);
+  background-color: var(--nav-bg); 
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+/* Layout Main Container */
+.layout-main {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  min-height: calc(100vh - 80px); /* nav height approx */
+}
+
+/* =========================================
+   HomePage Styles
+   ========================================= */
+
+.home-container {
+  padding: 2rem 0;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.about-text-block {
+  line-height: 1.8;
+  color: var(--text-secondary);
+}
+
+.about-text-block p {
+  margin-bottom: 1.5rem;
+}
+
+.about-text-block p:last-child {
+  margin-bottom: 0;
+}
+
+/* Portfolio Grid */
+.portfolio-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+.tech-stack-wrapper {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto; /* Push to bottom if needed */
+}
+
+/* Contact Section */
+.contact-info {
+  line-height: 1.8;
+  font-size: 1.1rem;
+}
+
+.text-link {
+  color: var(--link-color);
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.text-link:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+/ *   G l a s s m o r p h i s m   S t y l e s   a d d e d   * /  
+ 

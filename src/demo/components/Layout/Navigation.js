@@ -4,8 +4,9 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import UserProfileModal from '../User/UserProfileModal';
 import { notificationApi } from '../../api/notificationApi';
+import { Link } from 'react-router-dom';
 
-const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
+const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard, currentProject }) => {
   const { isDarkMode, toggleTheme } = useTheme();
   const { logout, updateUserProfile } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -75,7 +76,6 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
 
     let eventSource = null;
     let fallbackInterval = null;
-    let isConnected = false;
 
     // SSE 연결 함수
     const connectSSE = () => {
@@ -92,7 +92,6 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
       // 연결 성공
       eventSource.onopen = () => {
         console.log('SSE 연결 성공');
-        isConnected = true;
         // 연결 성공 시 폴백 폴링 중지
         if (fallbackInterval) {
           clearInterval(fallbackInterval);
@@ -121,20 +120,9 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
         }
       });
 
-      // 읽지 않은 알림 개수 업데이트
-      eventSource.addEventListener('unreadCount', (event) => {
-        try {
-          const count = parseInt(event.data, 10);
-          setUnreadCount(count);
-        } catch (err) {
-          console.error('알림 개수 파싱 실패:', err);
-        }
-      });
-
       // 연결 오류 처리
       eventSource.onerror = (error) => {
         console.error('SSE 연결 오류:', error);
-        isConnected = false;
 
         // 연결이 끊어지면 폴백 폴링 시작 (5분마다)
         if (!fallbackInterval) {
@@ -143,9 +131,6 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
             updateUnreadCount();
           }, 300000); // 5분마다
         }
-
-        // EventSource가 자동으로 재연결을 시도하지만, 
-        // 재연결이 실패하면 폴백 폴링이 작동함
       };
     };
 
@@ -165,7 +150,20 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
     };
   }, [user, updateUnreadCount]);
 
-  // 알림 읽음 처리
+  // 모든 알림 읽음 처리
+  const handleMarkAllAsRead = async () => {
+    const userId = user?.idx || user?.id;
+    if (!userId) return;
+    try {
+      await notificationApi.markAllAsRead(userId);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('모든 알림 읽음 처리 실패:', err);
+    }
+  };
+
+  // 알림 개별 읽음 처리
   const handleMarkAsRead = async (notificationId) => {
     const userId = user?.idx || user?.id;
     if (!userId) return;
@@ -180,20 +178,8 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
     }
   };
 
-  // 모든 알림 읽음 처리
-  const handleMarkAllAsRead = async () => {
-    const userId = user?.idx || user?.id;
-    if (!userId) return;
-    try {
-      await notificationApi.markAllAsRead(userId);
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-      setUnreadCount(0);
-    } catch (err) {
-      console.error('모든 알림 읽음 처리 실패:', err);
-    }
-  };
-
-  const menuItems = [
+  // Petory 메뉴 항목
+  const petoryMenuItems = [
     { id: 'home', label: '홈', icon: '🏠' },
     { id: 'location-services', label: '주변 서비스', icon: '📍' },
     { id: 'care-requests', label: '펫케어 요청', icon: '🐾' },
@@ -208,13 +194,23 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
     ] : []),
   ];
 
+  // LinkUp 메뉴 항목 (갤러리 모드이므로 단순화)
+  const linkupMenuItems = [
+    { id: 'gallery', label: '스크린샷 갤러리', icon: '🖼️' },
+  ];
+
+  const menuItems = currentProject === 'linkup' ? linkupMenuItems : petoryMenuItems;
+  const projectTitle = currentProject === 'linkup' ? 'LinkUp' : 'Petory';
+  const projectEmoji = currentProject === 'linkup' ? '🔗' : '🐾';
+  const portfolioLink = currentProject === 'linkup' ? "/portfolio/linkup" : "/portfolio/petory";
+
   return (
     <>
       <NavContainer>
         <NavContent>
           <Logo onClick={() => setActiveTab('home')}>
-            <span className="icon">🦴</span>
-            <span>Petory</span>
+            <span className="icon">{projectEmoji}</span>
+            <span>{projectTitle} Demo</span>
           </Logo>
 
           <NavMenu isOpen={isMobileMenuOpen}>
@@ -234,93 +230,89 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
           </NavMenu>
 
           <RightSection>
+            <PortfolioLink to={portfolioLink}>
+              ← 돌아가기
+            </PortfolioLink>
+
             {user && (
-              <>
-                <div style={{ position: 'relative' }}>
-                  <NotificationButton type="button" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
-                    🔔
-                    {unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}
-                  </NotificationButton>
-                  {isNotificationOpen && (
-                    <NotificationDropdown>
-                      <NotificationHeader>
-                        <NotificationTitle>알림</NotificationTitle>
-                        {unreadCount > 0 && (
-                          <MarkAllReadButton onClick={handleMarkAllAsRead}>
-                            모두 읽음
-                          </MarkAllReadButton>
-                        )}
-                      </NotificationHeader>
-                      <NotificationList>
-                        {loadingNotifications ? (
-                          <NotificationEmpty>알림을 불러오는 중...</NotificationEmpty>
-                        ) : notifications.length === 0 ? (
-                          <NotificationEmpty>알림이 없습니다</NotificationEmpty>
-                        ) : (
-                          notifications.map((notification) => (
-                            <NotificationItem
-                              key={notification.idx}
-                              unread={!notification.isRead}
-                              onClick={() => {
-                                if (!notification.isRead) {
-                                  handleMarkAsRead(notification.idx);
-                                }
-                                setIsNotificationOpen(false);
-                                // 관련 게시글로 이동
-                                if (notification.relatedType === 'BOARD' && notification.relatedId) {
-                                  // 커뮤니티 탭으로 이동
-                                  setActiveTab('community');
-                                  // 게시글 상세 페이지 열기 (전역 이벤트 사용)
-                                  setTimeout(() => {
-                                    window.dispatchEvent(new CustomEvent('openBoardDetail', {
-                                      detail: { boardId: notification.relatedId }
-                                    }));
-                                  }, 100); // 탭 전환 후 실행
-                                } else if (notification.relatedType === 'MISSING_PET' && notification.relatedId) {
-                                  // 실종제보 탭으로 이동
-                                  setActiveTab('missing-pets');
-                                  // 실종제보 게시글 상세 페이지 열기 (전역 이벤트 사용)
-                                  setTimeout(() => {
-                                    window.dispatchEvent(new CustomEvent('openMissingPetDetail', {
-                                      detail: { boardId: notification.relatedId }
-                                    }));
-                                  }, 100); // 탭 전환 후 실행
-                                } else if (notification.relatedType === 'CARE_REQUEST' && notification.relatedId) {
-                                  // 펫케어 요청 탭으로 이동
-                                  setActiveTab('care-requests');
-                                  // 펫케어 요청 상세 페이지 열기 (전역 이벤트 사용)
-                                  setTimeout(() => {
-                                    window.dispatchEvent(new CustomEvent('openCareRequestDetail', {
-                                      detail: { careRequestId: notification.relatedId }
-                                    }));
-                                  }, 100); // 탭 전환 후 실행
-                                }
-                              }}
-                            >
-                              <NotificationContent>
-                                <NotificationTitleText>{notification.title || '알림'}</NotificationTitleText>
-                                <NotificationText>{notification.content || ''}</NotificationText>
-                                <NotificationTime>
-                                  {notification.createdAt
-                                    ? new Date(notification.createdAt).toLocaleString('ko-KR')
-                                    : '시간 정보 없음'}
-                                </NotificationTime>
-                              </NotificationContent>
-                              {!notification.isRead && <UnreadDot />}
-                            </NotificationItem>
-                          ))
-                        )}
-                      </NotificationList>
-                    </NotificationDropdown>
-                  )}
-                </div>
-                <UserInfo type="button" onClick={() => setIsProfileOpen(true)}>
-                  <span role="img" aria-label="user">
-                    👤
-                  </span>
-                  {user.nickname || '내 정보'}
-                </UserInfo>
-              </>
+              <div style={{ position: 'relative' }}>
+                <NotificationButton type="button" onClick={() => setIsNotificationOpen(!isNotificationOpen)}>
+                  🔔
+                  {unreadCount > 0 && <NotificationBadge>{unreadCount}</NotificationBadge>}
+                </NotificationButton>
+                {isNotificationOpen && (
+                  <NotificationDropdown>
+                    <NotificationHeader>
+                      <NotificationTitle>알림</NotificationTitle>
+                      {unreadCount > 0 && (
+                        <MarkAllReadButton onClick={handleMarkAllAsRead}>
+                          모두 읽음
+                        </MarkAllReadButton>
+                      )}
+                    </NotificationHeader>
+                    <NotificationList>
+                      {loadingNotifications ? (
+                        <NotificationEmpty>알림을 불러오는 중...</NotificationEmpty>
+                      ) : notifications.length === 0 ? (
+                        <NotificationEmpty>알림이 없습니다</NotificationEmpty>
+                      ) : (
+                        notifications.map((notification) => (
+                          <NotificationItem
+                            key={notification.idx}
+                            unread={!notification.isRead}
+                            onClick={() => {
+                              if (!notification.isRead) {
+                                handleMarkAsRead(notification.idx);
+                              }
+                              setIsNotificationOpen(false);
+                              if (notification.relatedType === 'BOARD' && notification.relatedId) {
+                                setActiveTab('community');
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openBoardDetail', {
+                                    detail: { boardId: notification.relatedId }
+                                  }));
+                                }, 100);
+                              } else if (notification.relatedType === 'MISSING_PET' && notification.relatedId) {
+                                setActiveTab('missing-pets');
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openMissingPetDetail', {
+                                    detail: { boardId: notification.relatedId }
+                                  }));
+                                }, 100);
+                              } else if (notification.relatedType === 'CARE_REQUEST' && notification.relatedId) {
+                                setActiveTab('care-requests');
+                                setTimeout(() => {
+                                  window.dispatchEvent(new CustomEvent('openCareRequestDetail', {
+                                    detail: { careRequestId: notification.relatedId }
+                                  }));
+                                }, 100);
+                              }
+                            }}
+                          >
+                            <NotificationContent>
+                              <NotificationTitleText>{notification.title || '알림'}</NotificationTitleText>
+                              <NotificationText>{notification.content || ''}</NotificationText>
+                              <NotificationTime>
+                                {notification.createdAt
+                                  ? new Date(notification.createdAt).toLocaleString('ko-KR')
+                                  : '시간 정보 없음'}
+                              </NotificationTime>
+                            </NotificationContent>
+                            {!notification.isRead && <UnreadDot />}
+                          </NotificationItem>
+                        ))
+                      )}
+                    </NotificationList>
+                  </NotificationDropdown>
+                )}
+              </div>
+            )}
+            
+            {user && (
+              <UserInfo type="button" onClick={() => setIsProfileOpen(true)}>
+                <span role="img" aria-label="user">👤</span>
+                {user.nickname || '내 정보'}
+              </UserInfo>
             )}
 
             <ThemeToggle onClick={toggleTheme}>
@@ -655,4 +647,23 @@ const NotificationEmpty = styled.div`
   text-align: center;
   color: ${props => props.theme.colors.textSecondary};
   font-size: ${props => props.theme.typography.body2.fontSize};
+`;
+
+const PortfolioLink = styled(Link)`
+  text-decoration: none;
+  color: ${props => props.theme.colors.text};
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: 6px;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-right: 0.5rem;
+
+  &:hover {
+    border-color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme.colors.primary};
+  }
 `;

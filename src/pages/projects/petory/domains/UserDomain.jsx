@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../components/Common/MermaidDiagram';
-import TableOfContents from '../../components/Common/TableOfContents';
+import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
+import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function UserDomain() {
   const sections = [
