@@ -17,56 +17,56 @@ function LinkupProjectPage() {
 
   const architectureDiagram = `graph TB
     subgraph "Frontend Layer"
-        THYMELEAF[Thymeleaf<br/>서버 사이드 렌더링]
-        CSS[CSS<br/>스타일링]
-        AJAX[AJAX<br/>비동기 통신]
+        THYMELEAF["Thymeleaf<br/>서버 사이드 렌더링"]
+        CSS["CSS<br/>스타일링"]
+        AJAX["AJAX<br/>비동기 통신"]
     end
     
     subgraph "Controller Layer"
-        BOARD_CTRL[BoardController<br/>게시판 관리]
-        COMMENT_CTRL[CommentController<br/>댓글 관리]
-        NOTION_CTRL[NotionController<br/>노션 콘텐츠]
-        USER_CTRL[UsersController<br/>사용자 관리]
-        ADMIN_CTRL[AdminController<br/>관리자 기능]
+        BOARD_CTRL["BoardController<br/>게시판 관리"]
+        COMMENT_CTRL["CommentController<br/>댓글 관리"]
+        NOTION_CTRL["NotionController<br/>노션 콘텐츠"]
+        USER_CTRL["UsersController<br/>사용자 관리"]
+        ADMIN_CTRL["AdminController<br/>관리자 기능"]
     end
     
     subgraph "Service Layer"
-        BOARD_SVC[BoardService<br/>게시판 비즈니스 로직]
-        COMMENT_SVC[CommentService<br/>댓글 비즈니스 로직]
-        NOTION_SVC[NotionService<br/>노션 비즈니스 로직]
-        CACHE_SVC[BoardCacheService<br/>캐시 관리]
-        LIKE_SVC[LikeDislikeCacheService<br/>좋아요/싫어요 캐시]
-        SYNC_SVC[LikeDislikeSyncService<br/>동기화 서비스]
+        BOARD_SVC["BoardService<br/>게시판 비즈니스 로직"]
+        COMMENT_SVC["CommentService<br/>댓글 비즈니스 로직"]
+        NOTION_SVC["NotionService<br/>노션 비즈니스 로직"]
+        CACHE_SVC["BoardCacheService<br/>캐시 관리"]
+        LIKE_SVC["LikeDislikeCacheService<br/>좋아요/싫어요 캐시"]
+        SYNC_SVC["LikeDislikeSyncService<br/>동기화 서비스"]
     end
     
     subgraph "Repository Layer"
-        BOARD_REPO[BoardRepository<br/>JPA]
-        COMMENT_REPO[CommentRepository<br/>JPA]
-        NOTION_REPO[NotionRepository<br/>JPA]
-        USER_REPO[UsersRepository<br/>JPA]
-        MYBATIS[MyBatis<br/>복잡한 쿼리]
+        BOARD_REPO["BoardRepository<br/>JPA"]
+        COMMENT_REPO["CommentRepository<br/>JPA"]
+        NOTION_REPO["NotionRepository<br/>JPA"]
+        USER_REPO["UsersRepository<br/>JPA"]
+        MYBATIS["MyBatis<br/>복잡한 쿼리"]
     end
     
     subgraph "Data Layer"
-        MYSQL[(MySQL 8.0<br/>관계형 데이터베이스)]
-        REDIS[(Redis 7.0<br/>캐시 및 Pub/Sub)]
+        MYSQL[("MySQL 8.0<br/>관계형 데이터베이스")]
+        REDIS[("Redis 7.0<br/>캐시 및 Pub/Sub")]
     end
     
     subgraph "Security Layer"
-        SECURITY[Spring Security<br/>인증/인가]
-        OAUTH2[OAuth2 Client<br/>Google, Naver]
-        SESSION[HttpSession<br/>세션 관리]
+        SECURITY["Spring Security<br/>인증/인가"]
+        OAUTH2["OAuth2 Client<br/>Google, Naver"]
+        SESSION["HttpSession<br/>세션 관리"]
     end
     
     subgraph "Async Layer"
-        ASYNC[@Async<br/>비동기 처리]
-        SCHEDULER[@Scheduled<br/>스케줄러]
-        SSE[SSE Emitter<br/>실시간 알림]
+        ASYNC["@Async<br/>비동기 처리"]
+        SCHEDULER["@Scheduled<br/>스케줄러"]
+        SSE["SSE Emitter<br/>실시간 알림"]
     end
     
     subgraph "External Services"
-        GOOGLE[Google OAuth2]
-        NAVER[Naver OAuth2]
+        GOOGLE["Google OAuth2"]
+        NAVER["Naver OAuth2"]
     end
     
     THYMELEAF --> BOARD_CTRL
