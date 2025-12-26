@@ -127,7 +127,7 @@ function MeetupDomain() {
           {/* 1. 도메인 소개 */}
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -145,7 +145,7 @@ function MeetupDomain() {
           {/* 2. 가정한 문제 상황 */}
           <section id="problem" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>가정한 문제 상황</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -227,7 +227,7 @@ meetupRepository.save(meetup);`}
           {/* 3. 문제 재현 방식 (테스트 설계) */}
           <section id="test-design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 재현 방식 (테스트 설계)</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -255,7 +255,7 @@ meetupRepository.save(meetup);`}
                 </ul>
               </div>
             </div>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -270,7 +270,7 @@ meetupRepository.save(meetup);`}
           {/* 4. 성능 측정 결과 (개선 전) */}
           <section id="before" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 측정 결과 (개선 전)</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -303,7 +303,7 @@ meetupRepository.save(meetup);`}
           {/* 5. 성능 최적화 및 동시성 제어 */}
           <section id="optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 및 동시성 제어</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -321,7 +321,7 @@ meetupRepository.save(meetup);`}
                 <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join</strong>: 참여자와 사용자 정보를 함께 조회</li>
               </ul>
             </div>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -437,7 +437,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
                 </p>
               </div>
             </div>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -458,7 +458,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
           {/* 6. 성능 개선 결과 (개선 후) */}
           <section id="after" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과 (개선 후)</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -549,7 +549,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
                 </ul>
               </div>
             </div>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -557,15 +557,15 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
               marginTop: '1rem'
             }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>시퀀스 다이어그램 (최적화 후)</h3>
-              <MermaidDiagram chart={optimizedMeetupJoinSequenceDiagram} />
+              <MermaidDiagram  chart={optimizedMeetupJoinSequenceDiagram} />
             </div>
           </section>
 
           {/* 7. 주요 기능 */}
-          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
             
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -592,11 +592,10 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
                   <li>최대 인원 도달 시 참여 불가</li>
                   <li>모임 일시 지남 → 자동 완료</li>
                 </ol>
-                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -613,11 +612,10 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
                   <li>COMPLETED (완료) - 모임 일시 지남 시 자동 완료</li>
                   <li>CANCELLED (취소) - 주최자가 취소</li>
                 </ul>
-                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -632,7 +630,6 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
                   <li>위도/경도 좌표 기반 거리 계산</li>
                   <li>Spatial Index 활용</li>
                 </ul>
-                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
               </div>
             </div>
       </section>
@@ -640,7 +637,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -650,7 +647,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
           <MermaidDiagram chart={entityDiagram} />
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -676,7 +673,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
           </div>
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -698,10 +695,10 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
         </div>
       </section>
 
-          <section id="services" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Service 주요 기능</h2>
+      <section id="services" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Service 주요 기능</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -735,7 +732,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
           {/* 8. 보안 및 권한 체계 */}
           <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -757,13 +754,13 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
           border: '1px solid var(--nav-border)'
         }}>
-          <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+          <div  style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>User 도메인:</strong></div>
             <div>• Users가 모임을 주최, 모임에 참여, 주최자만 모임 수정/취소 가능</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Notification 도메인:</strong></div>
@@ -779,7 +776,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
           <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -804,7 +801,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
           </div>
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -826,7 +823,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
 
           <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
-        <div style={{
+        <div className="section-card" style={{
           padding: '1rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',

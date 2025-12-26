@@ -59,7 +59,7 @@ function MissingPetDomain() {
           {/* 1. 도메인 소개 */}
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -77,7 +77,7 @@ function MissingPetDomain() {
           {/* 2. 가정한 문제 상황 */}
           <section id="problem" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>가정한 문제 상황</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -92,7 +92,7 @@ function MissingPetDomain() {
           {/* 3. 문제 재현 방식 (테스트 설계) */}
           <section id="test-design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 재현 방식 (테스트 설계)</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -107,7 +107,7 @@ function MissingPetDomain() {
           {/* 4. 성능 측정 결과 (개선 전) */}
           <section id="before" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 측정 결과 (개선 전)</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -122,7 +122,7 @@ function MissingPetDomain() {
           {/* 5. 성능 최적화 및 동시성 제어 */}
           <section id="optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 및 동시성 제어</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -145,7 +145,7 @@ function MissingPetDomain() {
           {/* 6. 성능 개선 결과 (개선 후) */}
           <section id="after" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과 (개선 후)</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -160,7 +160,7 @@ function MissingPetDomain() {
           {/* 7. 얻은 교훈 / 설계 인사이트 */}
           <section id="insights" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>얻은 교훈 / 설계 인사이트</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -176,7 +176,7 @@ function MissingPetDomain() {
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
             
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -204,7 +204,7 @@ function MissingPetDomain() {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -233,7 +233,7 @@ function MissingPetDomain() {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -253,7 +253,7 @@ function MissingPetDomain() {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -276,7 +276,7 @@ function MissingPetDomain() {
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -286,7 +286,7 @@ function MissingPetDomain() {
           <MermaidDiagram chart={entityDiagram} />
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -312,7 +312,7 @@ function MissingPetDomain() {
           </div>
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -337,7 +337,7 @@ function MissingPetDomain() {
           <section id="services" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Service 주요 기능</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -360,7 +360,7 @@ function MissingPetDomain() {
           {/* 10. 보안 및 권한 체계 */}
           <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -382,7 +382,7 @@ function MissingPetDomain() {
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -406,7 +406,7 @@ function MissingPetDomain() {
           <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -431,7 +431,7 @@ function MissingPetDomain() {
 
           <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
-        <div style={{
+        <div className="section-card" style={{
           padding: '1rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',

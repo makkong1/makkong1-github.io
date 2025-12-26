@@ -8,7 +8,6 @@ function Navigation() {
 
   // 경로별 네비게이션 결정
   const isHome = path === '/';
-  const isPortfolio = path === '/portfolio';
   const isPetoryProject = path === '/portfolio/petory';
   const isLinkupProject = path === '/portfolio/linkup';
   const isDomainPage = path.startsWith('/domains/');
@@ -22,15 +21,10 @@ function Navigation() {
       <Link to="/" className={`nav-link brand ${isHome ? 'active' : ''}`}>
         Home
       </Link>
-      {!isHome && !isPortfolio && !isPetoryProject && !isLinkupProject && (
-        <Link to="/portfolio" className="nav-link brand">
-          Projects
-        </Link>
-      )}
       {isHome && (
         <>
           <span className="nav-separator">|</span>
-          <a href="#personal-info" className="nav-link">
+          <a href="#about" className="nav-link">
             About Me
           </a>
           <a href="#portfolio" className="nav-link">
@@ -129,12 +123,6 @@ function Navigation() {
       <div className="nav-container">
         <div className="nav-links-group">
           {renderMainNav()}
-          {isPortfolio && (
-            <>
-              <span className="nav-separator">|</span>
-              {renderDefaultNav()}
-            </>
-          )}
           {isPetoryProject && (
             <>
               <span className="nav-separator">|</span>

@@ -70,7 +70,7 @@ function LocationDomain() {
           {/* 1. 도메인 소개 */}
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -123,7 +123,7 @@ function LocationDomain() {
           {/* 2. 가정한 문제 상황 */}
           <section id="problem" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>가정한 문제 상황</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -228,7 +228,7 @@ function LocationDomain() {
           {/* 3. 문제 재현 방식 (테스트 설계) */}
           <section id="test-design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 재현 방식 (테스트 설계)</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -291,7 +291,7 @@ function LocationDomain() {
           {/* 4. 성능 측정 결과 (개선 전) */}
           <section id="before" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 측정 결과 (개선 전)</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -435,7 +435,7 @@ function LocationDomain() {
           {/* 5. 성능 최적화 및 동시성 제어 */}
           <section id="optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 및 동시성 제어</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -486,71 +486,19 @@ List<LocationService> findByRadius(
     @Param("radiusInMeters") Double radiusInMeters);`}
               </pre>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>Service Layer:</strong>
+                <strong style={{ color: 'var(--text-color)' }}>구현 요약:</strong>
               </p>
-              <pre style={{
-                padding: '0.75rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '4px',
-                overflow: 'auto',
-                fontSize: '0.85rem',
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
                 color: 'var(--text-secondary)',
-                fontFamily: 'monospace',
-                lineHeight: '1.6',
-                margin: '0.5rem 0'
+                lineHeight: '1.8',
+                fontSize: '0.9rem',
+                marginBottom: '0.75rem'
               }}>
-{`// LocationServiceService.java
-public List<LocationServiceDTO> searchLocationServicesByRegion(
-        String sido, String sigungu, String eupmyeondong, String roadName, 
-        String category, Integer maxResults, 
-        Double latitude, Double longitude, Double radius) {
-    
-    if (latitude != null && longitude != null && radius != null) {
-        // 위치 기반 검색 우선
-        services = locationServiceRepository
-            .findByRadius(latitude, longitude, radius);
-    } else {
-        // 기존 지역 기반 검색
-        services = locationServiceRepository.findByOrderByRatingDesc();
-    }
-    // 카테고리 필터링, DTO 변환...
-}`}
-              </pre>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>프론트엔드:</strong>
-              </p>
-              <pre style={{
-                padding: '0.75rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '4px',
-                overflow: 'auto',
-                fontSize: '0.85rem',
-                color: 'var(--text-secondary)',
-                fontFamily: 'monospace',
-                lineHeight: '1.6',
-                margin: '0.5rem 0'
-              }}>
-{`// LocationServiceMap.js
-if (isInitialLoad) {
-  const targetLocation = userLocationOverride || userLocation;
-  
-  if (targetLocation) {
-    // 사용자 위치가 있으면 위치 기반 검색 (10km 반경)
-    response = await locationServiceApi.searchPlaces({
-      latitude: targetLocation.lat,
-      longitude: targetLocation.lng,
-      radius: 10000, // 10km
-      category: apiCategory,
-    });
-  } else {
-    // 사용자 위치가 없으면 전체 조회
-    response = await locationServiceApi.searchPlaces({
-      category: apiCategory,
-      size: null, // 전체 조회
-    });
-  }
-}`}
-              </pre>
+                <li>• Service Layer: 위치 정보가 있으면 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>findByRadius()</code> 호출, 없으면 전체 조회</li>
+                <li>• 프론트엔드: 초기 로드 시 사용자 위치 기반 10km 반경 검색 요청</li>
+              </ul>
               <div style={{
                 padding: '0.75rem',
                 backgroundColor: 'var(--bg-color)',
@@ -574,19 +522,108 @@ if (isInitialLoad) {
                 </ul>
               </div>
             </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>2. 시군구 기반 검색 전략 적용</h3>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                위치 기반 검색(ST_Distance_Sphere)의 한계를 발견하고 시군구 기반 검색으로 전환했습니다.
+              </p>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>문제점:</strong>
+              </p>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontSize: '0.9rem',
+                marginBottom: '0.75rem'
+              }}>
+                <li>• 지도 이동 시 검색 기준점이 바뀌어 이전에 본 서비스가 사라지는 일관성 문제</li>
+                <li>• ST_Distance_Sphere 쿼리 성능 저하 (198-368ms 쿼리 시간)</li>
+              </ul>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>해결 방법:</strong>
+              </p>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontSize: '0.9rem',
+                marginBottom: '0.75rem'
+              }}>
+                <li>• 지도 중심 좌표를 역지오코딩하여 시도/시군구 추출</li>
+                <li>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>WHERE sido=? AND sigungu=?</code> 조건으로 조회 (인덱스 활용)</li>
+                <li>• 읍면동은 프론트엔드에서 클라이언트 사이드 필터링만 수행</li>
+              </ul>
+              <div style={{
+                padding: '0.75rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '4px',
+                marginTop: '0.75rem',
+                marginBottom: '0.75rem'
+              }}>
+                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <strong style={{ color: 'var(--text-color)' }}>성능 개선 효과:</strong>
+                </p>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                  fontSize: '0.9rem'
+                }}>
+                  <li>• DB 쿼리 시간: 198-368ms → <strong style={{ color: 'var(--text-color)' }}>36-53ms</strong> (약 5-6배 빠름)</li>
+                  <li>• 전체 처리 시간: 202-408ms → <strong style={{ color: 'var(--text-color)' }}>45-66ms</strong> (약 5-6배 빠름)</li>
+                  <li>• 검색 결과 일관성 확보 (시군구 단위로 확정되어 지도 이동 시에도 마커 유지)</li>
+                  <li>• 구현 단순화 (복잡한 ST_Distance_Sphere 쿼리 제거, 단순 WHERE 조건 사용)</li>
+                </ul>
+              </div>
+              <div style={{
+                padding: '0.75rem',
+                backgroundColor: 'var(--card-bg)',
+                borderRadius: '4px',
+                border: '1px solid var(--nav-border)',
+                fontSize: '0.9rem'
+              }}>
+                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.5rem' }}>
+                  <strong style={{ color: 'var(--text-color)' }}>관련 문서:</strong>
+                </p>
+                <a 
+                  href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/location/search-strategy-comparison.md" 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ 
+                    color: 'var(--link-color)',
+                    textDecoration: 'none'
+                  }}
+                >
+                  → 검색 전략 개선 상세 분석 문서 보기
+                </a>
+              </div>
+            </div>
           </section>
 
           {/* 6. 성능 개선 결과 (개선 후) */}
           <section id="after" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과 (개선 후)</h2>
-            <div style={{
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과</h2>
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
             }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)', fontSize: '1.25rem' }}>1단계: 위치 기반 초기 로드 적용</h3>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                위치 기반 초기 로드를 적용하여 성능을 대폭 개선했습니다.
+                전체 데이터 조회에서 위치 기반 검색으로 전환하여 초기 로드 성능을 대폭 개선했습니다.
               </p>
               <div style={{
                 overflowX: 'auto',
@@ -744,6 +781,100 @@ if (isInitialLoad) {
                 <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                   <strong style={{ color: 'var(--text-color)' }}>측정 조건:</strong> 사용자 위치 기반 10km 반경 검색
                 </p>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)', fontSize: '1.25rem' }}>2단계: 시군구 기반 검색 전략 적용</h3>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                위치 기반 검색의 한계를 해결하기 위해 시군구 기반 검색으로 전환하여 쿼리 성능과 일관성을 더욱 개선했습니다.
+              </p>
+              <div style={{
+                overflowX: 'auto',
+                marginBottom: '1rem'
+              }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.9rem'
+                }}>
+                  <thead>
+                    <tr style={{
+                      borderBottom: '2px solid var(--nav-border)'
+                    }}>
+                      <th style={{
+                        padding: '0.75rem',
+                        textAlign: 'left',
+                        color: 'var(--text-color)',
+                        fontWeight: 'bold'
+                      }}>항목</th>
+                      <th style={{
+                        padding: '0.75rem',
+                        textAlign: 'left',
+                        color: 'var(--text-color)',
+                        fontWeight: 'bold'
+                      }}>위치 기반</th>
+                      <th style={{
+                        padding: '0.75rem',
+                        textAlign: 'left',
+                        color: 'var(--text-color)',
+                        fontWeight: 'bold'
+                      }}>시군구 기반</th>
+                      <th style={{
+                        padding: '0.75rem',
+                        textAlign: 'left',
+                        color: 'var(--text-color)',
+                        fontWeight: 'bold'
+                      }}>개선율</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{
+                      borderBottom: '1px solid var(--nav-border)'
+                    }}>
+                      <td style={{ padding: '0.75rem' }}>DB 쿼리 실행 시간</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#e74c3c' }}>198-368ms</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#27ae60' }}>36-53ms</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>약 5-6배 빠름</td>
+                    </tr>
+                    <tr style={{
+                      borderBottom: '1px solid var(--nav-border)'
+                    }}>
+                      <td style={{ padding: '0.75rem' }}>전체 처리 시간</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#e74c3c' }}>202-408ms</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#27ae60' }}>45-66ms</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>약 5-6배 빠름</td>
+                    </tr>
+                    <tr style={{
+                      borderBottom: '1px solid var(--nav-border)'
+                    }}>
+                      <td style={{ padding: '0.75rem' }}>조회 레코드 수</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#e74c3c' }}>약 295개 (반경 내)</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#27ae60' }}>142-170개 (시군구 단위)</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>적절한 데이터 양</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '0.75rem' }}>검색 기준점 일관성</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#e74c3c' }}>지도 이동 시 변경 (일관성 문제)</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: '#27ae60' }}>시군구로 확정 (일관성 확보)</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>✅ 해결</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>2단계 개선 효과</h3>
                 <ul style={{
                   listStyle: 'none',
                   padding: 0,
@@ -751,9 +882,26 @@ if (isInitialLoad) {
                   lineHeight: '1.8',
                   fontSize: '0.9rem'
                 }}>
-                  <li>• 초기 로드 전략: 사용자 위치 있음 → 위치 기반 검색 (10km 반경, 약 1,000개)</li>
-                  <li>• 향후 데이터 증가 시에도 위치 기반 검색으로 성능 유지 가능</li>
+                  <li>• ✅ <strong style={{ color: 'var(--text-color)' }}>쿼리 성능 약 5-6배 향상</strong>: 198-368ms → 36-53ms</li>
+                  <li>• ✅ <strong style={{ color: 'var(--text-color)' }}>검색 결과 일관성 확보</strong>: 지도 이동 시에도 마커 유지</li>
+                  <li>• ✅ <strong style={{ color: 'var(--text-color)' }}>구현 단순화</strong>: 복잡한 ST_Distance_Sphere 쿼리 제거, 단순 WHERE 조건 사용</li>
+                  <li>• ✅ <strong style={{ color: 'var(--text-color)' }}>인덱스 활용</strong>: 시도/시군구 인덱스로 빠른 조회</li>
                 </ul>
+              </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem',
+                border: '1px solid var(--nav-border)'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>📌 측정 정보</h3>
+                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <strong style={{ color: 'var(--text-color)' }}>측정 일시:</strong> 2025-12-26
+                </p>
+                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <strong style={{ color: 'var(--text-color)' }}>측정 조건:</strong> 시군구 단위 검색 (WHERE sido=? AND sigungu=?)
+                </p>
               </div>
             </div>
           </section>
@@ -762,7 +910,7 @@ if (isInitialLoad) {
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
             
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -785,14 +933,14 @@ if (isInitialLoad) {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
               border: '1px solid var(--nav-border)',
               marginBottom: '1.5rem'
             }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 기반 반경 검색</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 기반 반경 검색 (초기 로드용)</h3>
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                 <p style={{ marginBottom: '0.5rem' }}>사용자 위치를 기반으로 반경 내 서비스를 검색합니다.</p>
                 <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>검색 프로세스:</strong></p>
@@ -803,48 +951,51 @@ if (isInitialLoad) {
                   <li>거리순 정렬 (선택적)</li>
                   <li>카테고리 필터링 (선택적)</li>
                 </ol>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>특징:</strong></p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>특징 (제한적 사용):</strong></p>
                 <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>MySQL의 <code>ST_Distance_Sphere</code> 함수 사용 (정확한 지구 곡률 반영)</li>
-                  <li>POINT 형식: <code>POINT(경도, 위도)</code> 순서 사용</li>
-                  <li>반경 단위: 미터 (m)</li>
-                  <li>성능 최적화: 인덱스 활용 및 쿼리 최적화</li>
+                  <li><strong>사용 시점</strong>: 앱 초기 진입 시 사용자 주변 정보 제공 목적으로만 사용</li>
+                  <li><strong>DB 쿼리</strong>: MySQL의 <code>ST_Distance_Sphere</code> 함수 사용 (정확한 지구 곡률 반영)</li>
+                  <li><strong>POINT 형식</strong>: <code>POINT(경도, 위도)</code> 순서 사용</li>
+                  <li><strong>반경 단위</strong>: 미터 (m)</li>
+                  <li><strong>한계</strong>: 지도 이동 시 검색 기준점이 계속 바뀌어 "아까 본 장소"가 사라지는 일관성 문제 발생</li>
+                  <li><strong>대안</strong>: 지도 탐색 시에는 <strong>시도/시군구 기반 검색</strong>을 주 전략으로 사용</li>
                 </ul>
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
               border: '1px solid var(--nav-border)',
               marginBottom: '1.5rem'
             }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>하이브리드 데이터 로딩 전략</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>하이브리드 데이터 로딩 전략 (개선됨)</h3>
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>초기 로드와 클라이언트 필터링을 결합한 효율적인 데이터 로딩 전략입니다.</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>초기 로드 전략:</strong></p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>전략 핵심:</strong></p>
+                <p style={{ 
+                  marginBottom: '0.75rem', 
+                  padding: '0.75rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '4px',
+                  fontStyle: 'italic',
+                  border: '1px solid var(--nav-border)'
+                }}>"검색은 시군구 단위로"</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>로딩 프로세스:</strong></p>
+                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li><strong>초기 진입</strong>: 사용자 위치 기반 5km 반경 검색 (빠른 초기 컨텍스트 제공)</li>
+                  <li><strong>지도 이동/검색</strong>: 지도 중심 좌표를 역지오코딩하여 <strong>시도/시군구</strong> 추출 후 해당 지역 전체 데이터 로드</li>
+                  <li><strong>읍면동 필터링</strong>: 로드된 데이터 내에서 <strong>클라이언트 사이드 필터링</strong> 수행</li>
+                </ol>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>장점:</strong></p>
                 <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>사용자 위치가 있으면: 위치 기반 검색 (5km 반경) + 백엔드 카테고리 필터링</li>
-                  <li>사용자 위치가 없으면: 전체 조회 + 백엔드 카테고리 필터링</li>
-                  <li>조회된 데이터를 <code>allServices</code>에 저장 (클라이언트 필터링용)</li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>클라이언트 필터링:</strong></p>
-                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>지역 선택 시: 현재 데이터 범위 내면 프론트엔드 필터링, 범위 밖이면 백엔드 재요청</li>
-                  <li>카테고리 변경 시: 백엔드 재요청 (백엔드에서 카테고리 필터링)</li>
-                  <li>키워드 검색 시: 전체 데이터에서 필터링</li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>성능 최적화:</strong></p>
-                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>초기 로드 시 한 번만 백엔드 요청</li>
-                  <li>지역 필터링은 클라이언트에서 처리 (데이터 범위 내)</li>
-                  <li>불필요한 API 호출 최소화</li>
+                  <li><strong>데이터 일관성</strong>: 시군구 단위로 데이터를 가져오므로 지도 이동 시에도 마커가 유지됨</li>
+                  <li><strong>성능 최적화</strong>: 인덱스가 잘 타는 <code>WHERE sido=? AND sigungu=?</code> 쿼리 사용으로 DB 부하 감소</li>
                 </ul>
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -870,7 +1021,7 @@ if (isInitialLoad) {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card"   style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -889,7 +1040,7 @@ if (isInitialLoad) {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -913,7 +1064,7 @@ if (isInitialLoad) {
           <section id="ux-principles" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>UX 설계 원칙</h2>
             
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -934,7 +1085,7 @@ if (isInitialLoad) {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -956,7 +1107,7 @@ if (isInitialLoad) {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -980,17 +1131,24 @@ if (isInitialLoad) {
               </div>
             </div>
 
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
               border: '1px solid var(--nav-border)'
             }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>원칙 4: 마커 개수 제한 및 동기화</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>원칙 4: 개별 핀 마커 표시 및 마커-리스트 동기화</h3>
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>개별 핀 마커 표시:</strong></p>
                 <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li><strong>마커 개수 제한</strong>: 최대 20개 마커만 표시 (지도 복잡도 감소)</li>
-                  <li><strong>마커-리스트 동기화</strong>: 양방향 스크롤 및 하이라이트로 사용자 경험 향상</li>
+                  <li>클러스터링을 제거하고 모든 장소를 개별 핀(Pin)으로 표시하여 직관성 확보</li>
+                  <li>마커 개수 제한: 최대 20개 마커만 표시 (지도 복잡도 감소)</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>마커-리스트 동기화:</strong></p>
+                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
+                  <li>양방향 스크롤 및 하이라이트로 사용자 경험 향상</li>
+                  <li>마커 클릭 시 리스트에서 해당 항목 스크롤</li>
+                  <li>리스트 클릭 시 지도 이동 및 마커 하이라이트</li>
                 </ul>
               </div>
             </div>
@@ -1000,7 +1158,7 @@ if (isInitialLoad) {
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1010,7 +1168,7 @@ if (isInitialLoad) {
           <MermaidDiagram chart={entityDiagram} />
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1041,7 +1199,7 @@ if (isInitialLoad) {
           </div>
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1066,7 +1224,7 @@ if (isInitialLoad) {
           <section id="services" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Service 주요 기능</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1086,7 +1244,7 @@ if (isInitialLoad) {
           </div>
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1101,7 +1259,7 @@ if (isInitialLoad) {
           </div>
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1122,7 +1280,7 @@ if (isInitialLoad) {
           {/* 보안 및 권한 체계 */}
           <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
-            <div style={{
+            <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
@@ -1145,7 +1303,7 @@ if (isInitialLoad) {
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1167,7 +1325,7 @@ if (isInitialLoad) {
           <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
         
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1189,7 +1347,7 @@ if (isInitialLoad) {
           </div>
         </div>
 
-        <div style={{
+        <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1211,7 +1369,7 @@ if (isInitialLoad) {
           </div>
         </div>
 
-        <div style={{
+        <div className="section-card" style={{ 
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
@@ -1233,7 +1391,7 @@ if (isInitialLoad) {
 
           <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
-        <div style={{
+        <div className="section-card" style={{
           padding: '1rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
