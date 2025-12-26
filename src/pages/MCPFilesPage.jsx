@@ -93,7 +93,7 @@ function MCPFilesPage() {
       
       {docsStructure.map((category, index) => (
         <div
-        className="section-card"
+        className="section-card"  
           key={index}
           style={{
             marginBottom: '2rem',

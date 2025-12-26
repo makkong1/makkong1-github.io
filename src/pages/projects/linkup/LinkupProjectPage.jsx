@@ -150,9 +150,10 @@ function LinkupProjectPage() {
           </section>
 
           {/* 핵심 성과 */}
-          <section id="achievements" className="section-card" style={{ border: '2px solid var(--link-color)', textAlign: 'center' }}>
-            <h2 style={{ marginBottom: '2rem' }}>핵심 성과</h2>
-            <div className="stat-grid">
+          <section id="achievements" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 성과</h2>
+            <div className="section-card" style={{ border: '2px solid var(--link-color)', textAlign: 'center' }}>
+              <div className="stat-grid">
               <div className="stat-item">
                 <div className="stat-number">77%</div>
                 <div className="stat-label">응답 시간 감소</div>
@@ -169,12 +170,14 @@ function LinkupProjectPage() {
                 <div className="stat-sub">좋아요/싫어요 캐싱</div>
               </div>
             </div>
+            </div>
           </section>
 
           {/* 프로젝트 목적 및 배경 */}
-          <section id="purpose" className="section-card">
-            <h2>프로젝트 목적 및 배경</h2>
-            <div className="content-card">
+          <section id="purpose" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>프로젝트 목적 및 배경</h2>
+            <div className="section-card">
+              <div className="content-card">
               <h3>프로젝트 목적</h3>
               <p style={{ fontSize: '1rem' }}>
                 노션 스타일 콘텐츠 작성과 사용자 간 의견 교환을 더 편하게 구현하고자 개발한 커뮤니티 플랫폼입니다. 
@@ -200,72 +203,76 @@ function LinkupProjectPage() {
                 <p>• <strong>실시간성 부족</strong>: 댓글/반응에 대한 즉각적인 피드백 부재</p>
                 <p>• <strong>성능 병목</strong>: 빈번한 좋아요/조회수 업데이트로 인한 DB 부하</p>
               </div>
+              </div>
             </div>
           </section>
 
-          <section id="features" className="section-card">
-            <h2>주요 기능</h2>
-            <div className="content-card">
-              <h3>1️⃣ 일반/소셜 로그인</h3>
-              <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
-                Google, Naver 계정을 통한 소셜 로그인 지원. 일반 회원가입과 소셜 로그인 통합 관리.
-              </p>
-              <div className="about-text-block">
-                <p>• <strong>인증 방식</strong>: Spring Security + OAuth2 Client (+ HttpSession)</p>
-                <p>• <strong>보안 정책</strong>: 로그인 실패 횟수 제한, 세션 고정 방어, CSRF 보호</p>
+          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
+            <div className="section-card">
+              <div className="content-card">
+                <h3>1️⃣ 일반/소셜 로그인</h3>
+                <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+                  Google, Naver 계정을 통한 소셜 로그인 지원. 일반 회원가입과 소셜 로그인 통합 관리.
+                </p>
+                <div className="about-text-block">
+                  <p>• <strong>인증 방식</strong>: Spring Security + OAuth2 Client (+ HttpSession)</p>
+                  <p>• <strong>보안 정책</strong>: 로그인 실패 횟수 제한, 세션 고정 방어, CSRF 보호</p>
+                </div>
               </div>
-            </div>
 
-            <div className="content-card">
-              <h3>2️⃣ 노션 스타일 에디터</h3>
-              <p style={{ fontSize: '1rem' }}>
-                직관적이고 자유로운 콘텐츠 작성 환경 제공. 파일 업로드 및 커스텀 레이아웃 지원.
-              </p>
-            </div>
-
-            <div className="content-card">
-              <h3>3️⃣ 게시판 & Redis 캐싱</h3>
-              <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
-                카테고리 분류, 검색, 페이징 지원. Redis 캐싱을 통해 읽기 성능 극대화.
-              </p>
-              <div className="about-text-block">
-                <p>• <strong>응답 속도</strong>: 608ms → 137ms (77% 감소)</p>
-                <p>• <strong>처리량</strong>: 144.8/sec → 457.7/sec (3배 증가)</p>
+              <div className="content-card">
+                <h3>2️⃣ 노션 스타일 에디터</h3>
+                <p style={{ fontSize: '1rem' }}>
+                  직관적이고 자유로운 콘텐츠 작성 환경 제공. 파일 업로드 및 커스텀 레이아웃 지원.
+                </p>
               </div>
-            </div>
 
-            <div className="content-card">
-              <h3>4️⃣ 비동기 좋아요/싫어요</h3>
-              <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
-                Redis INCR을 활용한 원자적 연산 처리 및 주기적 DB 동기화.
-              </p>
-              <div className="about-text-block">
-                <p>• <strong>DB 동기화</strong>: @Scheduled를 활용한 5분 주기 배치 업데이트</p>
-                <p>• <strong>부하 감소</strong>: 데이터베이스 쓰기 부하 약 80% 감소</p>
+              <div className="content-card">
+                <h3>3️⃣ 게시판 & Redis 캐싱</h3>
+                <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+                  카테고리 분류, 검색, 페이징 지원. Redis 캐싱을 통해 읽기 성능 극대화.
+                </p>
+                <div className="about-text-block">
+                  <p>• <strong>응답 속도</strong>: 608ms → 137ms (77% 감소)</p>
+                  <p>• <strong>처리량</strong>: 144.8/sec → 457.7/sec (3배 증가)</p>
+                </div>
               </div>
-            </div>
 
-            <div className="content-card">
-              <h3>5️⃣ 실시간 알림 (Pub/Sub)</h3>
-              <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
-                SSE(Server-Sent Events)와 Redis Pub/Sub을 조합한 확장 가능한 알림 구조.
-              </p>
-              <div className="about-text-block">
-                <p>• <strong>메시지 전파</strong>: 분산 환경 대응을 위한 Redis Pub/Sub 활용</p>
+              <div className="content-card">
+                <h3>4️⃣ 비동기 좋아요/싫어요</h3>
+                <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+                  Redis INCR을 활용한 원자적 연산 처리 및 주기적 DB 동기화.
+                </p>
+                <div className="about-text-block">
+                  <p>• <strong>DB 동기화</strong>: @Scheduled를 활용한 5분 주기 배치 업데이트</p>
+                  <p>• <strong>부하 감소</strong>: 데이터베이스 쓰기 부하 약 80% 감소</p>
+                </div>
               </div>
-            </div>
 
-            <div className="content-card" style={{ marginBottom: 0 }}>
-              <h3>6️⃣ 관리자 모니터링</h3>
-              <p style={{ fontSize: '1rem' }}>
-                신고 관리 및 Spring Boot Admin/Actuator를 통한 시스템 실시간 모니터링.
-              </p>
+              <div className="content-card">
+                <h3>5️⃣ 실시간 알림 (Pub/Sub)</h3>
+                <p style={{ fontSize: '1rem', marginBottom: '1rem' }}>
+                  SSE(Server-Sent Events)와 Redis Pub/Sub을 조합한 확장 가능한 알림 구조.
+                </p>
+                <div className="about-text-block">
+                  <p>• <strong>메시지 전파</strong>: 분산 환경 대응을 위한 Redis Pub/Sub 활용</p>
+                </div>
+              </div>
+
+              <div className="content-card" style={{ marginBottom: 0 }}>
+                <h3>6️⃣ 관리자 모니터링</h3>
+                <p style={{ fontSize: '1rem' }}>
+                  신고 관리 및 Spring Boot Admin/Actuator를 통한 시스템 실시간 모니터링.
+                </p>
+              </div>
             </div>
           </section>
 
-          <section id="tech-stack" className="section-card">
-            <h2>기술 스택</h2>
-            <div className="feature-points-grid">
+          <section id="tech-stack" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기술 스택</h2>
+            <div className="section-card">
+              <div className="feature-points-grid">
               <div className="content-card" style={{ marginBottom: 0 }}>
                 <h3>Backend</h3>
                 <ul className="about-text-block" style={{ listStyle: 'none', padding: 0 }}>
@@ -297,11 +304,13 @@ function LinkupProjectPage() {
                 </ul>
               </div>
             </div>
+            </div>
           </section>
 
-          <section id="architecture" className="section-card">
-            <h2>시스템 아키텍처</h2>
-            <div className="content-card">
+          <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>시스템 아키텍처</h2>
+            <div className="section-card">
+              <div className="content-card">
               <h3>전체 시스템 아키텍처</h3>
               <MermaidDiagram chart={architectureDiagram} />
             </div>
@@ -312,12 +321,14 @@ function LinkupProjectPage() {
                 <p>• <strong>Service</strong>: 비즈니스 로직 및 캐시 전략</p>
                 <p>• <strong>Repository</strong>: JPA/MyBatis 기반 데이터 접근</p>
               </div>
+              </div>
             </div>
           </section>
 
-          <section id="performance" className="section-card">
-            <h2>성능 최적화</h2>
-            <div className="feature-points-grid">
+          <section id="performance" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화</h2>
+            <div className="section-card">
+              <div className="feature-points-grid">
               <div className="content-card" style={{ marginBottom: 0 }}>
                 <h3>캐싱 전략</h3>
                 <p style={{ fontSize: '0.9rem' }}>게시글, 좋아요/싫어요 데이터에 Redis 캐싱 적용 (응답 시간 77% 감소)</p>
@@ -327,11 +338,13 @@ function LinkupProjectPage() {
                 <p style={{ fontSize: '0.9rem' }}>조회수 증가 및 실시간 알림 시스템에 비동기 아키텍처 적용</p>
               </div>
             </div>
+            </div>
           </section>
 
-          <section id="security" className="section-card">
-            <h2>보안 구현</h2>
-            <div className="feature-points-grid">
+          <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 구현</h2>
+            <div className="section-card">
+              <div className="feature-points-grid">
               <div className="content-card" style={{ marginBottom: 0 }}>
                 <h3>인증 전략</h3>
                 <p style={{ fontSize: '0.9rem' }}>OAuth2 소셜 로그인 통합 및 세션 기반 보안 강화 (BCrypt 활용)</p>
@@ -341,15 +354,18 @@ function LinkupProjectPage() {
                 <p style={{ fontSize: '0.9rem' }}>Spring Security Role 기반 세밀한 접근 제어 및 CSRF 방어</p>
               </div>
             </div>
+            </div>
           </section>
 
-          <section id="links" className="section-card">
-            <h2>관련 링크</h2>
-            <div className="domain-link-grid">
+          <section id="links" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 링크</h2>
+            <div className="section-card">
+              <div className="domain-link-grid">
               <a href="https://github.com/makkong1/LinkUpProject" target="_blank" rel="noopener noreferrer" className="project-card">
                 <h3>GitHub 저장소</h3>
                 <p style={{ fontSize: '0.9rem' }}>전체 소스 코드 및 문서</p>
               </a>
+              </div>
             </div>
           </section>
         </div>

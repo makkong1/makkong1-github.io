@@ -232,9 +232,10 @@ function PetoryProjectPage() {
           </section>
           
           {/* 성과 숫자 카드 - 대표 지표 */}
-          <section id="achievements" className="section-card" style={{ border: '2px solid var(--link-color)', textAlign: 'center' }}>
-            <h2 style={{ marginBottom: '2rem' }}>핵심 성과</h2>
-            <div className="stat-grid">
+          <section id="achievements" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 성과</h2>
+            <div className="section-card" style={{ border: '2px solid var(--link-color)', textAlign: 'center' }}>
+              <div className="stat-grid">
               <div className="stat-item">
                 <div className="stat-number">80.95%</div>
                 <div className="stat-label">쿼리 수 감소</div>
@@ -251,15 +252,17 @@ function PetoryProjectPage() {
                 <div className="stat-sub">0.58MB → 0.13MB</div>
               </div>
             </div>
-            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '1rem' }}>
-              📌 상세 근거는 아래 "문제 해결 사례" 섹션에서 확인 가능
-            </p>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '1rem' }}>
+                📌 상세 근거는 아래 "문제 해결 사례" 섹션에서 확인 가능
+              </p>
+            </div>
           </section>
 
           {/* 왜 이걸 했는가 */}
-          <section id="why" className="section-card">
-            <h2>왜 이걸 했는가</h2>
-            <div className="about-text-block">
+          <section id="why" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>왜 이걸 했는가</h2>
+            <div className="section-card">
+              <div className="about-text-block">
               <p>
                 실서비스 환경에서는 다수 사용자가 동시에 접근하는 상황에서, 인증 과정 중 연관 엔티티 조회로 인해 
                 <strong> N+1 문제와 불필요한 DB 접근이 발생할 수 있다고 가정</strong>했습니다.
@@ -272,13 +275,15 @@ function PetoryProjectPage() {
                 이 프로젝트는 <strong>포트폴리오 목적상 코드 품질과 아키텍처 설계에 집중</strong>했으며, 
                 실제 운영 배포는 프로젝트 범위를 벗어나지만, 필요 시 배포 가능한 구조로 설계되었습니다.
               </p>
+              </div>
             </div>
           </section>
 
           {/* 아키텍처 섹션 */}
-          <section id="architecture" className="section-card">
-            <h2>아키텍처</h2>
-            <div className="content-card">
+          <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
+            <div className="section-card">
+              <div className="content-card">
               <h3>설계 근거</h3>
               <div className="feature-points-grid">
                 <div>
@@ -300,43 +305,45 @@ function PetoryProjectPage() {
                   </p>
                 </div>
               </div>
-            </div>
+              </div>
 
         {/* 전체 시스템 아키텍처 다이어그램 */}
-            <div className="content-card">
-              <h3>전체 시스템 아키텍처</h3>
-          <MermaidDiagram chart={architectureDiagram} />
-        </div>
+              <div className="content-card">
+                <h3>전체 시스템 아키텍처</h3>
+            <MermaidDiagram chart={architectureDiagram} />
+          </div>
 
         {/* 레이어드 아키텍처 설명 */}
-            <div className="content-card">
-              <h3>레이어드 아키텍처</h3>
-              <div className="about-text-block">
-                <p>• <strong>Controller Layer</strong>: HTTP 요청/응답 처리, 요청 검증</p>
-                <p>• <strong>Service Layer</strong>: 비즈니스 로직 구현, 트랜잭션 관리</p>
-                <p>• <strong>Repository Layer</strong>: 데이터 액세스 추상화, JPA 쿼리</p>
-                <p>• <strong>Entity Layer</strong>: 도메인 모델 정의, 연관관계 관리</p>
+              <div className="content-card">
+                <h3>레이어드 아키텍처</h3>
+                <div className="about-text-block">
+                  <p>• <strong>Controller Layer</strong>: HTTP 요청/응답 처리, 요청 검증</p>
+                  <p>• <strong>Service Layer</strong>: 비즈니스 로직 구현, 트랜잭션 관리</p>
+                  <p>• <strong>Repository Layer</strong>: 데이터 액세스 추상화, JPA 쿼리</p>
+                  <p>• <strong>Entity Layer</strong>: 도메인 모델 정의, 연관관계 관리</p>
+                </div>
               </div>
-            </div>
 
-            <div className="content-card">
-              <h3>도메인 주도 설계 (DDD)</h3>
-              <div className="about-text-block">
-                <p>• <strong>도메인별 패키지 구조</strong>: 각 도메인은 독립적인 패키지로 구성</p>
-                <p>• <strong>명확한 경계</strong>: 도메인 간 의존성 최소화</p>
-                <p>• <strong>도메인 모델</strong>: 엔티티와 비즈니스 로직의 응집도 향상</p>
+              <div className="content-card">
+                <h3>도메인 주도 설계 (DDD)</h3>
+                <div className="about-text-block">
+                  <p>• <strong>도메인별 패키지 구조</strong>: 각 도메인은 독립적인 패키지로 구성</p>
+                  <p>• <strong>명확한 경계</strong>: 도메인 간 의존성 최소화</p>
+                  <p>• <strong>도메인 모델</strong>: 엔티티와 비즈니스 로직의 응집도 향상</p>
+                </div>
               </div>
-            </div>
 
         {/* 도메인 간 연관관계 다이어그램 */}
-            <div className="content-card" style={{ marginBottom: 0 }}>
-              <h3>도메인 간 연관관계</h3>
-          <MermaidDiagram chart={domainRelationsDiagram} />
-        </div>
-      </section>
+              <div className="content-card" style={{ marginBottom: 0 }}>
+                <h3>도메인 간 연관관계</h3>
+            <MermaidDiagram chart={domainRelationsDiagram} />
+          </div>
+            </div>
+          </section>
 
-          <section id="problem-solving" className="section-card">
-            <h2>문제 해결 사례</h2>
+          <section id="problem-solving" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 해결 사례</h2>
+            <div className="section-card">
             
             {/* 케이스 1: 로그인 쿼리 최적화 */}
             <div className="content-card">
@@ -404,11 +411,13 @@ function PetoryProjectPage() {
                 → 상세 보기 (문서)
               </Link>
             </div>
+            </div>
           </section>
 
-          <section id="features" className="section-card">
-            <h2>핵심 기능</h2>
-            <div className="domain-link-grid">
+          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 기능</h2>
+            <div className="section-card">
+              <div className="domain-link-grid">
               {domains.map((domain) => (
                 <Link key={domain.name} to={domain.link} className="project-card">
                   <h3>{domain.name}</h3>
@@ -420,9 +429,11 @@ function PetoryProjectPage() {
                   </div>
                 </Link>
               ))}
+              </div>
             </div>
           </section>
 
+          <section style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <div className="section-card">
               <h2 style={{ textAlign: 'center' }}>주요 기능 요약</h2>
               <div className="icon-grid">
@@ -458,10 +469,12 @@ function PetoryProjectPage() {
                 </div>
               </div>
             </div>
+          </section>
 
-          <section id="tech-stack" className="section-card">
-            <h2>기술 스택</h2>
-            <div className="feature-points-grid">
+          <section id="tech-stack" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기술 스택</h2>
+            <div className="section-card">
+              <div className="feature-points-grid">
               <div className="content-card" style={{ marginBottom: 0 }}>
                 <h3>Backend</h3>
                 <ul className="about-text-block" style={{ listStyle: 'none', padding: 0 }}>
@@ -499,13 +512,15 @@ function PetoryProjectPage() {
                 </ul>
               </div>
             </div>
+            </div>
           </section>
 
       {/* 도메인 빠른 링크 */}
-        <section id="domains" className="section-card">
-          <h2>도메인별 상세 문서</h2>
-          <h3>핵심 도메인</h3>
-          <div className="domain-link-grid">
+        <section id="domains" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+          <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인별 상세 문서</h2>
+          <div className="section-card">
+            <h3>핵심 도메인</h3>
+            <div className="domain-link-grid">
             <Link to="/domains/user" className="project-card">
               <strong>User</strong>
               <p style={{ fontSize: '0.9rem', marginTop: '0.9rem' }}>사용자, 반려동물, 소셜 로그인, 제재 관리</p>
@@ -534,11 +549,13 @@ function PetoryProjectPage() {
               <strong>Chat</strong>
               <p style={{ fontSize: '0.9rem', marginTop: '0.9rem' }}>실시간 채팅 시스템</p>
             </Link>
+            </div>
           </div>
         </section>
 
-        <div className="section-card">
-          <h3>지원 도메인</h3>
+        <section style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+          <div className="section-card">
+            <h3>지원 도메인</h3>
           <div className="feature-points-grid">
             <div className="content-card" style={{ marginBottom: 0 }}>
               <strong>Notification</strong>
@@ -561,10 +578,12 @@ function PetoryProjectPage() {
               <p style={{ fontSize: '0.9rem', marginTop: '0.5rem' }}>일별 통계 수집</p>
             </div>
           </div>
-        </div>
-        <section id="links" className="section-card">
-            <h2>관련 링크</h2>
-            <div className="domain-link-grid">
+          </div>
+        </section>
+        <section id="links" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 링크</h2>
+            <div className="section-card">
+              <div className="domain-link-grid">
               <a href="https://github.com/makkong1/makkong1-github.io" target="_blank" rel="noopener noreferrer" className="project-card">
                 <h3>GitHub 저장소</h3>
                 <p style={{ fontSize: '0.9rem' }}>전체 소스 코드 및 문서</p>
@@ -577,6 +596,7 @@ function PetoryProjectPage() {
                 <h3>라이브 데모</h3>
                 <p style={{ fontSize: '0.9rem' }}>인터랙티브 데모 체험</p>
               </Link>
+              </div>
             </div>
           </section>
         </div>

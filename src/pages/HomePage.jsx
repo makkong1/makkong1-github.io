@@ -9,9 +9,11 @@ function HomePage() {
         <p>저는 <strong>선택한 방향을 끝까지 책임지는 백엔드 개발자</strong>입니다.</p>
       </div>
 
-    <section id="about" className="section-card">
-      <h2>About Me</h2>
-      <div className="about-text-block">
+    {/* About Me 섹션 */}
+    <section id="about" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+      <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>About Me</h2>
+      <div className="section-card">
+        <div className="about-text-block">
         <p>
           저는 결과보다 선택에 대한 책임을 끝까지 지는 태도를 중요하게 생각하는 백엔드 개발자입니다.
           한 번 결정한 방향이라면, 중간에 흔들리더라도 끝까지 검증하고 완주하는 방식을 선호합니다.
@@ -31,13 +33,14 @@ function HomePage() {
           빠른 결과보다, 맡은 역할을 끝까지 책임지는 개발자로서
           팀과 함께 완성도를 높여가는 방향으로 성장하고자 합니다.
         </p>
+        </div>
       </div>
     </section>
 
-      {/* 프로젝트 포트폴리오 섹션 */}
-      <section id="portfolio" className="section-card">
-        <h2>Projects</h2>
-        <div className="portfolio-grid">
+      {/* Projects 섹션 */}
+      <section id="portfolio" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Projects</h2>
+          <div className="portfolio-grid">
           <Link
             to="/portfolio/petory"
             className="project-card"
@@ -71,13 +74,14 @@ function HomePage() {
               <span className="tech-badge">Redis</span>
             </div>
           </Link>
-        </div>
+          </div>
       </section>
-      {/* 교육 섹션 */}
-      <section id="education" className="section-card">
-        <h2>Education</h2>
 
-        <p className="contact-info">
+      {/* Education 섹션 */}
+      <section id="education" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Education</h2>
+        <div className="section-card">
+          <p className="contact-info">
           <strong>인덕대학교</strong><br />
           건설안전공학과<br />
           2017.02 - 2022.02(졸업)
@@ -87,19 +91,21 @@ function HomePage() {
           <strong>KH 정보교육원</strong><br />
           Java 기반 공공데이터융합 개발자 양성 프로그램<br />
           2024.02 - 2024.08
-        </p>
-
+          </p>
+        </div>
       </section>
 
-      {/* 연락처 섹션 */}
-      <section id="contact" className="section-card">
-        <h2>Contact</h2>
-        <p className="contact-info">
+      {/* Contact 섹션 */}
+      <section id="contact" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+        <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Contact</h2>
+        <div className="section-card">
+          <p className="contact-info">
           Email: <a href="mailto:wowong123@naver.com">wowong123@naver.com</a><br />
           GitHub: <a href="https://github.com/makkong1" target="_blank" rel="noopener noreferrer" className="text-link">
             Makkong1
           </a>
-        </p>
+          </p>
+        </div>
       </section>
     </div>
     
