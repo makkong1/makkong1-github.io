@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 
 function HomePage() {
   return (
-    <div className="home-container">
+    <div className="layout-main">
       {/* 페이지 헤더 */}
       <div className="page-header">
         <h1>내사진</h1>
