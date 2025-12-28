@@ -157,22 +157,7 @@ function MissingPetDomain() {
             </div>
           </section>
 
-          {/* 7. 얻은 교훈 / 설계 인사이트 */}
-          <section id="insights" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>얻은 교훈 / 설계 인사이트</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontStyle: 'italic' }}>
-                아직 구체적인 성능 최적화 작업을 진행하지 않았습니다. 향후 작업 예정입니다.
-              </p>
-            </div>
-          </section>
-
-          {/* 8. Entity 구조 */}
+          {/* 7. Entity 구조 */}
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
             
@@ -357,7 +342,7 @@ function MissingPetDomain() {
         </div>
       </section>
 
-          {/* 10. 보안 및 권한 체계 */}
+          {/* 9. 보안 및 권한 체계 */}
           <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
             <div className="section-card" style={{
@@ -378,7 +363,7 @@ function MissingPetDomain() {
             </div>
           </section>
 
-          {/* 11. 다른 도메인과의 연관관계 */}
+          {/* 10. 다른 도메인과의 연관관계 */}
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
         

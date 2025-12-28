@@ -1,0 +1,401 @@
+// Petory Database Schema - DBML Format
+// ERD 생성용 스키마 정의
+
+Table Users {
+  idx bigint [pk, increment]
+  id varchar(255) [not null, unique]
+  username varchar(255) [not null, unique]
+  email varchar(255) [not null, unique]
+  phone varchar(20)
+  password varchar(255) [not null]
+  role enum('USER', 'SERVICE_PROVIDER', 'ADMIN', 'MASTER') [default: 'USER']
+  location varchar(255)
+  pet_info longtext
+  last_login_at datetime
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+  refresh_token varchar(255)
+  refresh_expiration datetime
+  status varchar(20) [not null, default: 'ACTIVE']
+  warning_count int [not null, default: 0]
+  suspended_until datetime
+
+  Indexes {
+    id [unique]
+    username [unique]
+    email [unique]
+  }
+}
+
+Table SocialUser {
+  idx bigint [pk, increment]
+  users_idx bigint [not null, ref: > Users.idx]
+  provider enum('GOOGLE', 'KAKAO', 'GITHUB') [not null]
+  provider_id varchar(255) [not null]
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+Table user_sanctions {
+  idx bigint [pk, increment]
+  user_idx bigint [not null, ref: > Users.idx]
+  sanction_type varchar(20) [not null]
+  reason varchar(500) [not null]
+  duration_days int
+  starts_at datetime [not null]
+  ends_at datetime
+  admin_idx bigint [ref: > Users.idx]
+  report_idx bigint
+  created_at datetime [not null]
+
+  Indexes {
+    user_idx
+    ends_at
+  }
+}
+
+Table board {
+  idx bigint [pk, increment]
+  user_idx bigint [not null, ref: > Users.idx]
+  title varchar(255)
+  content longtext
+  status enum('ACTIVE', 'BLINDED', 'DELETED') [not null, default: 'ACTIVE']
+  category varchar(255)
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  view_count int [default: 0]
+  like_count int [default: 0]
+  comment_count int [default: 0]
+  last_reaction_at datetime
+  is_deleted tinyint(1) [default: 0]
+  deleted_at datetime
+
+  Indexes {
+    user_idx
+    title
+    status
+    category
+    created_at
+    is_deleted
+  }
+}
+
+Table board_popularity_snapshot {
+  snapshot_id bigint [pk, increment]
+  board_id bigint [not null, ref: > board.idx]
+  period_type enum('MONTHLY', 'WEEKLY') [not null]
+  period_start_date date [not null]
+  period_end_date date [not null]
+  view_count int [not null]
+  like_count int [not null]
+  comment_count int [not null]
+  popularity_score int [not null]
+  ranking int [not null]
+  created_at datetime(6)
+
+  Indexes {
+    board_id
+    period_type
+  }
+}
+
+Table board_reaction {
+  idx bigint [pk, increment]
+  board_idx bigint [not null, ref: > board.idx]
+  user_idx bigint [not null, ref: > Users.idx]
+  reaction_type enum('DISLIKE', 'LIKE') [not null]
+  created_at datetime(6)
+
+  Indexes {
+    board_idx
+    user_idx
+  }
+}
+
+Table board_view_log {
+  id bigint [pk, increment]
+  board_id bigint [not null, ref: > board.idx]
+  user_id bigint [not null, ref: > Users.idx]
+  viewed_at datetime(6) [not null]
+
+  Indexes {
+    board_id
+    user_id
+  }
+}
+
+Table comment {
+  idx bigint [pk, increment]
+  board_idx bigint [not null, ref: > board.idx]
+  user_idx bigint [not null, ref: > Users.idx]
+  content longtext
+  status enum('ACTIVE', 'BLINDED', 'DELETED') [not null, default: 'ACTIVE']
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  is_deleted tinyint(1) [default: 0]
+  deleted_at datetime
+
+  Indexes {
+    board_idx
+    user_idx
+    status
+  }
+}
+
+Table comment_reaction {
+  idx bigint [pk, increment]
+  comment_idx bigint [not null, ref: > comment.idx]
+  user_idx bigint [not null, ref: > Users.idx]
+  reaction_type enum('DISLIKE', 'LIKE') [not null]
+  created_at datetime(6)
+
+  Indexes {
+    comment_idx
+    user_idx
+  }
+}
+
+Table careapplication {
+  idx bigint [pk, increment]
+  care_request_idx bigint [not null, ref: > carerequest.idx]
+  provider_idx bigint [not null, ref: > Users.idx]
+  status enum('PENDING', 'ACCEPTED', 'REJECTED') [default: 'PENDING']
+  message longtext
+
+  Indexes {
+    care_request_idx
+    provider_idx
+  }
+}
+
+Table carerequest {
+  idx bigint [pk, increment]
+  user_idx bigint [not null, ref: > Users.idx]
+  title varchar(255)
+  description longtext
+  date datetime
+  status enum('OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED') [default: 'OPEN']
+  created_at datetime(6)
+  updated_at datetime(6)
+  is_deleted tinyint(1) [default: 0]
+  deleted_at datetime
+
+  Indexes {
+    user_idx
+  }
+}
+
+Table carerequest_comment {
+  idx bigint [pk, increment]
+  care_request_idx bigint [not null, ref: > carerequest.idx]
+  user_idx bigint [not null, ref: > Users.idx]
+  content longtext
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  is_deleted tinyint(1) [default: 0]
+  deleted_at datetime
+
+  Indexes {
+    care_request_idx
+    user_idx
+  }
+}
+
+Table carereview {
+  idx bigint [pk, increment]
+  care_application_idx bigint [not null, ref: > careapplication.idx]
+  reviewer_idx bigint [not null, ref: > Users.idx]
+  reviewee_idx bigint [not null, ref: > Users.idx]
+  rating int [not null]
+  comment longtext
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    care_application_idx
+    reviewer_idx
+    reviewee_idx
+  }
+}
+
+Table dailystatistics {
+  id bigint [pk, increment]
+  stat_date date [not null, unique]
+  new_users int [default: 0]
+  new_posts int [default: 0]
+  new_care_requests int [default: 0]
+  completed_cares int [default: 0]
+  total_revenue decimal(15,2) [default: 0.00]
+  active_users int [default: 0]
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    stat_date [unique]
+  }
+}
+
+Table file {
+  idx bigint [pk, increment]
+  target_type enum('BOARD', 'COMMENT', 'CARE_COMMENT', 'MISSING_PET') [not null]
+  target_idx bigint [not null]
+  file_path varchar(255) [not null]
+  file_type varchar(50)
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    (target_type, target_idx)
+  }
+}
+
+Table locationservice {
+  idx bigint [pk, increment]
+  name varchar(255)
+  category varchar(255)
+  address varchar(255)
+  latitude double
+  longitude double
+  rating double
+  description varchar(255)
+  phone varchar(255)
+  opening_time time
+  closing_time time
+  image_url varchar(255)
+  website varchar(255)
+  detail_address varchar(255)
+  pet_friendly tinyint(1) [default: 0]
+  pet_policy varchar(255)
+  coordinates point [not null]
+
+  Indexes {
+    name
+    category
+    address
+    latitude
+    rating
+    coordinates
+  }
+}
+
+Table locationservicereview {
+  idx bigint [pk, increment]
+  service_idx bigint [not null, ref: > locationservice.idx]
+  user_idx bigint [not null, ref: > Users.idx]
+  rating int [not null]
+  comment longtext
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    service_idx
+    user_idx
+  }
+}
+
+Table meetup {
+  idx bigint [pk, increment]
+  title varchar(200) [not null]
+  description longtext
+  location varchar(255)
+  latitude double
+  longitude double
+  date datetime [not null]
+  organizer_idx bigint [not null, ref: > Users.idx]
+  max_participants int [default: 10]
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+  status varchar(20) [default: 'RECRUITING']
+  current_participants int [default: 0]
+
+  Indexes {
+    organizer_idx
+    date
+    status
+    latitude
+  }
+}
+
+Table meetupparticipants {
+  meetup_idx bigint [pk, ref: > meetup.idx]
+  user_idx bigint [pk, ref: > Users.idx]
+  joined_at datetime [default: `CURRENT_TIMESTAMP`]
+}
+
+Table missing_pet_board {
+  idx bigint [pk, increment]
+  user_idx bigint [not null, ref: > Users.idx]
+  title varchar(100) [not null]
+  content longtext
+  pet_name varchar(50)
+  species varchar(50)
+  breed varchar(50)
+  gender enum('F', 'M')
+  age varchar(30)
+  color varchar(50)
+  lost_date date
+  lost_location varchar(255)
+  latitude decimal(15,12)
+  longitude decimal(15,12)
+  status enum('FOUND', 'MISSING', 'RESOLVED')
+  created_at datetime(6)
+  updated_at datetime(6)
+  is_deleted tinyint(1) [default: 0]
+  deleted_at datetime
+
+  Indexes {
+    user_idx
+  }
+}
+
+Table missing_pet_comment {
+  idx bigint [pk, increment]
+  board_idx bigint [not null, ref: > missing_pet_board.idx]
+  user_idx bigint [not null, ref: > Users.idx]
+  content longtext
+  address varchar(255)
+  latitude double
+  longitude double
+  created_at datetime(6)
+  is_deleted tinyint(1) [default: 0]
+  deleted_at datetime
+
+  Indexes {
+    board_idx
+    user_idx
+  }
+}
+
+Table notifications {
+  idx bigint [pk, increment]
+  user_idx bigint [not null, ref: > Users.idx]
+  type varchar(50) [not null]
+  title varchar(255) [not null]
+  content varchar(500)
+  related_id bigint
+  related_type varchar(50)
+  is_read tinyint(1) [not null, default: 0]
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    user_idx
+  }
+}
+
+Table report {
+  idx bigint [pk, increment]
+  target_type enum('BOARD', 'COMMENT', 'MISSING_PET', 'PET_CARE_PROVIDER') [not null]
+  target_idx bigint [not null]
+  reporter_idx bigint [not null, ref: > Users.idx]
+  reason text [not null]
+  status enum('PENDING', 'RESOLVED', 'REJECTED') [default: 'PENDING']
+  handled_by bigint [ref: > Users.idx]
+  handled_at datetime
+  action_taken enum('NONE', 'DELETE_CONTENT', 'SUSPEND_USER', 'WARN_USER', 'OTHER') [default: 'NONE']
+  admin_note text
+  created_at datetime [default: `CURRENT_TIMESTAMP`]
+  updated_at datetime [default: `CURRENT_TIMESTAMP`]
+
+  Indexes {
+    target_type
+    reporter_idx
+    handled_by
+  }
+}
+

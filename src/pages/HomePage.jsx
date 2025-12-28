@@ -6,7 +6,7 @@ function HomePage() {
       {/* 페이지 헤더 */}
       <div className="page-header">
         <h1>내사진</h1>
-        <p>저는 <strong>선택한 방향을 끝까지 책임지는 백엔드 개발자</strong>입니다.</p>
+        <p>안녕하세요! 저는 <strong>선택한 방향을 끝까지 책임지는 백엔드 개발자</strong> 박영범입니다.</p>
       </div>
 
     {/* About Me 섹션 */}
@@ -96,10 +96,10 @@ function HomePage() {
       </section>
 
       {/* Contact 섹션 */}
-      <section id="contact" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+      <section id="contact" style={{ marginBottom: '1rem', scrollMarginTop: '1rem' }}>
         <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Contact</h2>
         <div className="section-card">
-          <p className="contact-info">
+          <p className="contact-info" style={{ marginBottom: '0' }}>
           Email: <a href="mailto:wowong123@naver.com">wowong123@naver.com</a><br />
           GitHub: <a href="https://github.com/makkong1" target="_blank" rel="noopener noreferrer" className="text-link">
             Makkong1
