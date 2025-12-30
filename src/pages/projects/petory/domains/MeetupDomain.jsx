@@ -139,6 +139,26 @@ function MeetupDomain() {
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
                 사용자가 모임을 생성하고 다른 사용자들이 참여할 수 있습니다.
               </p>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem',
+                border: '1px solid var(--nav-border)'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                  fontSize: '0.9rem'
+                }}>
+                  <li>• 동시성 제어: <strong style={{ color: 'var(--text-color)' }}>Lost Update 해결</strong> (원자적 UPDATE 쿼리)</li>
+                  <li>• 최대 인원 초과 방지: <strong style={{ color: 'var(--text-color)' }}>Race Condition 완전 해결</strong></li>
+                  <li>• 데이터 일치성: <strong style={{ color: 'var(--text-color)' }}>불일치 → 일치</strong> (DB 제약조건 추가)</li>
+                </ul>
+              </div>
             </div>
           </section>
 

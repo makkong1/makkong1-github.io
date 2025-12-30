@@ -158,6 +158,26 @@ function UserDomain() {
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
                 <strong style={{ color: 'var(--text-color)' }}>실서비스 환경에서 가장 빈번하게 호출되는 도메인 중 하나</strong>입니다.
               </p>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem',
+                border: '1px solid var(--nav-border)'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                  fontSize: '0.9rem'
+                }}>
+                  <li>• 로그인 쿼리: <strong style={{ color: 'var(--text-color)' }}>21개 → 4개</strong> (80.95% 감소)</li>
+                  <li>• 실행 시간: <strong style={{ color: 'var(--text-color)' }}>305ms → 55ms</strong> (81.97% 감소)</li>
+                  <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>0.58MB → 0.13MB</strong> (77.24% 감소)</li>
+                </ul>
+              </div>
             </div>
           </section>
 

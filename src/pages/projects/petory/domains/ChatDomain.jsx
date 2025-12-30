@@ -132,6 +132,26 @@ function ChatDomain() {
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)' }}>
                 WebSocket(STOMP)을 사용하여 실시간 메시지 전송, 채팅방 관리, 읽지 않은 메시지 수 추적 등을 담당합니다.
               </p>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginTop: '1rem',
+                border: '1px solid var(--nav-border)'
+              }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과</h3>
+                <ul style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                  fontSize: '0.9rem'
+                }}>
+                  <li>• 메시지 읽음 처리: <strong style={{ color: 'var(--text-color)' }}>전체 메시지 조회 제거</strong> (불필요한 로직 제거)</li>
+                  <li>• 쿼리 수: <strong style={{ color: 'var(--text-color)' }}>7000건 기준 7002개 → 2-3개</strong> (99.9% 감소)</li>
+                  <li>• 메모리 사용: <strong style={{ color: 'var(--text-color)' }}>전체 메시지 로드 → 최소화</strong></li>
+                </ul>
+              </div>
             </div>
           </section>
 

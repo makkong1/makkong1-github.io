@@ -237,19 +237,19 @@ function PetoryProjectPage() {
             <div className="section-card" style={{ border: '2px solid var(--link-color)', textAlign: 'center' }}>
               <div className="stat-grid">
               <div className="stat-item">
-                <div className="stat-number">80.95%</div>
+                <div className="stat-number">99.8%</div>
                 <div className="stat-label">쿼리 수 감소</div>
-                <div className="stat-sub">21개 → 4개</div>
+                <div className="stat-sub">2400개 → 4-5개</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">81.97%</div>
+                <div className="stat-number">94%</div>
                 <div className="stat-label">실행 시간 개선</div>
-                <div className="stat-sub">305ms → 55ms</div>
+                <div className="stat-sub">1084ms → 66ms</div>
               </div>
               <div className="stat-item">
-                <div className="stat-number">77.24%</div>
+                <div className="stat-number">71%</div>
                 <div className="stat-label">메모리 절감</div>
-                <div className="stat-sub">0.58MB → 0.13MB</div>
+                <div className="stat-sub">21MB → 6MB</div>
               </div>
             </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '1rem' }}>
@@ -345,9 +345,37 @@ function PetoryProjectPage() {
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 해결 사례</h2>
             <div className="section-card">
             
-            {/* 케이스 1: 로그인 쿼리 최적화 */}
+            {/* 케이스 1: 펫케어 요청 목록 조회 최적화 */}
             <div className="content-card">
-              <h3>케이스 1: 로그인 쿼리 최적화</h3>
+              <h3>케이스 1: 펫케어 요청 목록 조회 최적화</h3>
+              <div className="stat-grid" style={{ gap: '1rem' }}>
+                <div className="stat-item">
+                  <div className="stat-sub">쿼리 수</div>
+                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>2400개 → 4-5개</div>
+                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>99.8% 감소</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-sub">실행 시간</div>
+                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>1084ms → 66ms</div>
+                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>94% 개선</div>
+                </div>
+                <div className="stat-item">
+                  <div className="stat-sub">메모리</div>
+                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>21MB → 6MB</div>
+                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>71% 절감</div>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
+                펫케어 요청 목록 조회 시 발생한 N+1 문제를 Fetch Join과 배치 조회로 해결 (1004개 데이터 기준)
+              </p>
+              <Link to="/domains/care" className="text-link" style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                → 상세 보기 (Care 도메인)
+              </Link>
+            </div>
+
+            {/* 케이스 2: 로그인 쿼리 최적화 */}
+            <div className="content-card">
+              <h3>케이스 2: 로그인 쿼리 최적화</h3>
               <div className="stat-grid" style={{ gap: '1rem' }}>
                 <div className="stat-item">
                   <div className="stat-sub">쿼리 수</div>
@@ -373,9 +401,9 @@ function PetoryProjectPage() {
               </Link>
             </div>
 
-            {/* 케이스 2: 게시판 N+1 해결 */}
-            <div className="content-card">
-              <h3>케이스 2: 게시판 N+1 문제 해결</h3>
+            {/* 케이스 3: 게시판 N+1 해결 */}
+            <div className="content-card" style={{ marginBottom: 0 }}>
+              <h3>케이스 3: 게시판 N+1 문제 해결</h3>
               <div className="stat-grid" style={{ gap: '1rem' }}>
                 <div className="stat-item">
                   <div className="stat-sub">쿼리 수</div>
@@ -398,17 +426,6 @@ function PetoryProjectPage() {
               </p>
               <Link to="/domains/board" className="text-link" style={{ fontSize: '0.9rem', fontWeight: '500' }}>
                 → 상세 보기 (Board 도메인)
-              </Link>
-            </div>
-
-            {/* 케이스 3: 캐싱 전략 */}
-            <div className="content-card" style={{ marginBottom: 0 }}>
-              <h3>케이스 3: 캐싱 전략</h3>
-              <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-                Redis 캐싱과 스냅샷 패턴을 활용하여 조회 성능 향상 및 실시간 집계 부하 감소
-              </p>
-              <Link to="/docs" className="text-link" style={{ fontSize: '0.9rem', fontWeight: '500' }}>
-                → 상세 보기 (문서)
               </Link>
             </div>
             </div>
