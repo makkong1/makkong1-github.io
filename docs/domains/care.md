@@ -188,6 +188,8 @@ domain/care/
 ### 3.2 엔티티 구조
 
 #### CareRequest (펫케어 요청)
+**역할**: 펫케어 요청을 나타내는 핵심 엔티티입니다. 반려동물 돌봄이 필요한 사용자가 서비스 제공자를 모집하기 위해 생성하는 게시물입니다. 요청자는 제목, 설명, 날짜, 관련 펫 정보를 포함하여 요청을 생성하며, 상태는 OPEN → IN_PROGRESS → COMPLETED로 전이됩니다. 하나의 요청에는 여러 지원(CareApplication)과 댓글(CareRequestComment)이 연결될 수 있습니다.
+
 ```java
 @Entity
 @Table(name = "carerequest")
@@ -214,6 +216,8 @@ public class CareRequest extends BaseTimeEntity {
 ```
 
 #### CareApplication (펫케어 지원)
+**역할**: 펫케어 지원을 나타내는 엔티티입니다. 서비스 제공자(SERVICE_PROVIDER)가 특정 펫케어 요청에 지원할 때 생성됩니다. 상태는 PENDING → ACCEPTED 또는 REJECTED로 변경되며, ACCEPTED 상태가 되면 실제 서비스가 시작됩니다. 채팅을 통한 거래 확정 시 양쪽 모두 확정하면 자동으로 ACCEPTED 상태가 되고, 요청 상태가 IN_PROGRESS로 변경됩니다. 하나의 요청에는 여러 지원이 가능하지만, 일반적으로 1명만 ACCEPTED 상태가 됩니다.
+
 ```java
 @Entity
 @Table(name = "careapplication")
@@ -231,6 +235,8 @@ public class CareApplication extends BaseTimeEntity {
 ```
 
 #### CareReview (펫케어 리뷰)
+**역할**: 펫케어 리뷰를 나타내는 엔티티입니다. 펫케어 서비스가 완료된 후, 요청자(reviewer)가 서비스 제공자(reviewee)에게 작성하는 리뷰입니다. 하나의 CareApplication당 1개의 리뷰만 작성 가능하며, ACCEPTED 상태의 CareApplication에 대해서만 리뷰를 작성할 수 있습니다. 평점(1-5)과 리뷰 내용을 포함하며, 제공자의 평균 평점 계산에 사용됩니다.
+
 ```java
 @Entity
 @Table(name = "carereview")
@@ -248,6 +254,8 @@ public class CareReview extends BaseTimeEntity {
 ```
 
 #### CareRequestComment (펫케어 요청 댓글)
+**역할**: 펫케어 요청 댓글을 나타내는 엔티티입니다. SERVICE_PROVIDER 역할의 사용자가 특정 펫케어 요청에 대해 질문이나 답변을 작성할 때 사용됩니다. 요청자와 서비스 제공자 간의 소통을 위한 기능으로, 댓글 작성 시 요청자에게 알림이 자동으로 발송됩니다. 파일 첨부가 가능하며, Soft Delete 방식으로 삭제됩니다.
+
 ```java
 @Entity
 @Table(name = "carerequest_comment")
@@ -311,16 +319,50 @@ erDiagram
 ### 5.1 DB 최적화
 
 #### 인덱스 전략
+
+**carerequest 테이블**:
 ```sql
--- 상태별 조회
-CREATE INDEX idx_care_request_status ON carerequest(status, is_deleted, date DESC);
+-- 외래키 (pet_idx)
+CREATE INDEX fk_carerequest_pet ON carerequest(pet_idx);
 
 -- 사용자별 조회
-CREATE INDEX idx_care_request_user ON carerequest(user_idx, is_deleted, created_at DESC);
-
--- 스케줄러 쿼리 최적화
-CREATE INDEX idx_care_request_date_status ON carerequest(date, status);
+CREATE INDEX user_idx ON carerequest(user_idx);
 ```
+
+**careapplication 테이블**:
+```sql
+-- 펫케어 요청별 지원 조회
+CREATE INDEX care_request_idx ON careapplication(care_request_idx);
+
+-- 제공자별 지원 조회
+CREATE INDEX provider_idx ON careapplication(provider_idx);
+```
+
+**carerequest_comment 테이블**:
+```sql
+-- 펫케어 요청별 댓글 조회
+CREATE INDEX fk_care_request_comment_request ON carerequest_comment(care_request_idx);
+
+-- 사용자별 댓글 조회
+CREATE INDEX fk_care_request_comment_user ON carerequest_comment(user_idx);
+```
+
+**carereview 테이블**:
+```sql
+-- 펫케어 지원별 리뷰 조회
+CREATE INDEX care_application_idx ON carereview(care_application_idx);
+
+-- 리뷰 대상별 리뷰 조회
+CREATE INDEX reviewee_idx ON carereview(reviewee_idx);
+
+-- 리뷰 작성자별 리뷰 조회
+CREATE INDEX reviewer_idx ON carereview(reviewer_idx);
+```
+
+**선정 이유**:
+- WHERE 절에서 자주 사용되는 조건
+- JOIN에 사용되는 외래키 (user_idx, care_request_idx, provider_idx 등)
+- 사용자별, 요청별 조회 최적화
 
 ### 5.2 애플리케이션 레벨 최적화
 

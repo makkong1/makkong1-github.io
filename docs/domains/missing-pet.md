@@ -561,21 +561,35 @@ POST /api/missing-pets/1/start-chat?witnessId=2
 ### 7.1 DB 최적화
 
 #### 인덱스 전략
+
+**missing_pet_board 테이블**:
 ```sql
--- 상태별 조회
-CREATE INDEX idx_missing_pet_status ON MissingPetBoard(status, is_deleted, created_at DESC);
+-- 사용자별 게시글 조회
+CREATE INDEX idx_missing_pet_user ON missing_pet_board(user_idx, is_deleted, created_at);
 
 -- 위치 기반 검색
-CREATE INDEX idx_missing_pet_location ON MissingPetBoard(latitude, longitude);
+CREATE INDEX idx_missing_pet_location ON missing_pet_board(latitude, longitude);
 
--- 사용자별 게시글 조회
-CREATE INDEX idx_missing_pet_user ON MissingPetBoard(user_idx, is_deleted, created_at DESC);
+-- 상태별 조회
+CREATE INDEX idx_missing_pet_status ON missing_pet_board(status, is_deleted, created_at);
+
+-- 외래키 (user_idx)
+CREATE INDEX FKrid0u1qvm8e07etghggxnu1b1 ON missing_pet_board(user_idx);
+```
+
+**missing_pet_comment 테이블**:
+```sql
+-- 사용자별 댓글 조회
+CREATE INDEX FKe3sca61815j9cxi608oxmrfjt ON missing_pet_comment(user_idx);
+
+-- 게시글별 댓글 조회
+CREATE INDEX FKpodx5stuchr73mrjgffir72ii ON missing_pet_comment(board_idx);
 ```
 
 **선정 이유**:
 - 자주 조회되는 컬럼 조합 (status, is_deleted, created_at)
 - WHERE 절에서 자주 사용되는 조건
-- JOIN에 사용되는 외래키 (user_idx)
+- JOIN에 사용되는 외래키 (user_idx, board_idx)
 - 위치 기반 검색을 위한 인덱스 (latitude, longitude)
 
 ### 7.2 애플리케이션 레벨 최적화
@@ -597,6 +611,35 @@ List<MissingPetBoard> findAllByOrderByCreatedAtDesc();
 #### 파일 첨부 최적화
 - **파일 매핑**: `mapBoardWithAttachments()`, `mapCommentWithAttachments()`로 첨부 파일 정보 포함
 - **주요 이미지 URL**: 첫 번째 파일의 다운로드 URL을 `imageUrl`로 설정하여 빠른 접근
+
+### 7.4 최적화 핵심 포인트
+
+#### 1단계: 댓글 N+1 해결
+- **문제**: 각 게시글마다 `board.getComments()` 호출 시 LAZY 로딩으로 개별 쿼리 발생
+- **해결**: Repository 쿼리에 `LEFT JOIN FETCH b.comments c` 및 `LEFT JOIN FETCH c.user cu` 추가
+- **효과**: 103개 쿼리 → 0개 (메인 쿼리에 포함)
+
+#### 2단계: 파일 N+1 해결
+- **문제**: 각 게시글마다 `getAttachments()` 호출로 개별 쿼리 발생
+- **해결**: `getAttachmentsBatch()` 메서드로 게시글 ID 목록을 한 번에 조회
+- **효과**: 103개 쿼리 → 1개 (배치 조회, IN 절 사용)
+
+### 7.5 성능 개선 결과
+
+| 항목 | 최적화 전 | 최적화 후 | 개선율 |
+|------|----------|----------|--------|
+| **쿼리 수** | 207개 | 3개 | **98.5% 감소** |
+| **실행 시간** | 571ms | 79ms | **86% 감소** |
+| **메모리 사용** | 11MB | 4MB | **64% 감소** |
+
+### 7.6 기술 스택
+
+- **Backend**: Spring Boot 3.5.7, JPA/Hibernate
+- **Database**: MySQL
+- **최적화 기법**: 
+  - Fetch Join (LEFT JOIN FETCH)
+  - 배치 조회 (Batch Fetching with IN 절)
+  - DISTINCT를 활용한 중복 제거
 
 ---
 

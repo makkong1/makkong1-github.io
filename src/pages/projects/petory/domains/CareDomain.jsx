@@ -614,7 +614,6 @@ function CareDomain() {
                   <li>요청자가 1명만 승인</li>
                   <li>승인 시 상태 변경 (OPEN → IN_PROGRESS)</li>
                 </ol>
-                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
               </div>
             </div>
 
@@ -641,7 +640,6 @@ function CareDomain() {
                   <li>요청자가 리뷰 작성 (평점 1-5, 내용)</li>
                   <li>평균 평점 계산 및 표시</li>
                 </ol>
-                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
               </div>
             </div>
 
@@ -660,7 +658,6 @@ function CareDomain() {
                   <li>댓글에서 "채팅하기" 버튼으로 1:1 채팅 시작</li>
                   <li>기존 채팅방이 있으면 재사용</li>
                 </ul>
-                <p style={{ marginTop: '0.5rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>스크린샷/영상: [추가 예정]</p>
               </div>
             </div>
       </section>
