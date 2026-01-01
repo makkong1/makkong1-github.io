@@ -571,6 +571,13 @@ code {
   z-index: 1000;
 }
 
+/* 모바일에서 네비게이션 고정 해제 */
+@media (max-width: 768px) {
+  .nav {
+    position: static;
+  }
+}
+
 .nav-container {
   max-width: 1200px;
   margin: 0 auto;
