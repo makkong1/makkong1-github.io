@@ -882,21 +882,8 @@ code {
   }
   .stat-number { font-size: 2.5rem; }
   
-  /* 큰 모바일에서는 2열 유지, 작은 모바일에서만 1열 */
-  .feature-points-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
-  
-  .domain-link-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .icon-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
-  }
+  /* 768px 이하에서는 각 그리드의 개별 미디어 쿼리 적용 */
+  /* (위에서 이미 정의된 미디어 쿼리 사용) */
 
   .tech-stack-wrapper { justify-content: flex-start; gap: 0.4rem; }
   .mermaid { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -909,16 +896,33 @@ code {
   .stat-number { font-size: 2.2rem; }
   .layout-main { padding: 1rem 0.75rem; }
   
-  /* 작은 모바일에서도 통계는 2열 유지 (3개면 마지막만 1열) */
+  /* 스마트폰: 통계는 2열 유지 (3개 항목) */
   .stat-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
   }
   
-  /* 작은 모바일에서 기능 포인트는 1열로 */
+  /* 스마트폰: 기능 포인트는 2열로 (더 나은 가독성) */
   .feature-points-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
     gap: 0.75rem;
+  }
+  
+  /* 스마트폰: 도메인 링크는 1열 (카드가 크므로) */
+  .domain-link-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  /* 스마트폰: 아이콘 그리드는 2열 유지 */
+  .icon-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  /* 스마트폰: 카드 패딩 축소 */
+  .project-card, .section-card, .content-card {
+    padding: 1rem !important;
   }
 }
 
