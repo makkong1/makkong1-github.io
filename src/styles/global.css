@@ -762,6 +762,18 @@ code {
   margin-bottom: 1.5rem;
 }
 
+@media (max-width: 768px) {
+  .feature-points-grid {
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .feature-points-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Domain Link Grid */
 .domain-link-grid {
   display: grid;
@@ -770,11 +782,36 @@ code {
   margin-bottom: 2rem;
 }
 
+@media (max-width: 768px) {
+  .domain-link-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .domain-link-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* Grid of icon cards */
 .icon-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .icon-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .icon-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
 }
 
 .icon-item {
@@ -839,11 +876,26 @@ code {
   }
   
   .portfolio-grid { grid-template-columns: 1fr; gap: 1rem; }
-  .stat-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+  .stat-grid { 
+    grid-template-columns: repeat(2, 1fr); 
+    gap: 1rem; 
+  }
   .stat-number { font-size: 2.5rem; }
   
-  .feature-points-grid, .domain-link-grid, .icon-grid {
+  /* 큰 모바일에서는 2열 유지, 작은 모바일에서만 1열 */
+  .feature-points-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+  
+  .domain-link-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .icon-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
   }
 
   .tech-stack-wrapper { justify-content: flex-start; gap: 0.4rem; }
@@ -856,6 +908,18 @@ code {
   .project-hero { padding: 2rem 1rem; }
   .stat-number { font-size: 2.2rem; }
   .layout-main { padding: 1rem 0.75rem; }
+  
+  /* 작은 모바일에서도 통계는 2열 유지 (3개면 마지막만 1열) */
+  .stat-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  /* 작은 모바일에서 기능 포인트는 1열로 */
+  .feature-points-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
 }
 
 /* TOC Sidebar */
