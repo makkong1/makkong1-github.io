@@ -795,6 +795,12 @@ code {
   h3 { font-size: 1.25rem; }
   p { font-size: 0.95rem; }
 
+  /* 프로젝트 페이지 섹션 간격 조정 */
+  .project-main-content section[id] {
+    margin-bottom: 2rem !important;
+    scroll-margin-top: 1.5rem !important;
+  }
+
   .project-hero { padding: 2.5rem 1.25rem; border-radius: 12px; }
   .project-hero h1 { font-size: 2.25rem; }
   .project-hero .subtitle { font-size: 1.2rem; margin-bottom: 1.25rem; }
@@ -885,5 +891,189 @@ code {
 @media (max-width: 1024px) {
   .toc-sidebar {
     display: none;
+  }
+}
+
+/* Domain Page Responsive Styles */
+@media (max-width: 1024px) {
+  /* 도메인 페이지 메인 컨테이너 - 태블릿 */
+  .domain-page-container {
+    flex-direction: column !important;
+    gap: 1.5rem !important;
+  }
+  
+  .domain-page-content {
+    width: 100% !important;
+  }
+  
+  /* 섹션 간격 조정 */
+  section[id] {
+    margin-bottom: 2rem !important;
+    scroll-margin-top: 1.5rem !important;
+  }
+  
+  /* 카드 패딩 조정 */
+  .section-card {
+    padding: 1.25rem !important;
+  }
+  
+  /* 테이블 가로 스크롤 */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+  
+  /* 코드 블록 오버플로우 */
+  pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    font-size: 0.8rem !important;
+    padding: 0.75rem !important;
+  }
+  
+  /* Mermaid 다이어그램 */
+  .mermaid {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  /* 도메인 페이지 메인 컨테이너 - 모바일 */
+  .domain-page-wrapper {
+    padding: 1rem 0 !important;
+  }
+  
+  .domain-page-container {
+    gap: 1rem !important;
+    padding: 0 1rem !important;
+  }
+  
+  /* 제목 크기 조정 */
+  .domain-page-content h1 {
+    font-size: 1.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .domain-page-content h2 {
+    font-size: 1.5rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .domain-page-content h3 {
+    font-size: 1.25rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  /* 섹션 간격 더 줄이기 */
+  section[id] {
+    margin-bottom: 1.5rem !important;
+    scroll-margin-top: 1rem !important;
+  }
+  
+  /* 카드 패딩 더 줄이기 */
+  .section-card {
+    padding: 1rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  /* 내부 박스 패딩 조정 */
+  .section-card > div[style*="padding"] {
+    padding: 0.75rem !important;
+  }
+  
+  /* 테이블 폰트 크기 */
+  table {
+    font-size: 0.85rem;
+  }
+  
+  table th,
+  table td {
+    padding: 0.5rem !important;
+  }
+  
+  /* 코드 블록 더 작게 */
+  pre {
+    font-size: 0.75rem !important;
+    padding: 0.5rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* 리스트 간격 조정 */
+  ul, ol {
+    margin-left: 1rem !important;
+    padding-left: 0.5rem !important;
+  }
+  
+  /* 텍스트 크기 조정 */
+  .domain-page-content p {
+    font-size: 0.9rem !important;
+    line-height: 1.6 !important;
+  }
+  
+  /* 통계 그리드 - 모바일에서 1열 */
+  .stat-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  /* 기능 포인트 그리드 - 모바일에서 1열 */
+  .feature-points-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  /* 도메인 페이지 - 작은 모바일 */
+  .domain-page-wrapper {
+    padding: 0.75rem 0 !important;
+  }
+  
+  .domain-page-container {
+    padding: 0 0.75rem !important;
+    gap: 0.75rem !important;
+  }
+  
+  /* 제목 더 작게 */
+  .domain-page-content h1 {
+    font-size: 1.5rem !important;
+  }
+  
+  .domain-page-content h2 {
+    font-size: 1.25rem !important;
+  }
+  
+  .domain-page-content h3 {
+    font-size: 1.1rem !important;
+  }
+  
+  /* 카드 패딩 최소화 */
+  .section-card {
+    padding: 0.75rem !important;
+  }
+  
+  /* 섹션 간격 최소화 */
+  section[id] {
+    margin-bottom: 1rem !important;
+  }
+  
+  /* 테이블 더 작게 */
+  table {
+    font-size: 0.8rem;
+  }
+  
+  table th,
+  table td {
+    padding: 0.4rem !important;
+  }
+  
+  /* 코드 블록 최소화 */
+  pre {
+    font-size: 0.7rem !important;
+    padding: 0.4rem !important;
   }
 }

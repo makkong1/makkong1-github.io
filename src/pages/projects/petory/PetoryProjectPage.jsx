@@ -263,18 +263,21 @@ function PetoryProjectPage() {
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>왜 이걸 했는가</h2>
             <div className="section-card">
               <div className="about-text-block">
-              <p>
-                실서비스 환경에서는 다수 사용자가 동시에 접근하는 상황에서, 인증 과정 중 연관 엔티티 조회로 인해 
-                <strong> N+1 문제와 불필요한 DB 접근이 발생할 수 있다고 가정</strong>했습니다.
-              </p>
-              <p>
-                단일 기능 테스트만으로는 성능 병목을 발견하기 어렵기 때문에, 
-                <strong> 시나리오 기반 테스트</strong>를 통해 실제 문제를 재현하고 해결했습니다.
-              </p>
-              <p>
-                이 프로젝트는 <strong>포트폴리오 목적상 코드 품질과 아키텍처 설계에 집중</strong>했으며, 
-                실제 운영 배포는 프로젝트 범위를 벗어나지만, 필요 시 배포 가능한 구조로 설계되었습니다.
-              </p>
+                <p>
+                  실서비스 환경에서는 다수 사용자가 동시에 인증 요청을 수행하는 과정에서,
+                  연관 엔티티 조회로 인해
+                  <strong> N+1 문제와 불필요한 DB 접근이 발생할 수 있는 구조적 위험</strong>이 존재합니다.
+                </p>
+                <p>
+                  이러한 문제는 단일 기능 단위 테스트로는 드러나기 어렵기 때문에,
+                  실제 사용자 흐름을 기준으로 한
+                  <strong> 시나리오 기반 테스트를 통해 성능 병목을 재현하고 개선</strong>했습니다.
+                </p>
+                <p>
+                  본 프로젝트는 <strong>포트폴리오 목적의 프로젝트로 코드 품질과 아키텍처 설계에 집중</strong>했으며,
+                  실제 운영 배포는 범위에 포함되지 않지만,&nbsp;
+                  <strong>필요 시 즉시 배포 가능한 구조를 고려하여 설계</strong>되었습니다.
+                </p>
               </div>
             </div>
           </section>
@@ -282,7 +285,7 @@ function PetoryProjectPage() {
           {/* 아키텍처 섹션 */}
           <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
-            <div className="section-card">
+            <div>
               <div className="content-card">
               <h3>설계 근거</h3>
               <div className="feature-points-grid">
@@ -334,10 +337,10 @@ function PetoryProjectPage() {
               </div>
 
         {/* 도메인 간 연관관계 다이어그램 */}
-              <div className="content-card" style={{ marginBottom: 0 }}>
-                <h3>도메인 간 연관관계</h3>
-            <MermaidDiagram chart={domainRelationsDiagram} />
-          </div>
+        <div className="content-card" style={{ marginBottom: 0 }}>
+          <h3>도메인 간 연관관계</h3>
+          <MermaidDiagram chart={domainRelationsDiagram} style={{ marginBottom: 0 }} />
+        </div>
             </div>
           </section>
 

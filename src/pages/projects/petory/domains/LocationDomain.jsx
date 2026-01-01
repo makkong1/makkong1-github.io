@@ -62,9 +62,9 @@ function LocationDomain() {
     }`;
 
   return (
-    <div style={{ padding: '2rem 0' }}>
-      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
+    <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
+      <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <div className="domain-page-content" style={{ flex: 1 }}>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>위치 서비스 도메인</h1>
           
           {/* 1. 도메인 소개 */}

@@ -139,9 +139,9 @@ function BoardDomain() {
     Note over BoardService,DB: 100개 게시글 기준: 3개 쿼리로 감소 (게시글+작성자 1개, 반응 배치 1개, 첨부파일 배치 1개)`;
 
   return (
-    <div style={{ padding: '2rem 0' }}>
-      <div style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
-        <div style={{ flex: 1 }}>
+    <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
+      <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
+        <div className="domain-page-content" style={{ flex: 1 }}>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>게시판 도메인</h1>
           
           {/* 1. 도메인 소개 */}
