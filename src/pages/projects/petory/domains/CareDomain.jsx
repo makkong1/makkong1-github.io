@@ -668,7 +668,7 @@ function CareDomain() {
         <div className="section-card" style={{
           padding: '1.5rem',
           backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
+          borderRadius: '8px',        
           border: '1px solid var(--nav-border)',
           marginBottom: '1.5rem'
         }}>
