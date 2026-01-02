@@ -11,7 +11,6 @@ function PetoryProjectPage() {
     { id: 'problem-solving', title: '문제 해결 사례' },
     { id: 'features', title: '주요 기능' },
     { id: 'tech-stack', title: '기술 스택' },
-    { id: 'domains', title: '도메인별 상세' },
     { id: 'links', title: '관련 링크' }
   ];
 

@@ -9,12 +9,19 @@ import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
 // 도메인 페이지들
 import UserDomain from './pages/projects/petory/domains/UserDomain';
+import UserDomainOptimization from './pages/projects/petory/domains/UserDomainOptimization';
 import BoardDomain from './pages/projects/petory/domains/BoardDomain';
+import BoardDomainOptimization from './pages/projects/petory/domains/BoardDomainOptimization';
 import CareDomain from './pages/projects/petory/domains/CareDomain';
+import CareDomainOptimization from './pages/projects/petory/domains/CareDomainOptimization';
 import MissingPetDomain from './pages/projects/petory/domains/MissingPetDomain';
+import MissingPetDomainOptimization from './pages/projects/petory/domains/MissingPetDomainOptimization';
 import LocationDomain from './pages/projects/petory/domains/LocationDomain';
+import LocationDomainOptimization from './pages/projects/petory/domains/LocationDomainOptimization';
 import MeetupDomain from './pages/projects/petory/domains/MeetupDomain';
+import MeetupDomainOptimization from './pages/projects/petory/domains/MeetupDomainOptimization';
 import ChatDomain from './pages/projects/petory/domains/ChatDomain';
+import ChatDomainOptimization from './pages/projects/petory/domains/ChatDomainOptimization';
 import './styles/global.css';
 
 function App() {
@@ -37,12 +44,19 @@ function App() {
             
             {/* 도메인 페이지들 */}
             <Route path="/domains/user" element={<UserDomain />} />
+            <Route path="/domains/user/optimization" element={<UserDomainOptimization />} />
             <Route path="/domains/board" element={<BoardDomain />} />
+            <Route path="/domains/board/optimization" element={<BoardDomainOptimization />} />
             <Route path="/domains/care" element={<CareDomain />} />
+            <Route path="/domains/care/optimization" element={<CareDomainOptimization />} />
             <Route path="/domains/missing-pet" element={<MissingPetDomain />} />
+            <Route path="/domains/missing-pet/optimization" element={<MissingPetDomainOptimization />} />
             <Route path="/domains/location" element={<LocationDomain />} />
+            <Route path="/domains/location/optimization" element={<LocationDomainOptimization />} />
             <Route path="/domains/meetup" element={<MeetupDomain />} />
+            <Route path="/domains/meetup/optimization" element={<MeetupDomainOptimization />} />
             <Route path="/domains/chat" element={<ChatDomain />} />
+            <Route path="/domains/chat/optimization" element={<ChatDomainOptimization />} />
             
             {/* MCP 파일 링크 페이지 */}
             <Route path="/docs" element={<MCPFilesPage />} />
