@@ -104,31 +104,6 @@ function UserDomain() {
                 marginTop: '1rem',
                 border: '1px solid var(--nav-border)'
               }}>
-                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 기능</h3>
-                <ul style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                  fontSize: '0.9rem',
-                  margin: 0
-                }}>
-                  <li>• 회원가입/로그인 (JWT 기반)</li>
-                  <li>• 소셜 로그인 (Google, Naver) - OAuth2 기반</li>
-                  <li>• 이메일 인증 시스템 (단일 통합 시스템, Redis 활용)</li>
-                  <li>• 사용자 제재 시스템 (경고, 이용제한, 영구 차단)</li>
-                  <li>• 반려동물 등록/관리</li>
-                  <li>• 프로필 관리 및 리뷰 조회</li>
-                  <li>• 비밀번호 찾기 및 변경</li>
-                </ul>
-              </div>
-              <div style={{
-                padding: '1rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '6px',
-                marginTop: '1rem',
-                border: '1px solid var(--nav-border)'
-              }}>
                 <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과</h3>
                 <ul style={{
                   listStyle: 'none',
