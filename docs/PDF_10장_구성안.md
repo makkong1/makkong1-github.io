@@ -42,17 +42,42 @@
 
 ---
 
-### **4장: 핵심 성과 (종합 지표)**
+### **4장: 기술 스택 & 주요 기능**
 **내용:**
-- **Board 도메인**
-  - 쿼리 수: 301개 → 3개 (99% 감소)
-  - 실행 시간: 745ms → 30ms (24.83배 개선)
-  - 메모리: 22.50 MB → 2 MB (91% 감소)
+- **기술 스택**
+  - Backend: Spring Boot 3.x, Java 17+, JPA, Security, WebSocket
+  - Frontend: React, Styled-components, Recharts
+  - Database: MySQL 8.0, Redis
+  - External: Naver Map API, OAuth2, SMTP
+
+- **주요 기능 요약**
+  - 7개 핵심 도메인 (User, Board, Care, Location, MissingPet, Meetup, Chat)
+  - 5개 지원 도메인 (Notification, Report, File, Activity, Statistics)
+  - 실시간 채팅 (WebSocket), 알림 (SSE), 인기글 스냅샷
+
+**비주얼:**
+- 기술 스택 로고/아이콘
+- 도메인 구조도
+- 기능 아이콘 그리드
+
+---
+
+### **5장: 핵심 성과 (종합 지표)**
+**내용:**
+- **Care 도메인**
+  - 쿼리 수: 2400개 → 4-5개 (99.8% 감소)
+  - 실행 시간: 1084ms → 66ms (94% 개선)
+  - 메모리: 21MB → 6MB (71% 절감)
 
 - **User 도메인**
   - 쿼리 수: 21개 → 4개 (80.95% 감소)
   - 실행 시간: 305ms → 55ms (81.97% 개선)
   - 메모리: 0.58MB → 0.13MB (77.24% 절감)
+
+- **Board 도메인**
+  - 쿼리 수: 301개 → 3개 (99.00% 감소)
+  - 실행 시간: 745ms → 30ms (24.83배 개선)
+  - 메모리: 22.50 MB → 2 MB (91% 감소)
 
 - **Location 도메인**
   - 초기 로드 데이터: 22,699개 → 1,026개 (95.5% 감소)
@@ -66,7 +91,47 @@
 
 ---
 
-### **5장: 문제 해결 사례 1 - User 도메인 (N+1 문제)**
+### **6장: 문제 해결 사례 1 - Care 도메인 (N+1 문제)**
+
+#### 📋 문제 상황
+
+- 펫케어 요청 목록 조회 시 N+1 문제 발생
+- 1004개 펫케어 요청 조회 시 CareApplication, File, PetVaccination을 각각 개별 쿼리로 조회
+- **총 2400개 쿼리** 실행되어 백엔드 실행 시간 1084ms 소요
+
+#### 🔧 해결 방법
+
+- **Fetch Join**: `LEFT JOIN FETCH cr.applications`로 CareApplication을 메인 쿼리에 포함
+- **배치 조회**: File과 PetVaccination을 배치 조회로 한 번에 조회
+- **@BatchSize**: PetVaccination 조회 시 `@BatchSize(size = 50)` 적용
+
+#### 📊 개선 결과
+
+| 항목 | Before | After | 개선율 |
+|------|--------|-------|--------|
+| **쿼리 수** | 2400개 | 4-5개 | 99.8% 감소 |
+| **실행 시간** | 1084ms | 66ms | 94% 개선 |
+| **메모리 사용량** | 21MB | 6MB | 71% 절감 |
+
+**상세 분석:**
+- 쿼리 수: 2400개 → 4-5개 (Fetch Join과 배치 조회로 대폭 감소)
+- 실행 시간: 1084ms → 66ms (16.4배 빠름)
+- 메모리: 21MB → 6MB (불필요한 객체 생성 감소)
+
+#### 🎯 핵심 포인트
+
+- **Fetch Join**: CareApplication을 메인 쿼리에 포함하여 N+1 문제 해결
+- **배치 조회**: File과 PetVaccination을 IN 절로 배치 조회
+- **@BatchSize**: Hibernate의 @BatchSize 어노테이션으로 자동 배치 조회
+
+**비주얼:**
+- Sequence Diagram (Before/After 비교)
+- 쿼리 실행 플로우 비교 차트 (2400개 → 4-5개)
+- 성능 지표 그래프 (쿼리 수, 실행 시간, 메모리)
+
+---
+
+### **7장: 문제 해결 사례 2 - User 도메인 (N+1 문제)**
 
 #### 📋 문제 상황
 
@@ -106,7 +171,7 @@
 
 ---
 
-### **6장: 문제 해결 사례 2 - Board 도메인 (N+1 문제)**
+### **8장: 문제 해결 사례 3 - Board 도메인 (N+1 문제)**
 
 #### 📋 문제 상황
 
@@ -149,7 +214,7 @@
 
 ---
 
-### **7장: 문제 해결 사례 3 - Location 도메인 (초기 로드 최적화)**
+### **9장: 문제 해결 사례 4 - Location 도메인 (초기 로드 최적화)**
 
 #### 📋 문제 상황
 
@@ -203,7 +268,7 @@
 
 ---
 
-### **8장: 문제 해결 사례 4 - Meetup 도메인 (동시성 제어)**
+### **10장: 문제 해결 사례 5 - Meetup 도메인 (동시성 제어)**
 
 #### 📋 문제 상황
 
@@ -247,48 +312,6 @@
 - 원자적 UPDATE 쿼리 vs 일반 UPDATE 비교
 - Before/After 테스트 결과 비교
 - 이벤트 기반 아키텍처 플로우
-
----
-
-### **9장: 기술 스택 & 주요 기능**
-**내용:**
-- **기술 스택**
-  - Backend: Spring Boot 3.x, Java 17+, JPA, Security, WebSocket
-  - Frontend: React, Styled-components, Recharts
-  - Database: MySQL 8.0, Redis
-  - External: Naver Map API, OAuth2, SMTP
-
-- **주요 기능 요약**
-  - 7개 핵심 도메인 (User, Board, Care, Location, MissingPet, Meetup, Chat)
-  - 5개 지원 도메인 (Notification, Report, File, Activity, Statistics)
-  - 실시간 채팅 (WebSocket), 알림 (SSE), 인기글 스냅샷
-
-**비주얼:**
-- 기술 스택 로고/아이콘
-- 도메인 구조도
-- 기능 아이콘 그리드
-
----
-
-### **10장: 마무리 & 연락처**
-**내용:**
-- 프로젝트 핵심 가치
-  - 테스트 기반 성능 최적화 프로세스
-  - 도메인 주도 설계 적용
-  - 실제 문제 해결 경험
-
-- 관련 링크
-  - GitHub 저장소
-  - Live Demo
-  - 포트폴리오 사이트
-
-- 연락처
-  - 이메일
-  - GitHub
-
-**비주얼:**
-- 프로젝트 핵심 가치 아이콘
-- 간단한 차트/요약 (선택)
 
 ---
 

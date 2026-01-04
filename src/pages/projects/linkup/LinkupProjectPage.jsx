@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../components/Common/TableOfContents';
+import linkupErdImage from '../../../assets/링크업 ERD 183644 - 복사본.png';
 
 function LinkupProjectPage() {
   const sections = [
@@ -314,7 +315,7 @@ function LinkupProjectPage() {
               <h3>전체 시스템 아키텍처</h3>
               <MermaidDiagram chart={architectureDiagram} />
             </div>
-            <div className="content-card" style={{ marginBottom: 0 }}>
+            <div className="content-card">
               <h3>서비스 계층 구조</h3>
               <div className="about-text-block">
                 <p>• <strong>Controller</strong>: 요청 처리 및 권한 체크</p>
@@ -322,6 +323,22 @@ function LinkupProjectPage() {
                 <p>• <strong>Repository</strong>: JPA/MyBatis 기반 데이터 접근</p>
               </div>
               </div>
+
+            <div className="content-card" style={{ marginBottom: 0 }}>
+              <h3>데이터베이스 ERD</h3>
+              <div style={{ width: '100%', overflowX: 'auto', marginTop: '1rem' }}>
+                <img 
+                  src={linkupErdImage}
+                  alt="LinkUp 데이터베이스 ERD"
+                  style={{ 
+                    width: '100%', 
+                    height: 'auto', 
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)'
+                  }}
+                />
+              </div>
+            </div>
             </div>
           </section>
 

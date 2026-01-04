@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../components/Common/TableOfContents';
+import petoryErdImage from '../../../assets/petory-erd.png';
 
 function PetoryProjectPage() {
   const sections = [
@@ -111,46 +112,6 @@ function PetoryProjectPage() {
     style CHAT_SVC fill:#e1f5ff
     style MYSQL fill:#ffe1f5
     style REDIS fill:#ffe1f5`;
-
-  const domainRelationsDiagram = `graph TB
-    Users[Users<br/>사용자]
-    Pet[Pet<br/>반려동물]
-    Board[Board<br/>게시판]
-    Comment[Comment<br/>댓글]
-    CareRequest[CareRequest<br/>펫케어요청]
-    CareApplication[CareApplication<br/>펫케어지원]
-    MissingPet[MissingPetBoard<br/>실종동물]
-    Meetup[Meetup<br/>모임]
-    LocationService[LocationService<br/>위치서비스]
-    Report[Report<br/>신고]
-    Notification[Notification<br/>알림]
-    File[AttachmentFile<br/>파일]
-    
-    Users -->|소유| Pet
-    Users -->|작성| Board
-    Users -->|작성| Comment
-    Users -->|요청| CareRequest
-    Users -->|지원| CareApplication
-    Users -->|신고| MissingPet
-    Users -->|주최| Meetup
-    Users -->|참여| Meetup
-    Users -->|리뷰| LocationService
-    Users -->|신고| Report
-    Users -->|수신| Notification
-    
-    Board -->|댓글| Comment
-    Board -->|첨부| File
-    
-    CareRequest -->|지원| CareApplication
-    CareRequest -->|관련| Pet
-    CareRequest -->|첨부| File
-    
-    MissingPet -->|첨부| File
-    
-    Report -.->|대상| Board
-    Report -.->|대상| Comment
-    Report -.->|대상| CareRequest
-    Report -.->|대상| Users`;
 
   const domains = [
     {
@@ -335,10 +296,21 @@ function PetoryProjectPage() {
                 </div>
               </div>
 
-        {/* 도메인 간 연관관계 다이어그램 */}
+        {/* 데이터베이스 ERD */}
         <div className="content-card" style={{ marginBottom: 0 }}>
           <h3>도메인 간 연관관계</h3>
-          <MermaidDiagram chart={domainRelationsDiagram} style={{ marginBottom: 0 }} />
+          <div style={{ width: '100%', overflowX: 'auto', marginTop: '1rem' }}>
+            <img 
+              src={petoryErdImage}
+              alt="Petory 데이터베이스 ERD"
+              style={{ 
+                width: '100%', 
+                height: 'auto', 
+                borderRadius: '8px',
+                border: '1px solid var(--border-color)'
+              }}
+            />
+          </div>
         </div>
             </div>
           </section>
