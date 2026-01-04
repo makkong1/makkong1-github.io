@@ -67,6 +67,59 @@ function CareDomain() {
         LocalDateTime createdAt
     }`;
 
+  const raceConditionSequence = `sequenceDiagram
+    participant UserA as 사용자 A
+    participant UserB as 제공자 B
+    participant Service as ConversationService
+    participant DB as MySQL
+
+    Note over UserA,UserB: 동시에 거래 확정 버튼 클릭
+
+    par 동시 요청
+        UserA->>Service: confirmCareDeal() (Tx A)
+        UserB->>Service: confirmCareDeal() (Tx B)
+    end
+
+    Service->>DB: Tx A: 내 상태 '확정' 변경
+    Service->>DB: Tx B: 내 상태 '확정' 변경
+
+    Note over Service,DB: 격리 수준(Isolation)으로 인해<br/>상대방의 변경사항 안 보임
+
+    Service->>DB: Tx A: 전체 확정 여부 확인? -> False (B 미확정)
+    Service->>DB: Tx B: 전체 확정 여부 확인? -> False (A 미확정)
+
+    Service-->>UserA: 완료 (상태 변경 없음)
+    Service-->>UserB: 완료 (상태 변경 없음)
+
+    Note over DB: 결과: 둘 다 확정했으나<br/>상태는 여전히 OPEN (Stuck)`;
+
+  const pessimisticLockSequence = `sequenceDiagram
+    participant UserA as 사용자 A
+    participant UserB as 제공자 B
+    participant Service as ConversationService
+    participant DB as MySQL
+
+    Note over UserA,UserB: 동시에 거래 확정 버튼 클릭
+
+    UserA->>Service: confirmCareDeal() (Tx A)
+    Service->>DB: SELECT ... FOR UPDATE (Lock 획득)
+    
+    UserB->>Service: confirmCareDeal() (Tx B)
+    Service->>DB: SELECT ... FOR UPDATE (Lock 대기)
+    
+    Note over Service,DB: Tx A 먼저 수행
+    Service->>DB: Tx A: 내 상태 '확정' 변경
+    Service->>DB: Tx A: 전체 확정 여부 확인? -> False
+    Service->>DB: Tx A: 커밋 & Lock 반납
+    
+    Note over Service,DB: Tx B 수행 (대기 해제)
+    Service->>DB: Tx B: Lock 획득 (최신 데이터 조회)
+    Service->>DB: Tx B: 내 상태 '확정' 변경
+    Service->>DB: Tx B: 전체 확정 여부 확인? -> True (A 확정 보임)
+    
+    Service->>DB: Tx B: CareRequest 상태 IN_PROGRESS 변경
+    Service-->>UserB: 완료 및 상태 변경 성공`;
+
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
       <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
@@ -197,6 +250,7 @@ function CareDomain() {
           <section id="troubleshooting" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>트러블슈팅</h2>
             
+            {/* Part 1. 펫케어 거래 확정 동시성 문제 */}
             <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
@@ -204,22 +258,42 @@ function CareDomain() {
               border: '1px solid var(--nav-border)',
               marginBottom: '1rem'
             }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. 펫케어 요청 목록 조회 시 N+1 문제</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Part 1. [Data Integrity] 거래 확정 동시성 문제 (Race Condition)</h3>
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong> <code>GET /api/care-requests</code> API 호출 시 펫케어 요청 목록 조회 과정에서 심각한 N+1 문제 발생</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0.5rem 0' }}>
-                  <li>• CareApplication 조회: 각 CareRequest마다 별도 쿼리 실행 (~1000번)</li>
-                  <li>• File 조회: 각 Pet마다 개별 쿼리 실행 (~700번)</li>
-                  <li>• PetVaccination 조회: 각 Pet마다 별도 쿼리 실행 (~700번)</li>
-                  <li>• 총 쿼리 수: 약 2400개 (메인 쿼리 1개 + N+1 쿼리 ~2400개)</li>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  <strong style={{ color: 'var(--text-color)' }}>문제:</strong> <code>confirmCareDeal()</code> 동시 호출 시 상태 변경이 누락되는 <strong>Stuck State</strong> 발생 (데이터 정합성 이슈)
+                </p>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <MermaidDiagram chart={raceConditionSequence} />
+                </div>
+
+                <h4 style={{ color: 'var(--text-color)', fontSize: '1rem', marginTop: '1.5rem', marginBottom: '1rem' }}>해결: 비관적 락 (Pessimistic Lock)</h4>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
+                  <li>• DB단에서 <code>SELECT ... FOR UPDATE</code>로 순차 처리 강제</li>
+                  <li>• 데이터 정합성을 최우선으로 확보하기 위해 적용</li>
                 </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결:</strong></p>
+                <div style={{ marginBottom: '1rem' }}>
+                  <MermaidDiagram chart={pessimisticLockSequence} />
+                </div>
+              </div>
+            </div>
+
+            {/* Part 2. 펫케어 요청 목록 조회 최적화 */}
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Part 2. [Performance] 요청 목록 조회 최적화 (N+1)</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>상황:</strong> 데이터 정합성 확보 후, 대량 조회 시 발생하는 성능 저하 해결</p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0.5rem 0' }}>
-                  <li>• 1단계: Fetch Join - CareApplication을 메인 쿼리에 포함</li>
-                  <li>• 2단계: 배치 조회 - File 조회를 배치로 처리 (IN 절)</li>
-                  <li>• 3단계: @BatchSize - PetVaccination을 배치 조회로 처리</li>
+                  <li>• <strong>문제:</strong> 목록 조회 1회에 연관 데이터 조회 2400회 발생 (N+1)</li>
+                  <li>• <strong>해결:</strong> <code>Fetch Join</code>(Entity) 및 <code>Batch Size</code>(Collection) 적용</li>
+                  <li>• <strong>성과:</strong> 쿼리 2400개 → 5개 (99.8% 감소), 응답속도 94% 개선</li>
                 </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>효과:</strong> 쿼리 수 2400개 → 4-5개 (99.8% 감소), 실행 시간 1084ms → 66ms (94% 감소)</p>
                 <div style={{
                   marginTop: '1rem',
                   padding: '1rem',
@@ -236,7 +310,7 @@ function CareDomain() {
                       display: 'inline-block'
                     }}
                   >
-                    → N+1 문제 해결 상세 보기
+                    → [Performance] 최적화 과정 상세 보기
                   </Link>
                 </div>
               </div>
@@ -666,7 +740,7 @@ List<CareRequest> findAllWithUserAndPet();`}
           border: '1px solid var(--nav-border)'
         }}>
           <a 
-            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/care/care-request-n-plus-one-analysis.md" 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/care/care-domain-technical-analysis.md" 
             target="_blank"
             rel="noopener noreferrer"
             style={{ 
@@ -676,7 +750,7 @@ List<CareRequest> findAllWithUserAndPet();`}
               marginBottom: '0.5rem'
             }}
           >
-            → 펫케어 요청 목록 조회 N+1 문제 분석 상세 문서
+            → Care 도메인 기술 심층 분석 보고서 (통합 문서)
           </a>
           <a 
             href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/care.md" 

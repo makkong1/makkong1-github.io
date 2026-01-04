@@ -107,9 +107,22 @@ function CareDomainOptimization() {
               border: '1px solid var(--nav-border)'
             }}>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                <code>GET /api/care-requests</code> API 호출 시 펫케어 요청 목록 조회 과정에서 
-                <strong style={{ color: 'var(--text-color)' }}> 심각한 N+1 문제가 발생</strong>했습니다.
+                <strong style={{ color: 'var(--text-color)' }}>Care 도메인 고도화 여정의 Part 2: 성능 최적화 (Performance)</strong>
               </p>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                앞선 <strong>Part 1(데이터 정합성)</strong>에서 Race Condition을 해결하여 데이터의 신뢰성을 확보한 후,
+                사용자 경험을 극대화하기 위해 <strong style={{ color: 'var(--text-color)' }}>대량 조회 시 발생하는 심각한 N+1 문제</strong>를 해결했습니다.
+              </p>
+              <div style={{
+                padding: '0.75rem',
+                backgroundColor: 'rgba(255, 255, 255, 0.05)',
+                borderRadius: '4px',
+                marginBottom: '1rem',
+                fontSize: '0.9rem',
+                borderLeft: '3px solid var(--link-color)'
+              }}>
+                ℹ️ <strong>참고:</strong> Part 1 (거래 확정 동시성 문제) 내용은 <Link to="/domains/care" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>Care 도메인 메인 페이지</Link>에서 확인할 수 있습니다.
+              </div>
               <div style={{
                 padding: '1rem',
                 backgroundColor: 'var(--bg-color)',
@@ -365,25 +378,6 @@ public class Pet {
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginTop: '1rem' }}>
                 <strong style={{ color: 'var(--text-color)' }}>효과:</strong> PetVaccination 조회 쿼리 ~700번 → 1-2번 (배치 조회)
               </p>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>동시성 제어</h3>
-              <ul style={{
-                listStyle: 'none',
-                padding: 0,
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8'
-              }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>지원 승인 동시 처리</strong>: 트랜잭션 + 상태 체크로 1명만 승인 보장</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>스케줄러 중복 실행 방지</strong>: ShedLock 사용 (분산 환경)</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>거래 확정 동시성 제어</strong>: 트랜잭션으로 안전성 보장, 양쪽 모두 확인 시 자동 승인</li>
-              </ul>
             </div>
           </section>
 
