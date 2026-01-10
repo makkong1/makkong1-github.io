@@ -8,7 +8,8 @@ function MissingPetDomainOptimization() {
     { id: 'test-design', title: '문제 재현 방식 (테스트 설계)' },
     { id: 'before', title: '성능 측정 결과 (개선 전)' },
     { id: 'optimization', title: '성능 최적화 및 동시성 제어' },
-    { id: 'after', title: '성능 개선 결과 (개선 후)' }
+    { id: 'after', title: '성능 개선 결과 (개선 후)' },
+    { id: 'docs', title: '관련 문서' }
   ];
 
   const beforeSequenceDiagram = `sequenceDiagram
@@ -27,14 +28,14 @@ function MissingPetDomainOptimization() {
     
     Note over Service,Repo: 1. 게시글+작성자 조회 (1번 쿼리)
     Service->>Repo: findAllByOrderByCreatedAtDesc()
-    Repo->>DB: SELECT mpb, u FROM missing_pet_board mpb<br/>JOIN users u ON ... (쿼리 1)
+    Repo->>DB: 게시글+작성자 조회 (쿼리 1)
     DB-->>Repo: MissingPetBoard 리스트 반환 (103개, 댓글 제외)
     Repo-->>Service: List<MissingPetBoard>
     
     Note over Service,FileService: 2. 파일 배치 조회 (1번 쿼리, 이미 최적화됨)
     Service->>Service: boardIds 추출
     Service->>FileService: getAttachmentsBatch(MISSING_PET, boardIds)
-    FileService->>DB: SELECT * FROM file<br/>WHERE target_type=? AND target_idx IN (...) (쿼리 2)
+    FileService->>DB: 파일 배치 조회 (IN 절) (쿼리 2)
     DB-->>FileService: 모든 게시글의 File 리스트
     FileService-->>Service: Map<boardIdx, List<FileDTO>>
     
@@ -45,10 +46,10 @@ function MissingPetDomainOptimization() {
         Converter->>Converter: toBoardDTO(board)
         Converter->>board: getComments()
         Note over board,DB: LAZY 로딩 트리거!
-        board->>DB: SELECT c, u FROM missing_pet_comment<br/>LEFT JOIN users u<br/>WHERE board_idx=? (쿼리 3, 4, 5...)
+        board->>DB: 댓글 조회 쿼리 (쿼리 3, 4, 5...)
         DB-->>board: 댓글 목록 반환
         board-->>Converter: List<MissingPetComment>
-        Note over Converter: 댓글을 사용하지 않는데도<br/>쿼리가 실행됨!
+        Note over Converter: 댓글을 사용하지 않는데도 쿼리가 실행됨!
     end
     
     Converter-->>Service: List<MissingPetBoardDTO>
@@ -57,7 +58,7 @@ function MissingPetDomainOptimization() {
     Controller-->>Frontend: JSON 응답
     Frontend-->>User: 실종 제보 목록 표시
     
-    Note over Service,DB: 총 105개 쿼리 발생<br/>- 게시글+작성자 조회: 1개<br/>- 파일 배치 조회: 1개<br/>- 댓글 조회: 103개 (N+1 문제)`;
+    Note over Service,DB: 총 105개 쿼리 발생<br/>게시글+작성자 조회: 1개<br/>파일 배치 조회: 1개<br/>댓글 조회: 103개 (N+1 문제)`;
 
   const afterSequenceDiagram = `sequenceDiagram
     participant User as 사용자
@@ -75,16 +76,16 @@ function MissingPetDomainOptimization() {
     
     Note over Service,Repo: 1. 게시글+작성자만 조회 (JOIN FETCH, 댓글 제외)
     Service->>Repo: findAllByOrderByCreatedAtDesc()
-    Repo->>DB: SELECT mpb, u FROM missing_pet_board mpb<br/>JOIN FETCH mpb.user u<br/>WHERE mpb.isDeleted=false<br/>AND u.isDeleted=false AND u.status='ACTIVE'<br/>ORDER BY mpb.createdAt DESC (쿼리 1)
-    Note over DB: 게시글과 작성자만 조회<br/>(댓글 제외 - LAZY 로딩 트리거 방지)
+    Repo->>DB: 게시글+작성자 조회 (JOIN FETCH) (쿼리 1)
+    Note over DB: 게시글과 작성자만 조회 (댓글 제외)
     DB-->>Repo: MissingPetBoard 리스트 반환 (103개, 댓글 미로드)
     Repo-->>Service: List<MissingPetBoard>
     
     Note over Service,FileService: 2. 파일 배치 조회 (IN 절)
     Service->>Service: boardIds 추출 (103개 ID)
     Service->>FileService: getAttachmentsBatch(MISSING_PET, boardIds)
-    FileService->>DB: SELECT * FROM file<br/>WHERE target_type=? AND target_idx IN (?,?,...,?) (쿼리 2)
-    Note over DB: 모든 게시글의 파일을<br/>한 번에 조회 (IN 절)
+    FileService->>DB: 파일 배치 조회 (IN 절) (쿼리 2)
+    Note over DB: 모든 게시글의 파일을 한 번에 조회
     DB-->>FileService: 모든 게시글의 File 리스트
     FileService-->>Service: Map<boardIdx, List<FileDTO>>
     
@@ -92,17 +93,17 @@ function MissingPetDomainOptimization() {
     Note over Converter: 3. 댓글 접근하지 않는 메서드 사용
     loop 각 게시글 변환
         Converter->>Converter: toBoardDTOWithoutComments(board)
-        Note over Converter: 댓글 접근하지 않음!<br/>LAZY 로딩 트리거 방지
+        Note over Converter: 댓글 접근하지 않음! LAZY 로딩 트리거 방지
         Converter->>Service: mapBoardWithAttachmentsFromBatch(board, filesByBoardId)
-        Note over Service: 파일은 배치 조회 결과 사용<br/>(개별 쿼리 없음)
+        Note over Service: 파일은 배치 조회 결과 사용 (개별 쿼리 없음)
     end
     
-    Converter-->>Service: List<MissingPetBoardDTO><br/>(댓글 빈 리스트)
+    Converter-->>Service: List<MissingPetBoardDTO> (댓글 빈 리스트)
     Service-->>Controller: List<MissingPetBoardDTO>
     Controller-->>Frontend: JSON 응답
-    Frontend-->>User: 실종 제보 목록 표시<br/>(댓글은 별도 API로 조회)
+    Frontend-->>User: 실종 제보 목록 표시 (댓글은 별도 API로 조회)
     
-    Note over Service,DB: 총 2개 쿼리로 감소<br/>- 게시글+작성자 조회: 1개 (JOIN FETCH)<br/>- 파일 배치 조회: 1개 (IN 절)<br/>- 댓글 조회: 0개 (접근하지 않음)<br/>98% 쿼리 수 감소 (105개 → 2개)`;
+    Note over Service,DB: 총 2개 쿼리로 감소<br/>게시글+작성자 조회: 1개 (JOIN FETCH)<br/>파일 배치 조회: 1개 (IN 절)<br/>댓글 조회: 0개 (접근하지 않음)<br/>98% 쿼리 수 감소 (105개 → 2개)`;
 
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
@@ -610,6 +611,43 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
             }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>시퀀스 다이어그램 (최적화 후)</h3>
               <MermaidDiagram chart={afterSequenceDiagram} />
+            </div>
+          </section>
+
+          {/* 6. 관련 문서 */}
+          <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
+            <div className="section-card" style={{
+              padding: '1rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <a 
+                href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/missing-pet/n-plus-one-query-issue.md" 
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--link-color)',
+                  textDecoration: 'none',
+                  display: 'block',
+                  marginBottom: '0.5rem'
+                }}
+              >
+                → Missing Pet 도메인 N+1 문제 해결 상세 문서
+              </a>
+              <a 
+                href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/missing-pet.md" 
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ 
+                  color: 'var(--link-color)',
+                  textDecoration: 'none',
+                  display: 'block'
+                }}
+              >
+                → Missing Pet 도메인 상세 문서
+              </a>
             </div>
           </section>
         </div>
