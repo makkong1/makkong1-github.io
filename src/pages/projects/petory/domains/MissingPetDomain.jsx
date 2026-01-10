@@ -87,7 +87,7 @@ function MissingPetDomain() {
                   lineHeight: '1.8',
                   fontSize: '0.9rem'
                 }}>
-                  <li>• 게시글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>105개 → 2개</strong> (98% 감소)</li>
+                  <li>• 게시글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>105개 → 3개</strong> (97% 감소)</li>
                   <li>• 백엔드 응답 시간: <strong style={{ color: 'var(--text-color)' }}>571ms → 106ms</strong> (81% 개선)</li>
                   <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>11MB → 3MB</strong> (73% 감소)</li>
                 </ul>
@@ -196,14 +196,16 @@ function MissingPetDomain() {
                   <li>• Converter 메서드 분리: `toBoardDTOWithoutComments()` 메서드 추가로 댓글 접근 완전 제거</li>
                   <li>• 서비스 분리: 게시글과 댓글 조회를 완전히 분리하여 조인 폭발 방지</li>
                   <li>• 배치 조회: 파일 첨부 정보를 IN 절로 한 번에 조회</li>
-                  <li>• 댓글은 별도 API로 조회: GET /api/missing-pets/{'{id}'}/comments</li>
+                  <li>• 댓글 수 배치 조회: `getCommentCountsBatch()` 메서드로 모든 게시글의 댓글 수를 한 번에 조회 (IN 절 + GROUP BY)</li>
+                  <li>• 댓글 목록은 별도 API로 조회: GET /api/missing-pets/{'{id}'}/comments</li>
                 </ul>
                 <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>효과:</strong></p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 쿼리 수: 105개 → 2개 (98% 감소)</li>
+                  <li>• 쿼리 수: 105개 → 3개 (97% 감소)</li>
                   <li>• 백엔드 응답 시간: 571ms → 106ms (81% 개선)</li>
                   <li>• 메모리 사용량: 11MB → 3MB (73% 감소)</li>
-                  <li>• 댓글 N+1 문제 완전 해결: 103번 → 0번 (100% 제거)</li>
+                  <li>• 댓글 목록 조회 쿼리: 103번 → 0번 (100% 제거)</li>
+                  <li>• 댓글 수 조회 쿼리: 103번 → 1번 (배치 조회로 최적화)</li>
                 </ul>
                 <div style={{
                   marginTop: '1rem',

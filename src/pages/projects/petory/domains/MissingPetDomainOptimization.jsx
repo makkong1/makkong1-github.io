@@ -68,6 +68,7 @@ function MissingPetDomainOptimization() {
     participant Repo as MissingPetBoardRepository
     participant Converter as MissingPetConverter
     participant FileService as AttachmentFileService
+    participant CommentService as MissingPetCommentService
     participant DB as MySQL
     
     User->>Frontend: GET /api/missing-pets
@@ -89,21 +90,28 @@ function MissingPetDomainOptimization() {
     DB-->>FileService: 모든 게시글의 File 리스트
     FileService-->>Service: Map<boardIdx, List<FileDTO>>
     
+    Note over Service,CommentService: 3. 댓글 수 배치 조회 (IN 절, GROUP BY)
+    Service->>CommentService: getCommentCountsBatch(boardIds)
+    CommentService->>DB: 댓글 수 배치 조회 (IN 절, GROUP BY) (쿼리 3)
+    Note over DB: 모든 게시글의 댓글 수를 한 번에 조회
+    DB-->>CommentService: 댓글 수 목록 반환
+    CommentService-->>Service: Map<boardIdx, commentCount>
+    
+    Note over Service,Converter: 4. DTO 변환 (댓글 접근하지 않음)
     Service->>Converter: toBoardDTOWithoutComments(boards)
-    Note over Converter: 3. 댓글 접근하지 않는 메서드 사용
     loop 각 게시글 변환
         Converter->>Converter: toBoardDTOWithoutComments(board)
         Note over Converter: 댓글 접근하지 않음! LAZY 로딩 트리거 방지
-        Converter->>Service: mapBoardWithAttachmentsFromBatch(board, filesByBoardId)
-        Note over Service: 파일은 배치 조회 결과 사용 (개별 쿼리 없음)
+        Converter->>Service: 파일 정보 및 댓글 수 설정
+        Note over Service: attachments와 commentCount는 배치 조회 결과 사용
     end
     
-    Converter-->>Service: List<MissingPetBoardDTO> (댓글 빈 리스트)
+    Converter-->>Service: List<MissingPetBoardDTO> (댓글 빈 리스트, commentCount 포함)
     Service-->>Controller: List<MissingPetBoardDTO>
     Controller-->>Frontend: JSON 응답
     Frontend-->>User: 실종 제보 목록 표시 (댓글은 별도 API로 조회)
     
-    Note over Service,DB: 총 2개 쿼리로 감소<br/>게시글+작성자 조회: 1개 (JOIN FETCH)<br/>파일 배치 조회: 1개 (IN 절)<br/>댓글 조회: 0개 (접근하지 않음)<br/>98% 쿼리 수 감소 (105개 → 2개)`;
+    Note over Service,DB: 총 3개 쿼리로 감소<br/>게시글+작성자 조회: 1개 (JOIN FETCH)<br/>파일 배치 조회: 1개 (IN 절)<br/>댓글 수 배치 조회: 1개 (IN 절, GROUP BY)<br/>댓글 목록 조회: 0개 (접근하지 않음)<br/>97% 쿼리 수 감소 (105개 → 3개)`;
 
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
@@ -154,10 +162,11 @@ function MissingPetDomainOptimization() {
                   lineHeight: '1.8',
                   fontSize: '0.9rem'
                 }}>
-                  <li>• 게시글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>105개 → 2개</strong> (98% 감소)</li>
+                  <li>• 게시글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>105개 → 3개</strong> (97% 감소)</li>
                   <li>• 백엔드 응답 시간: <strong style={{ color: 'var(--text-color)' }}>571ms → 106ms</strong> (81% 개선)</li>
                   <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>11MB → 3MB</strong> (73% 감소)</li>
-                  <li>• 댓글 N+1 문제: <strong style={{ color: 'var(--text-color)' }}>103번 → 0번</strong> (100% 제거)</li>
+                  <li>• 댓글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>103번 → 0번</strong> (100% 제거)</li>
+                  <li>• 댓글 수 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>103번 → 1번</strong> (배치 조회로 최적화)</li>
                 </ul>
               </div>
             </div>
@@ -439,7 +448,8 @@ public List<MissingPetBoardDTO> getBoards(MissingPetStatus status) {
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
               borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
             }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. 파일 배치 조회 (이미 최적화됨)</h3>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
@@ -462,10 +472,82 @@ List<Long> boardIds = boards.stream()
 Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
     .getAttachmentsBatch(FileTargetType.MISSING_PET, boardIds);`}
               </pre>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginTop: '1rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>참고:</strong> 파일 조회는 이미 배치 조회로 최적화되어 있어 추가 작업이 필요하지 않았습니다. 
-                핵심 문제는 댓글 N+1 문제였으며, Converter 메서드 분리로 완전히 해결했습니다.
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. 댓글 수 배치 조회</h3>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                댓글 목록은 접근하지 않지만, 댓글 수는 표시해야 하므로 <strong style={{ color: 'var(--text-color)' }}>배치 조회로 모든 게시글의 댓글 수를 한 번에 조회</strong>합니다.
               </p>
+              <pre style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                overflow: 'auto',
+                fontSize: '0.85rem',
+                color: 'var(--text-secondary)',
+                fontFamily: 'monospace',
+                lineHeight: '1.6',
+                marginBottom: '1rem'
+              }}>
+{`// MissingPetCommentService.java
+
+public Map<Long, Long> getCommentCountsBatch(List<Long> boardIds) {
+    return commentRepository.countCommentsByBoardIds(boardIds)
+            .stream()
+            .collect(Collectors.toMap(
+                    CommentCountResult::getBoardIdx,
+                    CommentCountResult::getCount
+            ));
+}
+
+// MissingPetCommentRepository.java
+
+@Query("SELECT c.board.idx as boardIdx, COUNT(c.idx) as count " +
+       "FROM MissingPetComment c " +
+       "JOIN c.user u " +
+       "WHERE c.board.idx IN :boardIds " +
+       "AND c.isDeleted = false " +
+       "AND u.isDeleted = false " +
+       "AND u.status = 'ACTIVE' " +
+       "GROUP BY c.board.idx")
+List<CommentCountResult> countCommentsByBoardIds(@Param("boardIds") List<Long> boardIds);
+
+// MissingPetBoardService.java
+
+// 댓글 수 배치 조회
+Map<Long, Long> commentCountsByBoardId = commentService
+        .getCommentCountsBatch(boardIds);
+
+// DTO 변환 시 댓글 수 설정
+List<MissingPetBoardDTO> result = boards.stream()
+        .map(board -> {
+            MissingPetBoardDTO dto = missingPetConverter.toBoardDTOWithoutComments(board);
+            // 댓글 수 설정
+            Long commentCount = commentCountsByBoardId.getOrDefault(board.getIdx(), 0L);
+            dto.setCommentCount(commentCount.intValue());
+            // 파일 정보 추가
+            List<FileDTO> attachments = filesByBoardId.getOrDefault(board.getIdx(), List.of());
+            dto.setAttachments(attachments);
+            dto.setImageUrl(extractPrimaryFileUrl(attachments));
+            return dto;
+        })
+        .collect(Collectors.toList());`}
+              </pre>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginTop: '1rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>핵심 포인트:</strong>
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <li>• 댓글 목록은 접근하지 않아 LAZY 로딩 트리거 방지 (103번 → 0번)</li>
+                <li>• 댓글 수만 배치 조회로 한 번에 조회 (103번 → 1번, IN 절 + GROUP BY)</li>
+                <li>• 활성 사용자 필터링 (삭제되지 않고 활성 상태인 사용자의 댓글만 카운트)</li>
+                <li>• 댓글 목록이 필요한 경우 별도 API (GET /api/missing-pets/{'{id}'}/comments)로 조회</li>
+              </ul>
             </div>
           </section>
 
@@ -537,10 +619,10 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
                     <tr style={{
                       borderBottom: '1px solid var(--nav-border)'
                     }}>
-                      <td style={{ padding: '0.75rem' }}>쿼리 수</td>
+                      <td style={{ padding: '0.75rem' }}>총 쿼리 수</td>
                       <td style={{ padding: '0.75rem' }}>105개</td>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>2개</td>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>98% ↓</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>3개</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>97% ↓</td>
                     </tr>
                     <tr style={{
                       borderBottom: '1px solid var(--nav-border)'
@@ -560,10 +642,16 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
                       borderTop: '2px solid var(--nav-border)',
                       borderBottom: '1px solid var(--nav-border)'
                     }}>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--text-color)' }}>댓글 조회 쿼리</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--text-color)' }}>댓글 목록 조회 쿼리</td>
                       <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>103개</td>
                       <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>0개</td>
                       <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>100% 제거</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--text-color)' }}>댓글 수 조회 쿼리</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold' }}>103개</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>1개</td>
+                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>99% ↓</td>
                     </tr>
                   </tbody>
                 </table>
@@ -590,7 +678,7 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
                   margin: 0,
                   marginBottom: '0.5rem'
                 }}>
-                  <strong style={{ color: 'var(--text-color)' }}>쿼리 분석:</strong> 게시글+작성자 조회 1개 + 파일 배치 조회 1개 = 2개 (댓글 조회 0개)
+                  <strong style={{ color: 'var(--text-color)' }}>쿼리 분석:</strong> 게시글+작성자 조회 1개 + 파일 배치 조회 1개 + 댓글 수 배치 조회 1개 = 3개 (댓글 목록 조회 0개)
                 </p>
                 <p style={{
                   fontSize: '0.9rem',
@@ -598,7 +686,7 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
                   lineHeight: '1.6',
                   margin: 0
                 }}>
-                  <strong style={{ color: 'var(--text-color)' }}>핵심 개선:</strong> Converter 메서드 분리로 댓글 접근 완전 제거, LAZY 로딩 트리거 방지
+                  <strong style={{ color: 'var(--text-color)' }}>핵심 개선:</strong> Converter 메서드 분리로 댓글 목록 접근 완전 제거, 댓글 수는 배치 조회로 최적화
                 </p>
               </div>
             </div>
