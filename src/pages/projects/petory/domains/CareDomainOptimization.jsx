@@ -489,27 +489,6 @@ public class Pet {
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>시퀀스 다이어그램 (최적화 후)</h3>
               <MermaidDiagram chart={afterOptimizationSequence} />
             </div>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginTop: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>얻은 교훈 / 설계 인사이트</h3>
-              <ul style={{
-                listStyle: 'none',
-                padding: 0,
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8'
-              }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>단계별 최적화</strong>: 한 번에 모든 문제를 해결하기보다 단계별로 접근하여 효과 측정</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join의 한계</strong>: 중첩 컬렉션은 Fetch Join으로 해결하기 어려우므로 @BatchSize 활용</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>배치 조회 패턴</strong>: 폴리모픽 관계(File)는 배치 조회로 효율적으로 처리 가능</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>쿼리 수 vs 실행 시간</strong>: 쿼리 수 감소가 항상 실행 시간 감소를 보장하지는 않지만, DB 부하는 대폭 감소</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>실제 측정의 중요성</strong>: 예상했던 15-20개보다 훨씬 적은 4-5개 쿼리만 실행되어 예상보다 우수한 결과</li>
-              </ul>
-            </div>
           </section>
         </div>
         <TableOfContents sections={sections} />
