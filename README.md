@@ -113,7 +113,7 @@ Petory-Portfolio/
 - [Meetup 도메인: 동시성 제어](./docs/troubleshooting/meetup/race-condition-participants.md)
 - [Care 도메인: 펫케어 요청 목록 조회 최적화](./docs/troubleshooting/care/care-request-n-plus-one-analysis.md)
 - [User 도메인: 로그인 쿼리 최적화](./docs/troubleshooting/users/login-n-plus-one-issue.md)
-- [Missing Pet 도메인: 성능 측정 결과](./docs/troubleshooting/missing-pet/performance-measurement-results.md)
+- [Missing Pet 도메인: 성능 측정 결과](./docs/troubleshooting/missing-pet/n-plus-one-query-issue.md)
 
 ---
 

@@ -212,19 +212,26 @@ function MissingPetDomain() {
                   borderRadius: '6px',
                   border: '1px solid var(--link-color)'
                 }}>
-                  <a
-                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/missing-pet/n-plus-one-query-issue.md"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                  <Link
+                    to="/domains/missing-pet/optimization"
                     style={{
                       color: 'var(--link-color)',
                       textDecoration: 'none',
                       fontWeight: 'bold',
-                      display: 'inline-block'
+                      display: 'inline-block',
+                      marginBottom: '0.5rem'
                     }}
                   >
-                    → N+1 문제 해결 상세 문서 보기
-                  </a>
+                    → N+1 문제 해결 상세 보기
+                  </Link>
+                  <p style={{
+                    fontSize: '0.85rem',
+                    color: 'var(--text-secondary)',
+                    marginTop: '0.5rem',
+                    marginBottom: 0
+                  }}>
+                    (시퀀스 다이어그램, 테스트 코드, 상세 최적화 과정 포함)
+                  </p>
                 </div>
               </div>
             </div>
