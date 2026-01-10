@@ -8,25 +8,6 @@
 
 ---
 
-## 📊 핵심 성과
-
-### 성능 최적화 하이라이트
-
-#### 🎯 Board 도메인 (게시판)
-- **쿼리 수**: 301개 → **3개** (99% 감소)
-- **실행 시간**: 745ms → **30ms** (24.83배 개선)
-- **메모리 사용량**: 22.50 MB → **2 MB** (91% 감소)
-- **최적화 기법**: Fetch Join, 배치 조회, 인기글 스냅샷
-
-#### 📍 Location 도메인 (위치 서비스)
-- **조회 데이터 수**: 22,699개 → **1,026개** (95.5% 감소)
-- **프론트엔드 처리 시간**: 1,484ms → **700ms** (52.8% 개선, 2.1배 빠름)
-- **네트워크 전송량**: 22 MB → **1 MB** (95.5% 감소)
-- **메모리 사용량**: 78.90 MB → **28.6 MB** (63.8% 감소)
-- **최적화 기법**: 위치 기반 초기 로드, ST_Distance_Sphere 활용
-
----
-
 ## 🛠 기술 스택
 
 ### Frontend
@@ -124,46 +105,15 @@ Petory-Portfolio/
 
 ## 📈 성능 최적화 사례
 
-### 1. Board 도메인: N+1 문제 해결
+상세한 문제 해결 사례는 아래 문서에서 확인할 수 있습니다:
 
-**문제**: 게시글 목록 조회 시 각 게시글마다 작성자, 반응 정보를 개별 쿼리로 조회
-
-**해결**:
-- Fetch Join으로 작성자 정보 함께 조회
-- 배치 조회로 반응 정보 IN 절 집계
-- 인기글 스냅샷 생성으로 복잡한 계산 최적화
-
-**결과**:
-- 쿼리 수: 301개 → 3개 (99% 감소)
-- 실행 시간: 745ms → 30ms (24.83배 개선)
-
-[상세 문서 보기](./docs/troubleshooting/board/performance-optimization.md)
-
-### 2. Location 도메인: 초기 로드 성능 개선
-
-**문제**: 초기 로드 시 전체 데이터(22,699개) 조회로 인한 성능 저하
-
-**해결**:
-- 사용자 위치 기반 10km 반경 검색으로 데이터 양 감소
-- MySQL `ST_Distance_Sphere` 함수 활용
-- 백엔드에서 위치 기반 필터링 수행
-
-**결과**:
-- 조회 데이터: 22,699개 → 1,026개 (95.5% 감소)
-- 처리 시간: 1,484ms → 700ms (52.8% 개선)
-- 네트워크 전송량: 22 MB → 1 MB (95.5% 감소)
-
-[상세 문서 보기](./docs/troubleshooting/location/initial-load-performance.md)
-
-### 3. Chat 도메인: 읽음 상태 성능 최적화
-
-**문제**: 채팅방 목록 조회 시 읽음 상태를 개별 쿼리로 조회
-
-**해결**:
-- 배치 조회로 읽음 상태 정보 한 번에 조회
-- Redis 캐싱 활용
-
-[상세 문서 보기](./docs/troubleshooting/chat/read-status-performance.md)
+- [Board 도메인: N+1 문제 해결](./docs/troubleshooting/board/performance-optimization.md)
+- [Location 도메인: 초기 로드 성능 개선](./docs/troubleshooting/location/initial-load-performance.md)
+- [Chat 도메인: 읽음 상태 성능 최적화](./docs/troubleshooting/chat/read-status-performance.md)
+- [Meetup 도메인: 동시성 제어](./docs/troubleshooting/meetup/race-condition-participants.md)
+- [Care 도메인: 펫케어 요청 목록 조회 최적화](./docs/troubleshooting/care/care-request-n-plus-one-analysis.md)
+- [User 도메인: 로그인 쿼리 최적화](./docs/troubleshooting/users/login-n-plus-one-issue.md)
+- [Missing Pet 도메인: 성능 측정 결과](./docs/troubleshooting/missing-pet/performance-measurement-results.md)
 
 ---
 
@@ -199,12 +149,6 @@ Petory-Portfolio/
 - [Care 도메인](./docs/domains/care.md)
 - [User 도메인](./docs/domains/user.md)
 - [전체 도메인 목록](./docs/README.md)
-
-### 문제 해결 사례
-- [Board 성능 최적화](./docs/troubleshooting/board/performance-optimization.md)
-- [Location 초기 로드 성능](./docs/troubleshooting/location/initial-load-performance.md)
-- [Chat 읽음 상태 성능](./docs/troubleshooting/chat/read-status-performance.md)
-- [Meetup 동시성 제어](./docs/troubleshooting/meetup/race-condition-participants.md)
 
 ---
 
