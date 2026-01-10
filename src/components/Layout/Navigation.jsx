@@ -41,9 +41,9 @@ function Navigation() {
       <Link to="/demo" className="nav-link brand">
         🎮 Live Demo
       </Link>
-      <Link to="/docs" className="nav-link brand">
+      {/* <Link to="/docs" className="nav-link brand">
         Docs
-      </Link>
+      </Link> */}
     </>
   );
 

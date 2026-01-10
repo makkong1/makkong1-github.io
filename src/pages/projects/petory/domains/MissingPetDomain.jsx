@@ -67,10 +67,10 @@ function MissingPetDomain() {
               border: '1px solid var(--nav-border)'
             }}>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                MissingPet 도메인은 실종 동물 신고 및 관리 시스템을 담당합니다.
+                MissingPet 도메인은 실종 동물 신고 및 관리 시스템으로, 반려동물을 잃어버린 사용자가 신고하고 다른 사용자들이 목격 정보를 제공할 수 있습니다.
               </p>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                반려동물을 잃어버린 사용자가 신고하고 다른 사용자들이 정보를 제공할 수 있습니다.
+                위치 기반 검색, 파일 첨부, 알림 발송 등의 기능을 제공하며, 게시글과 댓글 조회를 분리하여 조인 폭발을 방지하고 성능을 최적화했습니다.
               </p>
               <div style={{
                 padding: '1rem',
@@ -87,9 +87,9 @@ function MissingPetDomain() {
                   lineHeight: '1.8',
                   fontSize: '0.9rem'
                 }}>
-                  <li>• 게시글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>207개 → 3개</strong> (98.5% 감소)</li>
-                  <li>• 백엔드 응답 시간: <strong style={{ color: 'var(--text-color)' }}>571ms → 79ms</strong> (86% 감소)</li>
-                  <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>11MB → 4MB</strong> (64% 감소)</li>
+                  <li>• 게시글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>105개 → 2개</strong> (98% 감소)</li>
+                  <li>• 백엔드 응답 시간: <strong style={{ color: 'var(--text-color)' }}>571ms → 106ms</strong> (81% 개선)</li>
+                  <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>11MB → 3MB</strong> (73% 감소)</li>
                 </ul>
               </div>
             </div>
@@ -112,9 +112,10 @@ function MissingPetDomain() {
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   <li>• 실종 동물 신고 생성/조회/수정/삭제 (이메일 인증 필요)</li>
                   <li>• 실종 동물 정보 입력 (이름, 종, 품종, 성별, 나이, 색상, 실종 날짜, 실종 장소)</li>
-                  <li>• 위치 정보 저장 (위도, 경도, 주소) - 현재 검색 기능 미구현</li>
-                  <li>• 이미지 첨부 (첫 번째 파일만 저장)</li>
+                  <li>• 위치 정보 저장 (위도, 경도, 주소) - 현재 검색 기능 미구현 (향후 반경 기반 검색 구현 예정)</li>
+                  <li>• 이미지 첨부 (첫 번째 파일만 저장, FileTargetType.MISSING_PET)</li>
                   <li>• Soft Delete (게시글 삭제 시 관련 댓글도 함께 Soft Delete)</li>
+                  <li>• 서비스 분리: 게시글과 댓글 조회를 분리하여 조인 폭발 방지</li>
                 </ul>
               </div>
             </div>
@@ -149,9 +150,10 @@ function MissingPetDomain() {
                 <p style={{ marginBottom: '0.5rem' }}>댓글로 목격 정보를 제공하고 실종자와 소통할 수 있습니다.</p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                   <li>• 목격 정보 댓글 작성 (내용, 목격 위치 주소, 위도, 경도)</li>
-                  <li>• 이미지 첨부 지원 (첫 번째 파일만 저장)</li>
-                  <li>• 알림 발송 (댓글 작성 시 게시글 작성자에게 알림, 비동기 처리)</li>
+                  <li>• 이미지 첨부 지원 (첫 번째 파일만 저장, FileTargetType.MISSING_PET_COMMENT)</li>
+                  <li>• 알림 발송 (댓글 작성자가 게시글 작성자가 아닌 경우에만 알림, 비동기 처리, @Async 사용)</li>
                   <li>• 실종제보 채팅 연동 ("목격했어요" 버튼으로 제보자-목격자 간 1:1 채팅 시작)</li>
+                  <li>• 댓글은 별도 API로 조회 (GET /api/missing-pets/{'{id}'}/comments) - 조인 폭발 방지</li>
                 </ul>
               </div>
             </div>
@@ -166,9 +168,10 @@ function MissingPetDomain() {
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                 <p style={{ marginBottom: '0.5rem' }}>실종 위치 및 목격 위치 정보를 저장합니다. (현재 위치 기반 검색 기능은 미구현)</p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 실종 위치 정보 저장 (위도, 경도, 주소)</li>
-                  <li>• 목격 위치 정보 저장 (위도, 경도, 주소)</li>
-                  <li>• 위치 정보는 데이터 저장 용도로만 사용 (향후 반경 기반 검색 기능 구현 예정)</li>
+                  <li>• 실종 위치 정보 저장 (위도, 경도 - BigDecimal 타입, precision=15, scale=12, 주소)</li>
+                  <li>• 목격 위치 정보 저장 (위도, 경도 - Double 타입, 주소)</li>
+                  <li>• 위치 정보는 데이터 저장 용도로만 사용</li>
+                  <li>• 향후 구현 예정: 하버사인 공식 또는 MySQL의 공간 인덱스(GIS)를 활용한 반경 기반 검색 기능</li>
                 </ul>
               </div>
             </div>
@@ -187,9 +190,21 @@ function MissingPetDomain() {
             }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. 게시글 목록 조회 시 N+1 문제</h3>
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong> 게시글 목록 조회 시 연관 엔티티(댓글, 파일)를 개별 조회하여 심각한 N+1 문제 발생 (게시글 103개 조회 시 207개 쿼리)</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결:</strong> JOIN FETCH로 댓글과 댓글 작성자 정보를 함께 조회, 배치 조회로 파일을 한 번에 조회</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>효과:</strong> 207개 쿼리 → 3개 쿼리로 감소 (98.5% 개선), 백엔드 응답 시간 571ms → 79ms (86% 감소)</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong> 게시글 목록 조회 시 Converter에서 `board.getComments()` 접근으로 LAZY 로딩 발생, 게시글 103개 조회 시 댓글 조회 쿼리가 103번 실행됨 (총 105개 쿼리)</p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결:</strong></p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
+                  <li>• Converter 메서드 분리: `toBoardDTOWithoutComments()` 메서드 추가로 댓글 접근 완전 제거</li>
+                  <li>• 서비스 분리: 게시글과 댓글 조회를 완전히 분리하여 조인 폭발 방지</li>
+                  <li>• 배치 조회: 파일 첨부 정보를 IN 절로 한 번에 조회</li>
+                  <li>• 댓글은 별도 API로 조회: GET /api/missing-pets/{'{id}'}/comments</li>
+                </ul>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>효과:</strong></p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
+                  <li>• 쿼리 수: 105개 → 2개 (98% 감소)</li>
+                  <li>• 백엔드 응답 시간: 571ms → 106ms (81% 개선)</li>
+                  <li>• 메모리 사용량: 11MB → 3MB (73% 감소)</li>
+                  <li>• 댓글 N+1 문제 완전 해결: 103번 → 0번 (100% 제거)</li>
+                </ul>
                 <div style={{
                   marginTop: '1rem',
                   padding: '1rem',
@@ -197,8 +212,10 @@ function MissingPetDomain() {
                   borderRadius: '6px',
                   border: '1px solid var(--link-color)'
                 }}>
-                  <Link
-                    to="/domains/missing-pet/optimization"
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/missing-pet/n-plus-one-query-issue.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
                     style={{
                       color: 'var(--link-color)',
                       textDecoration: 'none',
@@ -206,8 +223,8 @@ function MissingPetDomain() {
                       display: 'inline-block'
                     }}
                   >
-                    → N+1 문제 해결 상세 보기
-                  </Link>
+                    → N+1 문제 해결 상세 문서 보기
+                  </a>
                 </div>
               </div>
             </div>
@@ -256,7 +273,7 @@ function MissingPetDomain() {
             }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 최적화</h3>
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Fetch Join 사용:</strong></p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>게시글 + 작성자 조회 (JOIN FETCH):</strong></p>
                 <pre style={{
                   padding: '1rem',
                   backgroundColor: 'var(--bg-color)',
@@ -268,18 +285,14 @@ function MissingPetDomain() {
                   lineHeight: '1.6',
                   marginBottom: '1rem'
                 }}>
-{`@Query("SELECT DISTINCT b FROM MissingPetBoard b " +
+{`@Query("SELECT b FROM MissingPetBoard b " +
        "JOIN FETCH b.user u " +
-       "LEFT JOIN FETCH b.comments c " +
-       "LEFT JOIN FETCH c.user cu " +
        "WHERE b.isDeleted = false AND u.isDeleted = false " +
        "AND u.status = 'ACTIVE' " +
-       "AND (c.idx IS NULL OR (c.isDeleted = false " +
-       "AND cu.isDeleted = false AND cu.status = 'ACTIVE')) " +
        "ORDER BY b.createdAt DESC")
-List<MissingPetBoard> findAllWithCommentsByOrderByCreatedAtDesc();`}
+List<MissingPetBoard> findAllByOrderByCreatedAtDesc();`}
                 </pre>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>배치 조회:</strong></p>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>파일 배치 조회:</strong></p>
                 <pre style={{
                   padding: '1rem',
                   backgroundColor: 'var(--bg-color)',
@@ -291,17 +304,42 @@ List<MissingPetBoard> findAllWithCommentsByOrderByCreatedAtDesc();`}
                   lineHeight: '1.6',
                   marginBottom: '1rem'
                 }}>
-{`// 게시글 ID 목록으로 한 번에 파일 조회
+{`// 게시글 ID 목록으로 한 번에 파일 조회 (IN 절 사용)
 List<Long> boardIds = boards.stream()
     .map(MissingPetBoard::getIdx)
     .collect(Collectors.toList());
 Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
     .getAttachmentsBatch(FileTargetType.MISSING_PET, boardIds);`}
                 </pre>
+                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Converter 메서드 분리:</strong></p>
+                <pre style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  overflow: 'auto',
+                  fontSize: '0.85rem',
+                  color: 'var(--text-secondary)',
+                  fontFamily: 'monospace',
+                  lineHeight: '1.6',
+                  marginBottom: '1rem'
+                }}>
+{`// 댓글을 접근하지 않는 메서드로 N+1 문제 완전 해결
+public MissingPetBoardDTO toBoardDTOWithoutComments(MissingPetBoard board) {
+    return MissingPetBoardDTO.builder()
+        .idx(board.getIdx())
+        .userId(board.getUser().getIdx())
+        // ... 기타 필드들
+        .comments(Collections.emptyList()) // 댓글은 빈 리스트
+        .commentCount(0)
+        .build();
+}`}
+                </pre>
                 <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>개선 포인트:</strong></p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• JOIN FETCH로 N+1 문제 해결</li>
+                  <li>• JOIN FETCH로 게시글+작성자 정보를 한 번에 조회 (댓글 제외)</li>
                   <li>• 배치 조회로 파일을 한 번에 조회 (IN 절 사용)</li>
+                  <li>• Converter 메서드 분리로 댓글 접근 완전 제거 (LAZY 로딩 트리거 방지)</li>
+                  <li>• 서비스 분리로 조인 폭발 방지 및 확장성 향상</li>
                   <li>• 활성 사용자 필터링 (삭제되지 않고 활성 상태인 사용자만 조회)</li>
                 </ul>
               </div>
@@ -337,13 +375,17 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
           }}>
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
             <div>• idx (PK), user (신고자), title, content</div>
-            <div>• petName, species, breed, gender, age, color</div>
-            <div>• lostDate, lostLocation, latitude, longitude</div>
-            <div>• status (MISSING/FOUND/RESOLVED)</div>
-            <div>• createdAt, updatedAt, isDeleted</div>
+            <div>• petName, species, breed, gender (MissingPetGender enum: M, F), age, color</div>
+            <div>• lostDate, lostLocation, latitude (BigDecimal, precision=15, scale=12), longitude</div>
+            <div>• status (MissingPetStatus enum: MISSING/FOUND/RESOLVED)</div>
+            <div>• createdAt, updatedAt, isDeleted, deletedAt</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
             <div>• ManyToOne → Users</div>
-            <div>• OneToMany → MissingPetComment, AttachmentFile</div>
+            <div>• OneToMany → MissingPetComment (cascade=CascadeType.ALL, LAZY 로딩)</div>
+            <div>• 폴리모픽 관계 → AttachmentFile (FileTargetType.MISSING_PET)</div>
+            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>특징:</strong></div>
+            <div>• BaseTimeEntity 미사용 (@PrePersist, @PreUpdate로 직접 시간 관리)</div>
+            <div>• Soft Delete 지원 (isDeleted, deletedAt)</div>
           </div>
         </div>
 
@@ -362,10 +404,15 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
           }}>
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
             <div>• idx (PK), board (게시글), user (작성자)</div>
-            <div>• content (목격 정보), address, latitude, longitude</div>
+            <div>• content (목격 정보), address, latitude (Double), longitude</div>
             <div>• createdAt, isDeleted, deletedAt</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
             <div>• ManyToOne → MissingPetBoard, Users</div>
+            <div>• 폴리모픽 관계 → AttachmentFile (FileTargetType.MISSING_PET_COMMENT)</div>
+            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>특징:</strong></div>
+            <div>• BaseTimeEntity 미사용 (@PrePersist로 직접 createdAt 관리)</div>
+            <div>• Soft Delete 지원 (isDeleted, deletedAt)</div>
+            <div>• 목격 위치 정보 포함 (주소, 위도, 경도)</div>
           </div>
         </div>
       </section>
@@ -385,9 +432,11 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
                 color: 'var(--text-secondary)',
                 lineHeight: '1.8'
               }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>이메일 인증</strong>: 실종 제보 작성/수정/삭제 시 이메일 인증 필요</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>이메일 인증</strong>: 실종 제보 작성/수정/삭제 시 이메일 인증 필요 (EmailVerificationRequiredException)</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>작성자만 수정/삭제 가능</strong>: 신고 작성자만 본인 신고 수정/삭제 가능</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>소프트 삭제</strong>: isDeleted 플래그로 논리 삭제 (게시글 삭제 시 관련 댓글도 함께 Soft Delete)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>소프트 삭제</strong>: isDeleted, deletedAt 플래그로 논리 삭제</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>연관 댓글 삭제</strong>: 게시글 삭제 시 MissingPetCommentService.deleteAllCommentsByBoard()로 관련 댓글도 함께 Soft Delete</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>활성 사용자 필터링</strong>: 삭제되지 않고 활성 상태인 사용자만 조회 (u.isDeleted = false AND u.status = 'ACTIVE')</li>
               </ul>
             </div>
           </section>
@@ -405,14 +454,20 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
           <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>User 도메인:</strong></div>
             <div>• Users가 실종 신고 작성, 목격 정보 제공</div>
+            <div>• 이메일 인증 확인 (실종 제보 작성/수정/삭제 시 EmailVerificationRequiredException)</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>File 도메인:</strong></div>
             <div>• 실종 동물 사진 첨부 (FileTargetType.MISSING_PET, MISSING_PET_COMMENT)</div>
+            <div>• syncSingleAttachment()로 파일 동기화 (첫 번째 파일만 저장)</div>
+            <div>• getAttachmentsBatch()로 배치 조회하여 N+1 문제 해결</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Notification 도메인:</strong></div>
-            <div>• 댓글 작성 시 알림 발송 (댓글 작성자가 게시글 작성자가 아닌 경우, 비동기 처리)</div>
+            <div>• 댓글 작성 시 알림 발송 (댓글 작성자가 게시글 작성자가 아닌 경우)</div>
+            <div>• 비동기 처리 (@Async 사용, 알림 발송 실패해도 댓글 작성은 성공)</div>
+            <div>• NotificationType.MISSING_PET_COMMENT 사용</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Report 도메인:</strong></div>
             <div>• 부적절한 신고 접수</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Chat 도메인:</strong></div>
-            <div>• "목격했어요" 버튼으로 제보자-목격자 간 1:1 채팅 시작 (실종제보 채팅 연동)</div>
+            <div>• "목격했어요" 버튼으로 제보자-목격자 간 1:1 채팅 시작</div>
+            <div>• ConversationService.createMissingPetChat()로 실종제보 채팅방 생성</div>
           </div>
         </div>
       </section>
@@ -435,12 +490,12 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
             fontFamily: 'monospace',
             fontSize: '0.9rem'
           }}>
-            <div>• GET / - 실종 제보 목록 조회 (status 파라미터로 필터링)</div>
-            <div>• GET /{'{id}'} - 특정 실종 제보 조회</div>
-            <div>• POST / - 실종 제보 생성 (인증 필요, 이메일 인증 필요)</div>
-            <div>• PUT /{'{id}'} - 실종 제보 수정 (인증 필요, 이메일 인증 필요)</div>
-            <div>• PATCH /{'{id}'}/status - 상태 변경 (RequestBody: {"{"}"status": "MISSING"{"}"})</div>
-            <div>• DELETE /{'{id}'} - 실종 제보 삭제 (인증 필요, 이메일 인증 필요, 응답: {"{"}"success": true{"}"})</div>
+            <div>• GET / - 실종 제보 목록 조회 (status 파라미터로 필터링, 댓글 제외)</div>
+            <div>• GET /{'{id}'} - 특정 실종 제보 조회 (댓글 수만 포함, 댓글 목록은 별도 API로 조회)</div>
+            <div>• POST / - 실종 제보 생성 (인증 필요, 이메일 인증 필요, 파일 첨부 지원)</div>
+            <div>• PUT /{'{id}'} - 실종 제보 수정 (인증 필요, 이메일 인증 필요, 선택적 업데이트, 파일 첨부 지원)</div>
+            <div>• PATCH /{'{id}'}/status - 상태 변경 (RequestBody: {"{"}"status": "MISSING"{"}"}, 모든 인증된 사용자 가능)</div>
+            <div>• DELETE /{'{id}'} - 실종 제보 삭제 (인증 필요, 이메일 인증 필요, 관련 댓글도 함께 Soft Delete, 응답: {"{"}"success": true{"}"})</div>
           </div>
         </div>
 
@@ -458,9 +513,9 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
             fontFamily: 'monospace',
             fontSize: '0.9rem'
           }}>
-            <div>• GET / - 댓글 목록 조회</div>
-            <div>• POST / - 댓글 작성 (인증 필요, 파일 첨부 지원 - 첫 번째 파일만 저장)</div>
-            <div>• DELETE /{'{commentId}'} - 댓글 삭제 (인증 필요, 응답: {"{"}"success": true{"}"})</div>
+            <div>• GET / - 댓글 목록 조회 (삭제되지 않은 댓글만, 작성자 정보 포함, 첨부 파일 배치 조회)</div>
+            <div>• POST / - 댓글 작성 (인증 필요, 파일 첨부 지원 - 첫 번째 파일만 저장, 알림 발송 비동기 처리)</div>
+            <div>• DELETE /{'{commentId}'} - 댓글 삭제 (인증 필요, Soft Delete, 응답: {"{"}"success": true{"}"})</div>
           </div>
         </div>
 
@@ -498,10 +553,23 @@ Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
             style={{ 
               color: 'var(--link-color)',
               textDecoration: 'none',
-              display: 'block'
+              display: 'block',
+              marginBottom: '0.5rem'
             }}
           >
             → Missing Pet 도메인 상세 문서
+          </a>
+          <a 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/missing-pet/n-plus-one-query-issue.md" 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: 'var(--link-color)',
+              textDecoration: 'none',
+              display: 'block'
+            }}
+          >
+            → N+1 문제 해결 상세 문서
           </a>
         </div>
           </section>
