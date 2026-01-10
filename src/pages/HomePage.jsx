@@ -5,7 +5,7 @@ function HomePage() {
     <div className="layout-main">
       {/* 페이지 헤더 */}
       <div className="page-header">
-        <h1>내사진</h1>
+        {/* <h1>내사진</h1> */}
         <p>안녕하세요! 저는 <strong>선택한 방향을 끝까지 책임지는 백엔드 개발자</strong> 박영범입니다.</p>
       </div>
 
