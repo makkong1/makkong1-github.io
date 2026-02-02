@@ -8,6 +8,7 @@ function ChatDomain() {
     { id: 'features', title: '주요 기능' },
     { id: 'troubleshooting', title: '트러블슈팅' },
     { id: 'db-optimization', title: 'DB 최적화' },
+    { id: 'refactoring', title: '리팩토링' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'security', title: '보안 및 권한 체계' },
     { id: 'relationships', title: '다른 도메인과의 연관관계' },
@@ -308,7 +309,131 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
             </div>
           </section>
 
-          {/* 5. Entity 구조 */}
+          {/* 5. 리팩토링 */}
+          <section id="refactoring" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>리팩토링</h2>
+            
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>DTO → record 리팩토링</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.75rem' }}>
+                  Chat 도메인의 DTO 중 record 적용에 적합한 항목을 선별하여 리팩토링했습니다.
+                </p>
+                
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem'
+                }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>record로 전환한 DTO (2개)</h4>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    fontSize: '0.9rem',
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>CreateConversationRequest</strong> - 채팅방 생성 요청 (5개 필드: conversationType, relatedType, relatedIdx, title, participantUserIds)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>SendMessageRequest</strong> - 메시지 전송 요청 (4개 필드: conversationIdx, content, messageType, replyToMessageIdx)</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem'
+                }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>record로 전환하지 않은 DTO (3개)</h4>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    fontSize: '0.9rem',
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>ChatMessageDTO</strong> - 필드 15개로 생성자 과도하게 김, 자기 참조 및 중첩 구조 포함</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>ConversationDTO</strong> - Service에서 setter 3곳 사용 (setUnreadCount, setParticipants, setLastMessage), N+1 최적화를 위한 배치 조회 후 setter로 조립하는 패턴</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>ConversationParticipantDTO</strong> - 필드 18개로 생성자 너무 길어짐</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '4px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  <p style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: 'var(--text-color)' }}>변경 사항 요약:</strong>
+                  </p>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• DTO 정의: Lombok <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Data</code> <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Builder</code> 제거 → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>public record XxxDTO(...)</code></li>
+                    <li>• 생성: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>.builder().field(x).build()</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>new XxxDTO(...)</code></li>
+                    <li>• 접근: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>dto.getXxx()</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>dto.xxx()</code> (record accessor)</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '4px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  <p style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: 'var(--text-color)' }}>수정된 파일:</strong>
+                  </p>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CreateConversationRequest.java</code> - class → record</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>SendMessageRequest.java</code> - class → record</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>ConversationController.java</code> - getter 호출 방식 변경 (5곳)</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>ChatMessageController.java</code> - getter 호출 방식 변경 (4곳)</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/recordType/chat/dto-record-refactoring.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → DTO → record 리팩토링 상세 문서 보기
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 6. Entity 구조 */}
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
             <div className="section-card" style={{

@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../components/Common/TableOfContents';
-import petoryErdImage from '../../../assets/petory-erd.png';
+import petoryErdImage from '../../../assets/petory-erd-0131.png';
 
 function PetoryProjectPage() {
   const sections = [

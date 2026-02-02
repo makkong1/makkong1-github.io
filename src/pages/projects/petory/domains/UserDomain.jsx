@@ -8,6 +8,7 @@ function UserDomain() {
     { id: 'features', title: '주요 기능' },
     { id: 'troubleshooting', title: '트러블슈팅' },
     { id: 'db-optimization', title: 'DB 최적화' },
+    { id: 'refactoring', title: '리팩토링' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'security', title: '보안 및 권한 체계' },
     { id: 'relationships', title: '다른 도메인과의 연관관계' },
@@ -622,8 +623,138 @@ WHERE u.id = ? AND u.is_deleted = false;`}
             </div>
           </section>
 
+          {/* 9. 리팩토링 */}
+          <section id="refactoring" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>리팩토링</h2>
+            
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>DTO → record 리팩토링</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.75rem' }}>
+                  User 도메인의 DTO 중 record 적용에 적합한 항목을 선별하여 리팩토링했습니다.
+                </p>
+                
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem'
+                }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>record로 전환한 DTO (3개)</h4>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    fontSize: '0.9rem',
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>LoginRequest</strong> - 로그인 요청 (2개 필드: id, password)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>TokenResponse</strong> - 토큰 발급 응답 (3개 필드: accessToken, refreshToken, user)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>SocialUserDTO</strong> - 소셜 로그인 사용자 정보 응답 (3개 필드: idx, provider, providerId)</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem'
+                }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>record로 전환하지 않은 DTO (5개)</h4>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    fontSize: '0.9rem',
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>UsersDTO</strong> - 필드 17개로 생성자 과도하게 김, Request/Response 겸용, 중첩 구조 포함</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>PetDTO</strong> - 필드 18개로 생성자 과도하게 김, Request/Response 겸용, 중첩 구조 포함</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>PetVaccinationDTO</strong> - 필드 8개로 적당하지만 사용 빈도 낮고 Request/Response 겸용 가능성</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>UserProfileWithReviewsDTO</strong> - 사용처 및 setter 사용 여부 확인 필요</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>UserPageResponseDTO</strong> - 페이징 응답으로 record 적합할 수 있으나 별도 확인 필요</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '4px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  <p style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: 'var(--text-color)' }}>변경 사항 요약:</strong>
+                  </p>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• DTO 정의: Lombok <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Data</code> <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Builder</code> 제거 → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>public record XxxDTO(...)</code></li>
+                    <li>• 생성: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>.builder().field(x).build()</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>new XxxDTO(...)</code></li>
+                    <li>• 접근: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>dto.getXxx()</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>dto.xxx()</code> (record accessor)</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '4px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  <p style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: 'var(--text-color)' }}>수정된 파일:</strong>
+                  </p>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>LoginRequest.java</code> - class → record</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>TokenResponse.java</code> - class → record</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>SocialUserDTO.java</code> - class → record</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>AuthController.java</code> - getter → accessor</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>AuthService.java</code> - builder → 생성자</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>OAuth2Service.java</code> - builder → 생성자</li>
+                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>SocialUserConverter.java</code> - builder → 생성자, getter → accessor</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/recordType/user/dto-record-refactoring.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → DTO → record 리팩토링 상세 문서 보기
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
         
-          {/* 9. Entity 구조 */}
+          {/* 10. Entity 구조 */}
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
             <div className="section-card" style={{
@@ -636,7 +767,7 @@ WHERE u.id = ? AND u.is_deleted = false;`}
             </div>
           </section>
 
-          {/* 10. 보안 및 권한 체계 */}
+          {/* 11. 보안 및 권한 체계 */}
           <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
             <div className="section-card" style={{
