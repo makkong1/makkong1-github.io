@@ -8,6 +8,7 @@ function BoardDomain() {
     { id: 'features', title: '주요 기능' },
     { id: 'troubleshooting', title: '트러블슈팅' },
     { id: 'db-optimization', title: 'DB 최적화' },
+    { id: 'refactoring', title: '리팩토링' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'security', title: '보안 및 권한 체계' },
     { id: 'relationships', title: '다른 도메인과의 연관관계' },
@@ -409,7 +410,240 @@ GROUP BY board_idx, reaction_type;`}
             </div>
           </section>
 
-          {/* 7. Entity 구조 */}
+          {/* 5. 리팩토링 */}
+          <section id="refactoring" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>리팩토링</h2>
+            
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. 검색 기능 리팩토링 (2026-01-31)</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.75rem' }}>
+                  게시글 검색 기능의 성능을 최적화하고 코드를 간소화했습니다.
+                </p>
+                
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem'
+                }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>주요 변경 사항</h4>
+                  
+                  <div style={{ marginBottom: '1rem' }}>
+                    <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                      <strong style={{ color: 'var(--text-color)' }}>1. TITLE/CONTENT 개별 검색 → TITLE_CONTENT 통합</strong>
+                    </p>
+                    <ul style={{
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: '0 0 0.5rem 0',
+                      fontSize: '0.9rem',
+                      lineHeight: '1.6'
+                    }}>
+                      <li>• <strong style={{ color: '#e74c3c' }}>Before:</strong> LIKE '%keyword%' 사용으로 풀 테이블 스캔 발생</li>
+                      <li>• <strong style={{ color: '#27ae60' }}>After:</strong> FULLTEXT 인덱스 활용으로 검색 성능 향상</li>
+                      <li>• 검색 타입: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>NICKNAME | TITLE | CONTENT | TITLE_CONTENT</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>TITLE_CONTENT | NICKNAME</code></li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <p style={{ marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                      <strong style={{ color: 'var(--text-color)' }}>2. NICKNAME 검색 최적화</strong>
+                    </p>
+                    <ul style={{
+                      listStyle: 'none',
+                      padding: 0,
+                      margin: 0,
+                      fontSize: '0.9rem',
+                      lineHeight: '1.6'
+                    }}>
+                      <li>• <strong style={{ color: '#e74c3c' }}>Before:</strong> 2번 쿼리 (User 조회 + Board 조회) + 메모리 페이징</li>
+                      <li>• <strong style={{ color: '#27ae60' }}>After:</strong> 1번 쿼리 (JOIN으로 한 번에 처리) + DB 레벨 페이징</li>
+                      <li>• 완전 일치 → 부분 일치 검색 지원 (UX 개선)</li>
+                    </ul>
+                  </div>
+                </div>
+
+                <div style={{
+                  overflowX: 'auto',
+                  marginBottom: '1rem'
+                }}>
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse',
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.9rem'
+                  }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)', fontWeight: 'bold' }}>항목</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)', fontWeight: 'bold' }}>Before</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)', fontWeight: 'bold' }}>After</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)', fontWeight: 'bold' }}>개선</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>TITLE/CONTENT 검색</td>
+                        <td style={{ padding: '0.75rem', color: '#e74c3c' }}>LIKE (Full Scan)</td>
+                        <td style={{ padding: '0.75rem', color: '#27ae60' }}>FULLTEXT (인덱스)</td>
+                        <td style={{ padding: '0.75rem' }}>인덱스 활용</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>NICKNAME 쿼리 수</td>
+                        <td style={{ padding: '0.75rem', color: '#e74c3c' }}>2번</td>
+                        <td style={{ padding: '0.75rem', color: '#27ae60' }}>1번</td>
+                        <td style={{ padding: '0.75rem' }}>50% 감소</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>NICKNAME 페이징</td>
+                        <td style={{ padding: '0.75rem', color: '#e74c3c' }}>메모리 (subList)</td>
+                        <td style={{ padding: '0.75rem', color: '#27ae60' }}>DB (LIMIT/OFFSET)</td>
+                        <td style={{ padding: '0.75rem' }}>메모리 사용량 감소</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '0.75rem' }}>NICKNAME 검색 방식</td>
+                        <td style={{ padding: '0.75rem', color: '#e74c3c' }}>완전 일치</td>
+                        <td style={{ padding: '0.75rem', color: '#27ae60' }}>부분 일치</td>
+                        <td style={{ padding: '0.75rem' }}>UX 개선</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/recordType/board/board-search-optimization.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → 검색 기능 리팩토링 상세 문서 보기
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>2. DTO → record 리팩토링</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.75rem' }}>
+                  Board 도메인의 DTO 중 record 적용에 적합한 항목을 선별하여 리팩토링했습니다.
+                </p>
+                
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem'
+                }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>record로 전환한 DTO (7개)</h4>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    fontSize: '0.9rem',
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>BoardPageResponseDTO</strong> - 게시글 페이징 응답 (7개 필드)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>CommentPageResponseDTO</strong> - 댓글 페이징 응답 (7개 필드)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>MissingPetBoardPageResponseDTO</strong> - 실종동물 게시글 페이징 응답 (7개 필드)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>MissingPetCommentPageResponseDTO</strong> - 실종동물 댓글 페이징 응답 (7개 필드)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>ReactionRequest</strong> - 좋아요/싫어요 반응 요청 (2개 필드)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>ReactionSummaryDTO</strong> - 좋아요/싫어요 요약 응답 (3개 필드)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>BoardPopularitySnapshotDTO</strong> - 인기 게시글 스냅샷 응답 (14개 필드)</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem'
+                }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>record로 전환하지 않은 DTO (4개)</h4>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    fontSize: '0.9rem',
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>BoardDTO</strong> - setter로 인-place 수정 사용 (불변성 제약)</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>CommentDTO</strong> - Request+Response 혼용, 가변 수정 사용</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>MissingPetBoardDTO</strong> - 필드 27개로 생성자 과도하게 김</li>
+                    <li>• <strong style={{ color: 'var(--text-color)' }}>MissingPetCommentDTO</strong> - 가변 수정 사용</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '0.75rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '4px',
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  <p style={{ marginBottom: '0.5rem' }}>
+                    <strong style={{ color: 'var(--text-color)' }}>변경 사항 요약:</strong>
+                  </p>
+                  <ul style={{
+                    listStyle: 'none',
+                    padding: 0,
+                    margin: 0,
+                    lineHeight: '1.8'
+                  }}>
+                    <li>• DTO 정의: Lombok <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Data</code> <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Builder</code> 제거 → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>public record XxxDTO(...)</code></li>
+                    <li>• 생성: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>.builder().field(x).build()</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>new XxxDTO(...)</code></li>
+                    <li>• 접근: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>dto.getXxx()</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>dto.xxx()</code> (record accessor)</li>
+                  </ul>
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/recordType/board/dto-record-refactoring.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → DTO → record 리팩토링 상세 문서 보기
+                  </a>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* 6. Entity 구조 */}
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
             <div className="section-card" style={{
