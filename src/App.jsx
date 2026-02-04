@@ -18,6 +18,7 @@ import MissingPetDomain from './pages/projects/petory/domains/MissingPetDomain';
 import MissingPetDomainOptimization from './pages/projects/petory/domains/MissingPetDomainOptimization';
 import LocationDomain from './pages/projects/petory/domains/LocationDomain';
 import LocationDomainOptimization from './pages/projects/petory/domains/LocationDomainOptimization';
+import LocationDomainRefactoring from './pages/projects/petory/domains/LocationDomainRefactoring';
 import MeetupDomain from './pages/projects/petory/domains/MeetupDomain';
 import MeetupDomainOptimization from './pages/projects/petory/domains/MeetupDomainOptimization';
 import ChatDomain from './pages/projects/petory/domains/ChatDomain';
@@ -53,6 +54,7 @@ function App() {
             <Route path="/domains/missing-pet/optimization" element={<MissingPetDomainOptimization />} />
             <Route path="/domains/location" element={<LocationDomain />} />
             <Route path="/domains/location/optimization" element={<LocationDomainOptimization />} />
+            <Route path="/domains/location/refactoring" element={<LocationDomainRefactoring />} />
             <Route path="/domains/meetup" element={<MeetupDomain />} />
             <Route path="/domains/meetup/optimization" element={<MeetupDomainOptimization />} />
             <Route path="/domains/chat" element={<ChatDomain />} />
