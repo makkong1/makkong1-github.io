@@ -21,6 +21,7 @@ import LocationDomainOptimization from './pages/projects/petory/domains/Location
 import LocationDomainRefactoring from './pages/projects/petory/domains/LocationDomainRefactoring';
 import MeetupDomain from './pages/projects/petory/domains/MeetupDomain';
 import MeetupDomainOptimization from './pages/projects/petory/domains/MeetupDomainOptimization';
+import MeetupDomainRefactoring from './pages/projects/petory/domains/MeetupDomainRefactoring';
 import ChatDomain from './pages/projects/petory/domains/ChatDomain';
 import ChatDomainOptimization from './pages/projects/petory/domains/ChatDomainOptimization';
 import './styles/global.css';
@@ -57,6 +58,7 @@ function App() {
             <Route path="/domains/location/refactoring" element={<LocationDomainRefactoring />} />
             <Route path="/domains/meetup" element={<MeetupDomain />} />
             <Route path="/domains/meetup/optimization" element={<MeetupDomainOptimization />} />
+            <Route path="/domains/meetup/refactoring" element={<MeetupDomainRefactoring />} />
             <Route path="/domains/chat" element={<ChatDomain />} />
             <Route path="/domains/chat/optimization" element={<ChatDomainOptimization />} />
             
