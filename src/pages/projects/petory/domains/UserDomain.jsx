@@ -751,6 +751,37 @@ WHERE u.id = ? AND u.is_deleted = false;`}
                 </div>
               </div>
             </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginTop: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>백엔드 성능 최적화 리팩토링</h3>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                getAllUsers 제거, Auth 중복 조회 제거, Admin 삭제 최적화, socialUsers N+1 해결, 프로필+리뷰 통합, OAuth2 ID 생성 최적화 등 백엔드 리팩토링 내역을 정리했습니다.
+              </p>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                border: '1px solid var(--link-color)'
+              }}>
+                <Link
+                  to="/domains/user/refactoring"
+                  style={{
+                    color: 'var(--link-color)',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    display: 'inline-block'
+                  }}
+                >
+                  → 리팩토링 상세 페이지 보기
+                </Link>
+              </div>
+            </div>
           </section>
 
         

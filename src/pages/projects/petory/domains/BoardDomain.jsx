@@ -641,6 +641,37 @@ GROUP BY board_idx, reaction_type;`}
                 </div>
               </div>
             </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginTop: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. 백엔드 성능 최적화 리팩토링</h3>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                Admin 메모리 로드 제거, 페이징 DB 레벨 필터링, Comment N+1 해결, extractPrimaryFileUrl 공통화 등 백엔드 리팩토링 내역을 정리했습니다.
+              </p>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                border: '1px solid var(--link-color)'
+              }}>
+                <Link
+                  to="/domains/board/refactoring"
+                  style={{
+                    color: 'var(--link-color)',
+                    textDecoration: 'none',
+                    fontWeight: 'bold',
+                    display: 'inline-block'
+                  }}
+                >
+                  → 리팩토링 상세 페이지 보기
+                </Link>
+              </div>
+            </div>
           </section>
 
           {/* 6. Entity 구조 */}

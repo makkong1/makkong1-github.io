@@ -10,8 +10,10 @@ import DemoPage from './pages/DemoPage';
 // 도메인 페이지들
 import UserDomain from './pages/projects/petory/domains/UserDomain';
 import UserDomainOptimization from './pages/projects/petory/domains/UserDomainOptimization';
+import UserDomainRefactoring from './pages/projects/petory/domains/UserDomainRefactoring';
 import BoardDomain from './pages/projects/petory/domains/BoardDomain';
 import BoardDomainOptimization from './pages/projects/petory/domains/BoardDomainOptimization';
+import BoardDomainRefactoring from './pages/projects/petory/domains/BoardDomainRefactoring';
 import CareDomain from './pages/projects/petory/domains/CareDomain';
 import CareDomainOptimization from './pages/projects/petory/domains/CareDomainOptimization';
 import MissingPetDomain from './pages/projects/petory/domains/MissingPetDomain';
@@ -47,8 +49,10 @@ function App() {
             {/* 도메인 페이지들 */}
             <Route path="/domains/user" element={<UserDomain />} />
             <Route path="/domains/user/optimization" element={<UserDomainOptimization />} />
+            <Route path="/domains/user/refactoring" element={<UserDomainRefactoring />} />
             <Route path="/domains/board" element={<BoardDomain />} />
             <Route path="/domains/board/optimization" element={<BoardDomainOptimization />} />
+            <Route path="/domains/board/refactoring" element={<BoardDomainRefactoring />} />
             <Route path="/domains/care" element={<CareDomain />} />
             <Route path="/domains/care/optimization" element={<CareDomainOptimization />} />
             <Route path="/domains/missing-pet" element={<MissingPetDomain />} />
