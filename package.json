@@ -6,7 +6,7 @@
   "homepage": "https://makkong1.github.io/makkong1-github.io",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "vite build && node -e \"require('fs').copyFileSync('dist/index.html','dist/404.html')\"",
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy": "gh-pages -d dist"

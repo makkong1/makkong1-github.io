@@ -95,7 +95,7 @@ function Navigation() {
       <Link to="/domains/user" className={`nav-link ${path === '/domains/user' ? 'active' : ''}`}>
         User
       </Link>
-      <Link to="/domains/board" className={`nav-link ${path === '/domains/board' ? 'active' : ''}`}>
+      <Link to="/domains/board" className={`nav-link ${path === '/domains/board' || path.startsWith('/domains/board/') ? 'active' : ''}`}>
         Board
       </Link>
       <Link to="/domains/care" className={`nav-link ${path === '/domains/care' ? 'active' : ''}`}>

@@ -50,9 +50,9 @@ function App() {
             <Route path="/domains/user" element={<UserDomain />} />
             <Route path="/domains/user/optimization" element={<UserDomainOptimization />} />
             <Route path="/domains/user/refactoring" element={<UserDomainRefactoring />} />
-            <Route path="/domains/board" element={<BoardDomain />} />
-            <Route path="/domains/board/optimization" element={<BoardDomainOptimization />} />
             <Route path="/domains/board/refactoring" element={<BoardDomainRefactoring />} />
+            <Route path="/domains/board/optimization" element={<BoardDomainOptimization />} />
+            <Route path="/domains/board" element={<BoardDomain />} />
             <Route path="/domains/care" element={<CareDomain />} />
             <Route path="/domains/care/optimization" element={<CareDomainOptimization />} />
             <Route path="/domains/missing-pet" element={<MissingPetDomain />} />
