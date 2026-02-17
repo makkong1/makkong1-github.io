@@ -117,7 +117,7 @@ if (Boolean.TRUE.equals(deleted)) {
                 fontSize: '0.9rem'
               }}>
                 <li>• <code>listBoards</code> (GET /api/admin/boards) 엔드포인트 제거</li>
-                <li>• <code>GET /api/admin/boards/{id}</code> 단일 게시글 조회 API 추가</li>
+                <li>• <code>GET /api/admin/boards/{'{id}'}</code> 단일 게시글 조회 API 추가</li>
                 <li>• ReportDetailModal: 전체 로드 → 단건 조회로 변경</li>
               </ul>
             </div>
