@@ -16,6 +16,7 @@ import BoardDomainOptimization from './pages/projects/petory/domains/BoardDomain
 import BoardDomainRefactoring from './pages/projects/petory/domains/BoardDomainRefactoring';
 import CareDomain from './pages/projects/petory/domains/CareDomain';
 import CareDomainOptimization from './pages/projects/petory/domains/CareDomainOptimization';
+import CareDomainRefactoring from './pages/projects/petory/domains/CareDomainRefactoring';
 import MissingPetDomain from './pages/projects/petory/domains/MissingPetDomain';
 import MissingPetDomainOptimization from './pages/projects/petory/domains/MissingPetDomainOptimization';
 import LocationDomain from './pages/projects/petory/domains/LocationDomain';
@@ -53,6 +54,7 @@ function App() {
             <Route path="/domains/board/refactoring" element={<BoardDomainRefactoring />} />
             <Route path="/domains/board/optimization" element={<BoardDomainOptimization />} />
             <Route path="/domains/board" element={<BoardDomain />} />
+            <Route path="/domains/care/refactoring" element={<CareDomainRefactoring />} />
             <Route path="/domains/care" element={<CareDomain />} />
             <Route path="/domains/care/optimization" element={<CareDomainOptimization />} />
             <Route path="/domains/missing-pet" element={<MissingPetDomain />} />

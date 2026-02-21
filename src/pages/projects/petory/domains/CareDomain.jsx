@@ -577,7 +577,8 @@ List<CareRequest> findAllWithUserAndPet();`}
                   padding: '1rem',
                   backgroundColor: 'var(--bg-color)',
                   borderRadius: '6px',
-                  border: '1px solid var(--link-color)'
+                  border: '1px solid var(--link-color)',
+                  marginBottom: '1rem'
                 }}>
                   <a
                     href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/recordType/payment/dto-record-refactoring.md"
@@ -592,6 +593,25 @@ List<CareRequest> findAllWithUserAndPet();`}
                   >
                     → Payment 도메인 DTO → record 리팩토링 상세 문서 보기
                   </a>
+                </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <Link
+                    to="/domains/care/refactoring"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → Care·Payment 리팩토링 상세 페이지 보기
+                  </Link>
                 </div>
               </div>
             </div>
