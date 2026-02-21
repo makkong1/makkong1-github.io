@@ -104,10 +104,10 @@ function Navigation() {
       <Link to="/domains/missing-pet" className={`nav-link ${path === '/domains/missing-pet' ? 'active' : ''}`}>
         Missing Pet
       </Link>
-      <Link to="/domains/location" className={`nav-link ${path === '/domains/location' ? 'active' : ''}`}>
+      <Link to="/domains/location" className={`nav-link ${path === '/domains/location' || path.startsWith('/domains/location/') ? 'active' : ''}`}>
         Location
       </Link>
-      <Link to="/domains/meetup" className={`nav-link ${path === '/domains/meetup' ? 'active' : ''}`}>
+      <Link to="/domains/meetup" className={`nav-link ${path === '/domains/meetup' || path.startsWith('/domains/meetup/') ? 'active' : ''}`}>
         Meetup
       </Link>
       <Link to="/domains/chat" className={`nav-link ${path === '/domains/chat' ? 'active' : ''}`}>

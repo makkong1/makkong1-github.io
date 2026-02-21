@@ -134,6 +134,7 @@
 - [Board](./refactoring/board/board-backend-performance-optimization.md) - N+1, 메모리 페이징, Admin 필터링
 - [User](./refactoring/user/user-backend-performance-optimization.md) - Auth 중복 조회, Admin 삭제, SocialUsers N+1
 - [Payment](./refactoring/payment/payment-backend-performance-optimization.md) - 펫코인 Race Condition, DB 페이징, N+1
+- [Location](./refactoring/location/거리-계산-중복-제거.md) - 거리 계산 중복 제거, 검색 로직 단순화
 - [Meetup](./refactoring/meetup/meetup-backend-performance-optimization.md) - 인근 모임 인메모리 필터링, 참여자 N+1
 
 ## 다이어그램

@@ -31,6 +31,7 @@ function PetoryProjectPage() {
         USER_SVC[User Service<br/>인증, 소셜 로그인]
         BOARD_SVC[Board Service<br/>커뮤니티, 인기글]
         CARE_SVC[Care Service<br/>케어 매칭, 리뷰]
+        PAYMENT_SVC[Payment Service<br/>펫코인, 에스크로]
         LOCATION_SVC[Location Service<br/>위치 서비스, 리뷰]
         MEETUP_SVC[Meetup Service<br/>오프라인 모임]
         MISSING_SVC[MissingPet Service<br/>실종 제보]
@@ -70,6 +71,7 @@ function PetoryProjectPage() {
     CONTROLLERS --> USER_SVC
     CONTROLLERS --> BOARD_SVC
     CONTROLLERS --> CARE_SVC
+    CONTROLLERS --> PAYMENT_SVC
     CONTROLLERS --> LOCATION_SVC
     CONTROLLERS --> MEETUP_SVC
     CONTROLLERS --> MISSING_SVC
@@ -84,6 +86,8 @@ function PetoryProjectPage() {
     BOARD_SVC --> REPOS
     CARE_SVC --> REPOS
     CARE_SVC --> CHAT_SVC
+    CARE_SVC --> PAYMENT_SVC
+    CHAT_SVC --> PAYMENT_SVC
     LOCATION_SVC --> REPOS
     MEETUP_SVC --> REPOS
     MEETUP_SVC --> CHAT_SVC
@@ -91,6 +95,7 @@ function PetoryProjectPage() {
     CHAT_SVC --> REPOS
     NOTIF_SVC --> REPOS
     NOTIF_SVC --> REDIS
+    PAYMENT_SVC --> REPOS
     REPORT_SVC --> REPOS
     STATS_SVC --> REPOS
     ACTIVITY_SVC --> REPOS
@@ -100,7 +105,7 @@ function PetoryProjectPage() {
     
     STATS_SCHED --> STATS_SVC
     POPULAR_SCHED --> BOARD_SVC
-    SANCTION_SCHED --> REPORT_SVC
+    SANCTION_SCHED --> USER_SVC
     CARE_SCHED --> CARE_SVC
     
     LOCATION_SVC --> NAVER_MAP
