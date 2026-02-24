@@ -93,24 +93,6 @@ function BoardDomain() {
         <div className="domain-page-content" style={{ flex: 1 }}>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>게시판 도메인</h1>
           
-          <div style={{
-            marginBottom: '1.5rem',
-            padding: '1rem',
-            backgroundColor: 'var(--card-bg)',
-            borderRadius: '8px',
-            border: '1px solid var(--link-color)',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '1rem'
-          }}>
-            <Link to="/domains/board/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 'bold' }}>
-              → N+1 성능 최적화 상세
-            </Link>
-            <Link to="/domains/board/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 'bold' }}>
-              → 백엔드 리팩토링 상세
-            </Link>
-          </div>
-          
           {/* 1. 도메인 소개 */}
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
