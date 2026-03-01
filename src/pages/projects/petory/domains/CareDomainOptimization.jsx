@@ -8,7 +8,8 @@ function CareDomainOptimization() {
     { id: 'test-design', title: '문제 재현 방식 (테스트 설계)' },
     { id: 'before', title: '성능 측정 결과 (개선 전)' },
     { id: 'optimization', title: '성능 최적화 및 동시성 제어' },
-    { id: 'after', title: '성능 개선 결과 (개선 후)' }
+    { id: 'after', title: '성능 개선 결과 (개선 후)' },
+    { id: 'paging-n1', title: 'Part 3. 페이징 N+1 쿼리 문제' }
   ];
 
   const beforeOptimizationSequence = `sequenceDiagram
@@ -488,6 +489,62 @@ public class Pet {
             }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>시퀀스 다이어그램 (최적화 후)</h3>
               <MermaidDiagram chart={afterOptimizationSequence} />
+            </div>
+          </section>
+
+          {/* Part 3. 페이징 N+1 쿼리 문제 */}
+          <section id="paging-n1" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Part 3. 펫케어 요청 목록 페이징 N+1 쿼리 문제</h2>
+            
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 상황</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  페이징 적용 후 <code>GET /api/care-requests?page=0&size=20</code> 또는 <code>GET /api/care-requests/search</code> 호출 시 N+1 문제 발생
+                </p>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  비페이징 경로(<code>findAllActiveRequests</code> 등)는 <code>LEFT JOIN FETCH cr.applications</code>로 최적화되어 있으나, <strong>페이징 쿼리</strong>에는 해당 fetch가 누락됨
+                </p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0.5rem 0' }}>
+                  <li>• 페이지당 20건 시 careapplication 쿼리 20번 실행 (총 2+N번 DB 왕복)</li>
+                  <li>• Converter에서 <code>request.getApplications()</code> 접근 시 lazy load 트리거</li>
+                </ul>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>해결 방안</h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontSize: '0.9rem'
+              }}>
+                <li>• <strong>방안 1 (권장):</strong> CareRequest 엔티티에 <code>@BatchSize(size=50)</code> 적용</li>
+                <li>• <strong>방안 2:</strong> 페이징 쿼리에 <code>LEFT JOIN FETCH cr.applications</code> 추가 (DISTINCT 필요)</li>
+                <li>• <strong>방안 3:</strong> 목록용 DTO 분리 (applicationCount만 서브쿼리/배치로 계산)</li>
+              </ul>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1rem',
+              backgroundColor: 'var(--bg-color)',
+              borderRadius: '6px',
+              border: '1px solid var(--link-color)'
+            }}>
             </div>
           </section>
         </div>

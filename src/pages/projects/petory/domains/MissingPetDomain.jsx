@@ -8,6 +8,7 @@ function MissingPetDomain() {
     { id: 'features', title: '주요 기능' },
     { id: 'troubleshooting', title: '트러블슈팅' },
     { id: 'db-optimization', title: 'DB 최적화' },
+    { id: 'refactoring', title: '리팩토링' },
     { id: 'entities', title: 'Entity 구조' },
     { id: 'security', title: '보안 및 권한 체계' },
     { id: 'relationships', title: '다른 도메인과의 연관관계' },
@@ -355,6 +356,46 @@ public MissingPetBoardDTO toBoardDTOWithoutComments(MissingPetBoard board) {
             </div>
           </section>
 
+          {/* 5. 리팩토링 */}
+          <section id="refactoring" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>리팩토링</h2>
+            
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>백엔드 성능 최적화 리팩토링</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  Admin 메모리 로드 제거, 페이징 DB 레벨 필터링, deleteAllCommentsByBoard 배치 업데이트, 
+                  startMissingPetChat 경량 조회, restoreMissingPet 구현, toBoardDTOList 제거 등 백엔드 리팩토링 내역을 정리했습니다.
+                </p>
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <Link
+                    to="/domains/missing-pet/refactoring"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → 리팩토링 상세 페이지 보기
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
         
@@ -575,10 +616,23 @@ public MissingPetBoardDTO toBoardDTOWithoutComments(MissingPetBoard board) {
             style={{ 
               color: 'var(--link-color)',
               textDecoration: 'none',
-              display: 'block'
+              display: 'block',
+              marginBottom: '0.5rem'
             }}
           >
             → N+1 문제 해결 상세 문서
+          </a>
+          <a 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/missing-pet/missing-pet-backend-performance-optimization.md" 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: 'var(--link-color)',
+              textDecoration: 'none',
+              display: 'block'
+            }}
+          >
+            → 백엔드 성능 최적화 리팩토링 문서
           </a>
         </div>
           </section>

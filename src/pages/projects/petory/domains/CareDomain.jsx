@@ -401,11 +401,12 @@ function CareDomain() {
                       display: 'inline-block'
                     }}
                   >
-                    → [Performance] 최적화 과정 상세 보기
+                    → [Performance] 최적화 과정 상세 보기 (Part 2·3 포함)
                   </Link>
                 </div>
               </div>
             </div>
+
           </section>
 
           {/* 4. DB 최적화 */}
