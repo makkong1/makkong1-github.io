@@ -405,6 +405,79 @@ List<Meetup> findAllWithOrganizerAndParticipants();`}
               border: '1px solid var(--nav-border)',
               marginTop: '1rem'
             }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Fetch 전략 개선</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.75rem' }}>
+                  단건 상세 → Fetch Join / 페이징 목록 → Batch Size 규칙에 따라 Meetup 도메인 Fetch 전략을 개선했습니다.
+                </p>
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem',
+                  overflowX: 'auto'
+                }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>구분</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>대상</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>전략</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>상태</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>Meetup 단건 상세</td>
+                        <td style={{ padding: '0.75rem' }}>getMeetupById</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                        <td style={{ padding: '0.75rem' }}>✅ 이미 적용됨</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>Meetup 목록</td>
+                        <td style={{ padding: '0.75rem' }}>getAllMeetups, getNearbyMeetups 등</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join + Batch Size</td>
+                        <td style={{ padding: '0.75rem' }}>✅ 적용됨</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '0.75rem' }}>MeetupParticipants</td>
+                        <td style={{ padding: '0.75rem' }}>getMeetupParticipants</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                        <td style={{ padding: '0.75rem' }}>✅ 적용됨</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/fetch-optimization/meetup/Fetch%20%EC%A0%84%EB%9E%B5%20%EA%B0%9C%EC%84%A0%20(Fetch%20Join%20vs%20Batch%20Size).md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → Fetch 전략 개선 상세 문서 보기
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginTop: '1rem'
+            }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 · 리팩토링</h3>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 반경 기반 모임 조회 최적화, N+1 쿼리 해결, 서브쿼리 최적화, Stream 연산 중복 제거, 프론트엔드 성능 최적화 등 백엔드/프론트엔드 리팩토링 내역을 정리했습니다.

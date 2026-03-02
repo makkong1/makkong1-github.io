@@ -11,6 +11,7 @@ function CareDomainRefactoring() {
     { id: 'payment-repo-pattern', title: 'AdminPaymentController Repository 패턴 일관성' },
     { id: 'payment-getbalance', title: 'PetCoinService.getBalance User 재조회 제거' },
     { id: 'payment-dto-record', title: 'Payment DTO → record 리팩토링' },
+    { id: 'payment-fetch-optimization', title: 'Payment Fetch 전략 개선' },
     { id: 'summary', title: '리팩토링 요약' }
   ];
 
@@ -336,7 +337,75 @@ function CareDomainRefactoring() {
             </div>
           </section>
 
-          {/* 9. 리팩토링 요약 */}
+          {/* 9. Payment Fetch 전략 개선 */}
+          <section id="payment-fetch-optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Payment Fetch 전략 개선</h2>
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                단건 상세 → Fetch Join / 페이징 목록 → Batch Size 규칙에 따라 Payment(PetCoin) 도메인 Fetch 전략을 개선했습니다.
+              </p>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                marginBottom: '1rem',
+                overflowX: 'auto'
+              }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>구분</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>대상</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>전략</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>상태</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={{ padding: '0.75rem' }}>PetCoinTransaction 페이징</td>
+                      <td style={{ padding: '0.75rem' }}>getMyTransactions, getUserTransactions</td>
+                      <td style={{ padding: '0.75rem' }}>EntityGraph</td>
+                      <td style={{ padding: '0.75rem' }}>✅ 이미 적용됨</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={{ padding: '0.75rem' }}>PetCoinTransaction 단건</td>
+                      <td style={{ padding: '0.75rem' }}>getTransactionDetail</td>
+                      <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                      <td style={{ padding: '0.75rem' }}>✅ 적용됨</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '0.75rem' }}>PetCoinEscrow</td>
+                      <td style={{ padding: '0.75rem' }}>getTransactionDetail 내 escrow 조회</td>
+                      <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                      <td style={{ padding: '0.75rem' }}>✅ 적용됨</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                border: '1px solid var(--link-color)'
+              }}>
+                <a
+                  href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/fetch-optimization/payment/Fetch%20%EC%A0%84%EB%9E%B5%20%EA%B0%9C%EC%84%A0%20(Fetch%20Join%20vs%20Batch%20Size).md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 'bold' }}
+                >
+                  → Payment Fetch 전략 개선 상세 문서 보기
+                </a>
+              </div>
+            </div>
+          </section>
+
+          {/* 10. 리팩토링 요약 */}
           <section id="summary" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>리팩토링 요약</h2>
 

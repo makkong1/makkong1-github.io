@@ -663,7 +663,92 @@ GROUP BY board_idx, reaction_type;`}
               border: '1px solid var(--nav-border)',
               marginTop: '1rem'
             }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. 백엔드 성능 최적화 리팩토링</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. Fetch 전략 개선</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.75rem' }}>
+                  단건 상세 → Fetch Join / 페이징 목록 → Batch Size 규칙에 따라 Board 도메인(일반 게시글, Comment, 실종 제보) Fetch 전략을 개선했습니다.
+                </p>
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem',
+                  overflowX: 'auto'
+                }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>구분</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>대상</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>전략</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>상태</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>Board 단건 상세</td>
+                        <td style={{ padding: '0.75rem' }}>getBoard, getBoardForAdmin</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                        <td style={{ padding: '0.75rem' }}>적용 필요</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>Board 페이징</td>
+                        <td style={{ padding: '0.75rem' }}>getAllBoardsWithPaging, searchBoardsWithPaging</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                        <td style={{ padding: '0.75rem' }}>✅ 이미 적용됨</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>Board Admin 페이징</td>
+                        <td style={{ padding: '0.75rem' }}>getAdminBoardsWithPagingOptimized</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                        <td style={{ padding: '0.75rem' }}>적용 필요</td>
+                      </tr>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>MissingPetBoard Admin</td>
+                        <td style={{ padding: '0.75rem' }}>getAdminBoardsWithPaging</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                        <td style={{ padding: '0.75rem' }}>적용 필요</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '0.75rem' }}>Comment, MissingPetComment</td>
+                        <td style={{ padding: '0.75rem' }}>페이징 목록</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join</td>
+                        <td style={{ padding: '0.75rem' }}>✅ 이미 적용됨</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/fetch-optimization/board/Fetch%20%EC%A0%84%EB%9E%B5%20%EA%B0%9C%EC%84%A0%20(Fetch%20Join%20vs%20Batch%20Size).md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → Fetch 전략 개선 상세 문서 보기
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginTop: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. 백엔드 성능 최적화 리팩토링</h3>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
                 Admin 메모리 로드 제거, 페이징 DB 레벨 필터링, Comment N+1 해결, extractPrimaryFileUrl 공통화 등 백엔드 리팩토링 내역을 정리했습니다.
               </p>

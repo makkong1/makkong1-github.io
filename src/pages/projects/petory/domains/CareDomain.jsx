@@ -616,6 +616,94 @@ List<CareRequest> findAllWithUserAndPet();`}
                 </div>
               </div>
             </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginTop: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Fetch 전략 개선</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.75rem' }}>
+                  단건 상세 → Fetch Join / 페이징 목록 → Batch Size 규칙에 따라 Care·Payment 도메인 Fetch 전략을 개선했습니다.
+                </p>
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  marginBottom: '1rem',
+                  overflowX: 'auto'
+                }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>도메인</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>대상</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>전략</th>
+                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>상태</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                        <td style={{ padding: '0.75rem' }}>Care</td>
+                        <td style={{ padding: '0.75rem' }}>CareRequest 단건/페이징, CareApplication, CareRequestComment</td>
+                        <td style={{ padding: '0.75rem' }}>Fetch Join / Batch Size</td>
+                        <td style={{ padding: '0.75rem' }}>✅ 적용됨</td>
+                      </tr>
+                      <tr>
+                        <td style={{ padding: '0.75rem' }}>Payment</td>
+                        <td style={{ padding: '0.75rem' }}>PetCoinTransaction, PetCoinEscrow</td>
+                        <td style={{ padding: '0.75rem' }}>EntityGraph / Fetch Join</td>
+                        <td style={{ padding: '0.75rem' }}>✅ 적용됨</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/fetch-optimization/care/Fetch%20%EC%A0%84%EB%9E%B5%20%EA%B0%9C%EC%84%A0%20(Fetch%20Join%20vs%20Batch%20Size).md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → Care Fetch 전략 개선 상세 문서 보기
+                  </a>
+                </div>
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)',
+                  marginTop: '0.5rem'
+                }}>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/fetch-optimization/payment/Fetch%20%EC%A0%84%EB%9E%B5%20%EA%B0%9C%EC%84%A0%20(Fetch%20Join%20vs%20Batch%20Size).md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block'
+                    }}
+                  >
+                    → Payment Fetch 전략 개선 상세 문서 보기
+                  </a>
+                </div>
+              </div>
+            </div>
           </section>
 
           {/* 6. Entity 구조 */}
