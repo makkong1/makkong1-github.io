@@ -249,17 +249,6 @@ function BoardDomain() {
                   >
                     → N+1 문제 해결 상세 보기
                   </Link>
-                  <Link
-                    to="/domains/board/refactoring"
-                    style={{
-                      color: 'var(--link-color)',
-                      textDecoration: 'none',
-                      fontWeight: 'bold',
-                      display: 'inline-block'
-                    }}
-                  >
-                    → 백엔드 리팩토링 상세 보기
-                  </Link>
                 </div>
               </div>
             </div>
