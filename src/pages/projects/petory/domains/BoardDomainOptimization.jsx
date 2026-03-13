@@ -12,30 +12,32 @@ function BoardDomainOptimization() {
   ];
 
   const boardListSequenceDiagram = `sequenceDiagram
-    participant User as 사용자
-    participant Frontend as Frontend
     participant BoardService as BoardService
     participant BoardRepo as BoardRepository
+    participant BoardConverter as BoardConverter
+    participant Board as Board
     participant ReactionRepo as BoardReactionRepository
-    participant UserRepo as UserRepository
+    participant AttachmentFileService as AttachmentFileService
     participant DB as MySQL
     
-    User->>Frontend: 게시글 목록 조회 요청
-    Frontend->>BoardService: getAllBoards()
     BoardService->>BoardRepo: findAllByIsDeletedFalseOrderByCreatedAtDesc()
-    BoardRepo->>DB: 게시글 목록 조회 (1)
+    BoardRepo->>DB: SELECT board ... (1)
     
     Note over BoardService,DB: N+1 문제 발생
     loop 각 게시글마다
-        BoardService->>UserRepo: getByIdx() (2, 3, 4...)
-        UserRepo->>DB: 작성자 정보 개별 조회
-        BoardService->>ReactionRepo: countByBoardIdxAndReactionType() (101, 102, 103...)
-        ReactionRepo->>DB: 좋아요 카운트 개별 조회
-        BoardService->>ReactionRepo: countByBoardIdxAndReactionType() (201, 202, 203...)
-        ReactionRepo->>DB: 싫어요 카운트 개별 조회
+        BoardService->>BoardConverter: toDTO(board)
+        BoardConverter->>Board: getUser()
+        Note right of BoardConverter: LAZY 로딩 트리거
+        Board->>DB: SELECT users WHERE idx=? (작성자)
+        BoardService->>ReactionRepo: countByBoardAndReactionType(LIKE)
+        ReactionRepo->>DB: COUNT ... LIKE
+        BoardService->>ReactionRepo: countByBoardAndReactionType(DISLIKE)
+        ReactionRepo->>DB: COUNT ... DISLIKE
+        BoardService->>AttachmentFileService: getAttachments(BOARD, boardIdx)
+        AttachmentFileService->>DB: SELECT attachment_file ...
     end
     
-    Note over BoardService,DB: 100개 게시글 기준: 1(게시글) + 10(작성자) + 100(좋아요) + 100(싫어요) + 100(첨부파일) = 311개 예상, 실제 301개 쿼리`;
+    Note over BoardService,DB: 100개 게시글 기준: 1(게시글) + 100(작성자) + 100(좋아요) + 100(싫어요) + 100(첨부파일) = 301개 쿼리`;
 
   const optimizedBoardListSequenceDiagram = `sequenceDiagram
     participant User as 사용자
@@ -139,25 +141,24 @@ function BoardDomainOptimization() {
                 backgroundColor: 'var(--card-bg)',
                 borderRadius: '4px',
                 fontSize: '0.9rem',
-                fontFamily: 'monospace',
                 color: 'var(--text-secondary)',
                 lineHeight: '1.8'
               }}>
-                {`📝 테스트 데이터 구성
-├── 사용자
-│   ├── 게시글 작성자: 10명 (순환 사용하여 각 게시글마다 다른 작성자 할당)
-│   └── 반응을 남길 사용자: 10명 (순환 사용)
-│
-├── 게시글: 100개
-│   ├── 카테고리: "자유"
-│   ├── 제목: "테스트 게시글 0" ~ "테스트 게시글 99"
-│   ├── 내용: "테스트 내용 0" ~ "테스트 내용 99"
-│   └── 작성자: 10명의 사용자를 순환 사용 (LAZY 로딩 N+1 문제 재현용)
-│
-└── 반응 데이터: 총 700개
-    ├── 좋아요: 각 게시글당 5개 (총 500개)
-    └── 싫어요: 각 게시글당 2개 (총 200개)`}
-                </div>
+                <p style={{ marginBottom: '0.5rem', fontWeight: 'bold', color: 'var(--text-color)' }}>📝 테스트 데이터 구성</p>
+                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                  <li style={{ marginBottom: '0.25rem' }}><strong>사용자</strong></li>
+                  <li style={{ marginLeft: '1rem', marginBottom: '0.15rem' }}>• 게시글 작성자: 10명 (순환 사용하여 각 게시글마다 다른 작성자 할당)</li>
+                  <li style={{ marginLeft: '1rem', marginBottom: '0.5rem' }}>• 반응을 남길 사용자: 10명 (순환 사용)</li>
+                  <li style={{ marginBottom: '0.25rem' }}><strong>게시글: 100개</strong></li>
+                  <li style={{ marginLeft: '1rem', marginBottom: '0.15rem' }}>• 카테고리: "자유"</li>
+                  <li style={{ marginLeft: '1rem', marginBottom: '0.15rem' }}>• 제목: "테스트 게시글 0" ~ "테스트 게시글 99"</li>
+                  <li style={{ marginLeft: '1rem', marginBottom: '0.15rem' }}>• 내용: "테스트 내용 0" ~ "테스트 내용 99"</li>
+                  <li style={{ marginLeft: '1rem', marginBottom: '0.5rem' }}>• 작성자: 10명의 사용자를 순환 사용 (LAZY 로딩 N+1 문제 재현용)</li>
+                  <li style={{ marginBottom: '0.25rem' }}><strong>반응 데이터: 총 700개</strong></li>
+                  <li style={{ marginLeft: '1rem', marginBottom: '0.15rem' }}>• 좋아요: 각 게시글당 5개 (총 500개)</li>
+                  <li style={{ marginLeft: '1rem' }}>• 싫어요: 각 게시글당 2개 (총 200개)</li>
+                </ul>
+              </div>
               </div>
               <div style={{
                 padding: '1rem',
@@ -380,19 +381,26 @@ private List<BoardDTO> mapBoardsWithReactionsBatch(List<Board> boards) {
 }
 
 private Map<Long, Map<ReactionType, Long>> getReactionCountsBatch(List<Long> boardIds) {
-    final int BATCH_SIZE = 500;  // IN 절 크기 제한
+    if (boardIds.isEmpty()) {
+        return new HashMap<>();
+    }
+
+    // IN 절 크기 제한 (일반적으로 1000개 이하 권장)
+    final int BATCH_SIZE = 500;
     Map<Long, Map<ReactionType, Long>> countsMap = new HashMap<>();
-    
-    // IN 절을 500개 단위로 나누어 조회
+
+    // boardIds를 배치 단위로 나누어 처리
     for (int i = 0; i < boardIds.size(); i += BATCH_SIZE) {
         int end = Math.min(i + BATCH_SIZE, boardIds.size());
         List<Long> batch = boardIds.subList(i, end);
-        
-        List<Object[]> results = boardReactionRepository
-            .countByBoardsGroupByReactionType(batch);
-        // 결과 파싱 및 Map 구성
+
+        List<Object[]> results = boardReactionRepository.countByBoardsGroupByReactionType(batch);
+
+        // 결과를 Map으로 변환: Map<BoardId, Map<ReactionType, Count>> (공통 메서드 사용)
+        Map<Long, Map<ReactionType, Long>> batchCounts = parseBatchReactionCountResults(results);
+        countsMap.putAll(batchCounts);
     }
-    
+
     return countsMap;
 }`}
               </pre>
