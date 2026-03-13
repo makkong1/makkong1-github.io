@@ -535,7 +535,6 @@ function LocationDomain() {
                   </div>
                 </div>
               </div>
-            </div>
           </section>
 
           {/* 5. DB 최적화 */}
