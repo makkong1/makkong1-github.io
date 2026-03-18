@@ -2,6 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { missingPetApi } from '../../api/missingPetApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEmailVerification } from '../../hooks/useEmailVerification';
+import PageNavigation from '../Common/PageNavigation';
 import MissingPetBoardForm from './MissingPetBoardForm';
 import MissingPetBoardDetail from './MissingPetBoardDetail';
 
@@ -20,6 +22,7 @@ const statusLabel = {
 
 const MissingPetBoardPage = () => {
   const { user } = useAuth();
+  const { checkAndRedirect, EmailVerificationPromptComponent } = useEmailVerification('MISSING_PET');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [boards, setBoards] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -32,13 +35,33 @@ const MissingPetBoardPage = () => {
   const [activeBoard, setActiveBoard] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  const fetchBoards = useCallback(async () => {
+  // 서버 사이드 페이징 상태
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  const [hasNext, setHasNext] = useState(false);
+
+  // 서버 사이드 페이징으로 게시글 가져오기
+  const fetchBoards = useCallback(async (pageNum = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const params = statusFilter === 'ALL' ? {} : { status: statusFilter };
-      const response = await missingPetApi.list(params);
-      setBoards(response.data || []);
+
+      const requestParams = {
+        ...(statusFilter !== 'ALL' ? { status: statusFilter } : {}),
+        page: pageNum,
+        size: pageSize
+      };
+
+      const response = await missingPetApi.list(requestParams);
+      const pageData = response.data || {};
+      const boardsData = pageData.boards || [];
+
+      setBoards(boardsData);
+
+      setTotalCount(pageData.totalCount || 0);
+      setHasNext(pageData.hasNext || false);
+      setPage(pageNum);
       setLastUpdated(new Date());
     } catch (err) {
       const message = err.response?.data?.error || err.message;
@@ -46,19 +69,52 @@ const MissingPetBoardPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, pageSize]);
 
   useEffect(() => {
-    fetchBoards();
-  }, [fetchBoards]);
+    fetchBoards(0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, pageSize]);
 
   const loadBoardDetail = useCallback(
     async (id) => {
       if (!id) return;
+      
       try {
         setDetailLoading(true);
+        
+        // 성능 측정 시작
+        const startTime = performance.now();
+        const startMemory = performance.memory ? performance.memory.usedJSHeapSize : null;
+        
         const response = await missingPetApi.get(id);
-        setActiveBoard(response.data);
+        
+        // 성능 측정 종료
+        const endTime = performance.now();
+        const endMemory = performance.memory ? performance.memory.usedJSHeapSize : null;
+        const executionTime = Math.round(endTime - startTime);
+        const memoryUsed = startMemory && endMemory ? Math.round((endMemory - startMemory) / 1024 / 1024 * 100) / 100 : null;
+        
+        const board = response.data;
+        const commentCount = board.comments ? board.comments.length : 0;
+        
+        // 성능 측정 로그 출력
+        console.log('=== [성능 측정] 게시글 상세 조회 완료 ===');
+        console.log(`  - 게시글 ID: ${id}`);
+        console.log(`  - 실행 시간: ${executionTime}ms`);
+        if (commentCount > 0) {
+          console.log(`  - 평균 댓글당 시간: ${Math.round((executionTime / commentCount) * 100) / 100}ms`);
+        }
+        console.log(`  - 조회된 댓글 수: ${commentCount}개`);
+        if (memoryUsed !== null) {
+          console.log(`  - 메모리 사용량: ${memoryUsed > 0 ? '+' : ''}${memoryUsed}MB`);
+        }
+        if (performance.memory) {
+          console.log(`  - 현재 메모리: ${Math.round(performance.memory.usedJSHeapSize / 1024 / 1024)}MB`);
+          console.log(`  - 최대 메모리: ${Math.round(performance.memory.jsHeapSizeLimit / 1024 / 1024)}MB`);
+        }
+        
+        setActiveBoard(board);
       } catch (err) {
         alert(err.response?.data?.error || err.message);
       } finally {
@@ -88,7 +144,7 @@ const MissingPetBoardPage = () => {
   }, [loadBoardDetail]);
 
   const refreshBoardDetail = useCallback(async () => {
-    await fetchBoards();
+    await fetchBoards(0);
     if (activeBoardId) {
       await loadBoardDetail(activeBoardId);
     }
@@ -106,6 +162,11 @@ const MissingPetBoardPage = () => {
     if (!user) {
       window.dispatchEvent(new Event('showPermissionModal'));
       return;
+    }
+
+    // 이메일 인증 체크
+    if (!checkAndRedirect()) {
+      return; // 이메일 인증이 필요하면 확인 다이얼로그 표시되고 함수 종료
     }
 
     try {
@@ -132,7 +193,7 @@ const MissingPetBoardPage = () => {
 
       const response = await missingPetApi.create(payload);
       setIsFormOpen(false);
-      await fetchBoards();
+      await fetchBoards(0);
 
       if (response?.data?.idx) {
         const newId = response.data.idx;
@@ -154,6 +215,20 @@ const MissingPetBoardPage = () => {
     loadBoardDetail(board.idx);
   };
 
+  const handlePageChange = useCallback((newPage) => {
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    if (newPage >= 0 && newPage < totalPages) {
+      fetchBoards(newPage);
+    }
+  }, [totalCount, pageSize, fetchBoards]);
+
+  // 페이지 크기 변경 핸들러
+  const handlePageSizeChange = useCallback((newSize) => {
+    setPageSize(newSize);
+    setPage(0);
+    setBoards([]);
+  }, []);
+
   const closeDrawer = useCallback(() => {
     setIsDrawerOpen(false);
     setActiveBoardId(null);
@@ -162,12 +237,13 @@ const MissingPetBoardPage = () => {
   }, []);
 
   const handleBoardDeleted = useCallback(async () => {
-    await fetchBoards();
+    await fetchBoards(0);
     closeDrawer();
   }, [fetchBoards, closeDrawer]);
 
   return (
     <>
+      <EmailVerificationPromptComponent />
       <Wrapper>
         <Header>
           <div>
@@ -214,7 +290,27 @@ const MissingPetBoardPage = () => {
           </UpdatedAt>
         )}
 
-        {boards.length === 0 && !loading && !error ? (
+        <PageSizeSelector>
+          <PageSizeLabel>페이지당 게시글 수:</PageSizeLabel>
+          <PageSizeButtons>
+            <PageSizeButton active={pageSize === 20} onClick={() => handlePageSizeChange(20)}>
+              20
+            </PageSizeButton>
+            <PageSizeButton active={pageSize === 50} onClick={() => handlePageSizeChange(50)}>
+              50
+            </PageSizeButton>
+            <PageSizeButton active={pageSize === 100} onClick={() => handlePageSizeChange(100)}>
+              100
+            </PageSizeButton>
+          </PageSizeButtons>
+        </PageSizeSelector>
+
+        {loading && boards.length === 0 ? (
+          <LoadingContainer>
+            <LoadingSpinner />
+            <LoadingMessage>실종 신고 정보를 불러오는 중...</LoadingMessage>
+          </LoadingContainer>
+        ) : boards.length === 0 && !error ? (
           <EmptyState>
             <p>등록된 실종 신고가 없습니다.</p>
             <span>새로운 제보가 등록되면 이곳에서 확인하실 수 있습니다.</span>
@@ -263,6 +359,18 @@ const MissingPetBoardPage = () => {
               </BoardCard>
             ))}
           </BoardGrid>
+        )}
+
+        {totalCount > 0 && (
+          <PaginationWrapper>
+            <PageNavigation
+              currentPage={page}
+              totalCount={totalCount}
+              pageSize={pageSize}
+              onPageChange={handlePageChange}
+              loading={loading}
+            />
+          </PaginationWrapper>
         )}
       </Wrapper>
 
@@ -631,4 +739,85 @@ const DrawerLoader = styled.div`
   font-weight: 600;
   color: ${(props) => props.theme.colors.text};
 `;
+
+const LoadingContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: ${props => props.theme.spacing.xxl};
+  min-height: 400px;
+  gap: ${props => props.theme.spacing.lg};
+`;
+
+const LoadingSpinner = styled.div`
+  width: 48px;
+  height: 48px;
+  border: 4px solid ${props => props.theme.colors.border};
+  border-top-color: ${props => props.theme.colors.primary};
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const LoadingMessage = styled.div`
+  text-align: center;
+  color: ${props => props.theme.colors.textSecondary};
+  font-size: ${props => props.theme.typography.body1.fontSize};
+`;
+
+const PageSizeSelector = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.md};
+  padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.lg};
+  margin-bottom: ${props => props.theme.spacing.md};
+  background: ${props => props.theme.colors.surface};
+  border-radius: ${props => props.theme.borderRadius.md};
+`;
+
+const PageSizeLabel = styled.span`
+  font-size: ${props => props.theme.typography.body2.fontSize};
+  color: ${props => props.theme.colors.textSecondary};
+  font-weight: 500;
+`;
+
+const PageSizeButtons = styled.div`
+  display: flex;
+  gap: ${props => props.theme.spacing.xs};
+`;
+
+const PageSizeButton = styled.button`
+  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.md};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.md};
+  background: ${props => props.active ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.active ? 'white' : props.theme.colors.text};
+  font-size: ${props => props.theme.typography.body2.fontSize};
+  font-weight: ${props => props.active ? 600 : 400};
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.background};
+    border-color: ${props => props.theme.colors.primary};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+`;
+
+const PaginationWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: ${props => props.theme.spacing.xl} 0;
+  margin-top: ${props => props.theme.spacing.lg};
+`;
+
 

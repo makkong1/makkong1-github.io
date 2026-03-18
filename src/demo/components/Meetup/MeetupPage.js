@@ -4,6 +4,7 @@ import { meetupApi } from '../../api/meetupApi';
 import MapContainer from '../LocationService/MapContainer';
 import { useAuth } from '../../contexts/AuthContext';
 import { geocodingApi } from '../../api/geocodingApi';
+import { useEmailVerification } from '../../hooks/useEmailVerification';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 };
 const DEFAULT_RADIUS = 5; // km
@@ -57,6 +58,7 @@ const calculateMapLevelFromRadius = (radiusKm) => {
 
 const MeetupPage = () => {
   const { user } = useAuth();
+  const { checkAndRedirect, EmailVerificationPromptComponent } = useEmailVerification('MEETUP');
   const [meetups, setMeetups] = useState([]);
   const [selectedMeetup, setSelectedMeetup] = useState(null);
   const [participants, setParticipants] = useState([]);
@@ -79,8 +81,8 @@ const MeetupPage = () => {
   const [showList, setShowList] = useState(true);
   const showListRef = useRef(true); // ref로도 관리하여 안정성 확보
   const [showCreateForm, setShowCreateForm] = useState(false);
-  // 모달 제거 - RegionControls 방식으로 변경
-  const [showRegionControls, setShowRegionControls] = useState(false); // 지역 선택 UI 표시 여부
+  const [createStep, setCreateStep] = useState('none'); // 'none', 'location', 'form'
+  const [showRegionControls, setShowRegionControls] = useState(false);
   const [availableSigungus, setAvailableSigungus] = useState([]); // 선택된 시도의 시군구 목록
   const [availableEupmyeondongs, setAvailableEupmyeondongs] = useState([]); // 선택된 시군구의 읍면동 목록
   const [formData, setFormData] = useState({
@@ -98,31 +100,42 @@ const MeetupPage = () => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedTime, setSelectedTime] = useState({ hour: '12', minute: '00' });
   const [datePickerPosition, setDatePickerPosition] = useState({ top: 0, left: 0 });
+  const [locationSearchQuery, setLocationSearchQuery] = useState(''); // 주소 검색 입력값
+  const [locationSearchResults, setLocationSearchResults] = useState([]); // 주소 검색 결과
+  const [showLocationSearchResults, setShowLocationSearchResults] = useState(false); // 검색 결과 표시 여부
+  const [locationSearchLoading, setLocationSearchLoading] = useState(false); // 검색 중 여부
   const datePickerButtonRef = useRef(null);
   const createFormModalRef = useRef(null);
+  const locationSearchInputRef = useRef(null);
+  const locationSearchResultsRef = useRef(null);
   const isProgrammaticMoveRef = useRef(false); // 프로그래매틱 이동인지 구분
   const isInitialLoadRef = useRef(true); // 초기 로드 여부
 
-  // 날짜/시간 초기화
+  // 날짜/시간 동기화 (작성 단계 진입 시)
   useEffect(() => {
-    if (formData.date) {
-      const date = new Date(formData.date);
-      setSelectedDate(date);
-      setSelectedTime({
-        hour: String(date.getHours()).padStart(2, '0'),
-        minute: String(date.getMinutes()).padStart(2, '0'),
-      });
-    } else {
-      // 기본값: 현재 시간 + 1시간
-      const defaultDate = new Date();
-      defaultDate.setHours(defaultDate.getHours() + 1, 0, 0, 0);
-      setSelectedDate(defaultDate);
-      setSelectedTime({
-        hour: String(defaultDate.getHours()).padStart(2, '0'),
-        minute: '00',
-      });
+    if (createStep === 'form') {
+      if (formData.date) {
+        const date = new Date(formData.date);
+        setSelectedDate(date);
+        setSelectedTime({
+          hour: String(date.getHours()).padStart(2, '0'),
+          minute: String(date.getMinutes()).padStart(2, '0'),
+        });
+      } else {
+        // 기본값: 현재 시간 + 1시간
+        const defaultDate = new Date();
+        defaultDate.setHours(defaultDate.getHours() + 1, 0, 0, 0);
+        setSelectedDate(defaultDate);
+        setSelectedTime({
+          hour: String(defaultDate.getHours()).padStart(2, '0'),
+          minute: '00',
+        });
+
+        const localDateString = `${defaultDate.getFullYear()}-${String(defaultDate.getMonth() + 1).padStart(2, '0')}-${String(defaultDate.getDate()).padStart(2, '0')}T${String(defaultDate.getHours()).padStart(2, '0')}:00`;
+        setFormData(prev => ({ ...prev, date: localDateString }));
+      }
     }
-  }, []);
+  }, [createStep]);
 
   // 달력 버튼 위치 계산 (모달 오른쪽에 배치)
   const handleDatePickerToggle = () => {
@@ -252,7 +265,11 @@ const MeetupPage = () => {
 
   // 모임 목록 조회
   const fetchMeetups = useCallback(async (filterSido = null, filterSigungu = null, filterEupmyeondong = null) => {
-    if (!mapCenter || !mapCenter.lat || !mapCenter.lng) {
+    // mapCenter가 없으면 기본 위치 사용
+    const centerToUse = mapCenter && mapCenter.lat && mapCenter.lng ? mapCenter : DEFAULT_CENTER;
+    
+    if (!centerToUse || !centerToUse.lat || !centerToUse.lng) {
+      console.warn('⚠️ 지도 중심 위치를 확인할 수 없습니다.');
       return;
     }
 
@@ -264,32 +281,37 @@ const MeetupPage = () => {
     setLoading(true);
     try {
       const response = await meetupApi.getNearbyMeetups(
-        mapCenter.lat,
-        mapCenter.lng,
+        centerToUse.lat,
+        centerToUse.lng,
         radius
       );
       const allMeetups = response.data.meetups || [];
+      console.log(`📍 [산책모임 조회] 총 ${allMeetups.length}개 모임 조회됨 (반경 ${radius}km)`);
 
-      // 선택된 지역으로 필터링
+      // 선택된 지역으로 필터링 (빈 문자열이 아닌 경우에만 필터링)
       let filteredMeetups = allMeetups;
-      if (targetFilterSido) {
+      if (targetFilterSido && targetFilterSido.trim() !== '') {
+        console.log(`🔍 [산책모임 필터링] 시도: ${targetFilterSido}, 시군구: ${targetFilterSigungu || '(없음)'}, 읍면동: ${targetFilterEupmyeondong || '(없음)'}`);
         filteredMeetups = filteredMeetups.filter(meetup => {
           if (!meetup.location) return false;
           const locationParts = meetup.location.split(' ');
           if (locationParts.length < 1) return false;
           if (locationParts[0] !== targetFilterSido) return false;
 
-          if (targetFilterSigungu) {
+          if (targetFilterSigungu && targetFilterSigungu.trim() !== '') {
             if (locationParts.length < 2) return false;
             if (locationParts[1] !== targetFilterSigungu) return false;
 
-            if (targetFilterEupmyeondong) {
+            if (targetFilterEupmyeondong && targetFilterEupmyeondong.trim() !== '') {
               if (locationParts.length < 3) return false;
               if (locationParts[2] !== targetFilterEupmyeondong) return false;
             }
           }
           return true;
         });
+        console.log(`✅ [산책모임 필터링] 필터링 후 ${filteredMeetups.length}개 모임 남음`);
+      } else {
+        console.log(`ℹ️ [산책모임 필터링] 지역 필터 없음 - 전체 ${filteredMeetups.length}개 모임 표시`);
       }
 
       setMeetups(filteredMeetups);
@@ -370,7 +392,10 @@ const MeetupPage = () => {
 
   // mapCenter 또는 radius가 변경될 때 모임 자동 조회
   useEffect(() => {
-    if (mapCenter && mapCenter.lat && mapCenter.lng) {
+    // mapCenter가 없어도 기본 위치로 조회 (fetchMeetups 내부에서 처리)
+    const centerToUse = mapCenter && mapCenter.lat && mapCenter.lng ? mapCenter : DEFAULT_CENTER;
+    
+    if (centerToUse && centerToUse.lat && centerToUse.lng) {
       // 초기 로드이거나 프로그래매틱 이동이 아닐 때만 조회
       if (isInitialLoadRef.current) {
         // 초기 로드 시에는 항상 조회
@@ -383,6 +408,10 @@ const MeetupPage = () => {
         // 프로그래매틱 이동이면 플래그만 리셋 (리스트 조회 안 함)
         isProgrammaticMoveRef.current = false;
       }
+    } else {
+      // mapCenter가 없으면 기본 위치로 조회 시도
+      console.log('⚠️ mapCenter가 없어 기본 위치로 조회 시도');
+      fetchMeetups();
     }
   }, [mapCenter, radius, fetchMeetups]);
 
@@ -771,36 +800,99 @@ const MeetupPage = () => {
 
 
 
-  // 주소 입력 시 자동으로 위도/경도 변환 (debounce)
-  useEffect(() => {
-    if (!formData.location || formData.location.trim().length < 3) {
+  // 주소 검색 함수
+  const searchLocation = useCallback(async (query) => {
+    if (!query || query.trim().length < 2) {
+      setLocationSearchResults([]);
+      setShowLocationSearchResults(false);
       return;
     }
 
-    const timeoutId = setTimeout(async () => {
-      try {
-        const coordData = await geocodingApi.addressToCoordinates(formData.location);
-        if (coordData && coordData.success !== false && coordData.latitude && coordData.longitude) {
-          setFormData(prev => ({
-            ...prev,
-            latitude: coordData.latitude,
-            longitude: coordData.longitude,
-          }));
-          // 주소 변환 성공 시 에러 제거
-          setFormErrors(prev => {
-            const newErrors = { ...prev };
-            delete newErrors.location;
-            return newErrors;
-          });
-        }
-      } catch (error) {
-        console.error('주소 변환 실패:', error);
-        // 에러는 조용히 처리 (사용자가 입력 중일 수 있음)
+    setLocationSearchLoading(true);
+    try {
+      // 주소를 좌표로 변환하여 검색 (검색 API가 있다면 사용, 없으면 geocoding API 활용)
+      const coordData = await geocodingApi.addressToCoordinates(query);
+      if (coordData && coordData.success !== false && coordData.latitude && coordData.longitude) {
+        // 검색 결과를 배열로 반환 (여러 결과를 지원하려면 백엔드에 검색 API가 필요하지만, 일단 단일 결과 처리)
+        setLocationSearchResults([{
+          address: coordData.address || query,
+          latitude: coordData.latitude,
+          longitude: coordData.longitude,
+        }]);
+        setShowLocationSearchResults(true);
+      } else {
+        setLocationSearchResults([]);
+        setShowLocationSearchResults(false);
       }
-    }, 1000); // 1초 debounce
+    } catch (error) {
+      console.error('주소 검색 실패:', error);
+      setLocationSearchResults([]);
+      setShowLocationSearchResults(false);
+    } finally {
+      setLocationSearchLoading(false);
+    }
+  }, []);
+
+  // 주소 검색 입력 debounce
+  useEffect(() => {
+    if (!locationSearchQuery || locationSearchQuery.trim().length < 2) {
+      setLocationSearchResults([]);
+      setShowLocationSearchResults(false);
+      return;
+    }
+
+    const timeoutId = setTimeout(() => {
+      searchLocation(locationSearchQuery);
+    }, 500); // 0.5초 debounce
 
     return () => clearTimeout(timeoutId);
-  }, [formData.location]);
+  }, [locationSearchQuery, searchLocation]);
+
+  // 검색 결과 선택 핸들러
+  const handleLocationSelect = useCallback((result) => {
+    // formData 업데이트
+    setFormData(prev => ({
+      ...prev,
+      location: result.address,
+      latitude: result.latitude,
+      longitude: result.longitude,
+    }));
+
+    // 검색 UI 상태 업데이트
+    setLocationSearchQuery(result.address);
+    setShowLocationSearchResults(false);
+    setLocationSearchResults([]);
+
+    // 에러 제거
+    setFormErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.location;
+      return newErrors;
+    });
+  }, []);
+
+
+
+  // 검색 결과 외부 클릭 시 닫기
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        locationSearchInputRef.current &&
+        !locationSearchInputRef.current.contains(event.target) &&
+        locationSearchResultsRef.current &&
+        !locationSearchResultsRef.current.contains(event.target)
+      ) {
+        setShowLocationSearchResults(false);
+      }
+    };
+
+    if (showLocationSearchResults) {
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside);
+      };
+    }
+  }, [showLocationSearchResults]);
 
   // 폼 입력 핸들러
   const handleFormChange = (e) => {
@@ -1003,6 +1095,13 @@ const MeetupPage = () => {
   const handleCreateMeetup = async (e) => {
     e.preventDefault();
 
+    // 이메일 인증 체크
+    const canProceed = checkAndRedirect();
+
+    if (!canProceed) {
+      return; // 이메일 인증이 필요하면 확인 다이얼로그 표시되고 함수 종료
+    }
+
     if (!validateForm()) {
       return;
     }
@@ -1033,6 +1132,9 @@ const MeetupPage = () => {
         maxParticipants: 10,
       });
       setFormErrors({});
+      setLocationSearchQuery('');
+      setLocationSearchResults([]);
+      setShowLocationSearchResults(false);
       setShowCreateForm(false);
 
       // 모임 목록 새로고침
@@ -1045,60 +1147,116 @@ const MeetupPage = () => {
     }
   };
 
+  // 폼 열 때 locationSearchQuery 초기화
+  useEffect(() => {
+    if (showCreateForm) {
+      setLocationSearchQuery(formData.location || '');
+      setLocationSearchResults([]);
+      setShowLocationSearchResults(false);
+    }
+  }, [showCreateForm]);
+
+  // 지도 클릭 시 해당 위치로 중심 이동 (등록 모드일 때)
+  const handleMapClick = useCallback((e) => {
+    if (createStep !== 'location') return;
+
+    const lat = typeof e.coord.lat === 'function' ? e.coord.lat() : e.coord.lat;
+    const lng = typeof e.coord.lng === 'function' ? e.coord.lng() : e.coord.lng;
+
+    setMapCenter({ lat, lng });
+    isProgrammaticMoveRef.current = false;
+  }, [createStep]);
+
+  // 지도 중심 이동 시 주소 자동 갱신
+  useEffect(() => {
+    const updateAddressFromCenter = async () => {
+      if (createStep === 'location' && mapCenter) {
+        try {
+          const response = await geocodingApi.coordinatesToAddress(mapCenter.lat, mapCenter.lng);
+          const address = (response && response.success !== false)
+            ? response.address
+            : `${mapCenter.lat.toFixed(6)}, ${mapCenter.lng.toFixed(6)}`;
+
+          setFormData(prev => ({
+            ...prev,
+            location: address,
+            latitude: mapCenter.lat,
+            longitude: mapCenter.lng,
+          }));
+          setLocationSearchQuery(address);
+        } catch (error) {
+          console.error('주소 변환 실패:', error);
+        }
+      }
+    };
+
+    updateAddressFromCenter();
+  }, [mapCenter, createStep]);
+
   return (
-    <Container>
-      <Header>
-        <Title>🐾 산책 모임</Title>
-        <Controls>
-          <LocationButton onClick={fetchUserLocation} title="내 위치로 이동">
-            📍 내 위치
-          </LocationButton>
-          <LocationSelectButton onClick={() => setShowRegionControls(!showRegionControls)} title="위치 선택">
-            📌 위치 선택
-          </LocationSelectButton>
-          {selectedLocation && (
-            <SelectedLocationInfo>
-              {selectedLocation.eupmyeondong && selectedLocation.eupmyeondong !== '전체'
-                ? `${selectedLocation.sido} ${selectedLocation.sigungu} ${selectedLocation.eupmyeondong}`
-                : selectedLocation.sigungu
-                  ? `${selectedLocation.sido} ${selectedLocation.sigungu}`
-                  : selectedLocation.sido || '내위치'}
-            </SelectedLocationInfo>
-          )}
-          <RadiusControls>
-            <RadiusSelect
-              value={radius}
-              onChange={(e) => {
-                const newRadius = Number(e.target.value);
-                const newMapLevel = calculateMapLevelFromRadius(newRadius);
+    <>
+      <EmailVerificationPromptComponent />
+      <Container>
+        <Header>
+          <HeaderTop>
+            <Title>🐾 산책 모임</Title>
+            <HeaderActions>
+              {createStep === 'none' ? (
+                <>
+                  <LocationButton onClick={fetchUserLocation} title="내 위치로 이동">
+                    📍 내 위치
+                  </LocationButton>
+                  <LocationSelectButton onClick={() => setShowRegionControls(!showRegionControls)} title="위치 선택">
+                    📌 지역 필터
+                  </LocationSelectButton>
+                  {selectedLocation && (
+                    <SelectedLocationInfo>
+                      {selectedLocation.eupmyeondong && selectedLocation.eupmyeondong !== '전체'
+                        ? `${selectedLocation.sido} ${selectedLocation.sigungu} ${selectedLocation.eupmyeondong}`
+                        : selectedLocation.sigungu
+                          ? `${selectedLocation.sido} ${selectedLocation.sigungu}`
+                          : selectedLocation.sido || '내위치'}
+                    </SelectedLocationInfo>
+                  )}
+                  <CreateButton onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // 이메일 인증 체크 (모임 등록 시작 시점에 체크)
+                    const result = checkAndRedirect();
 
-                setRadius(newRadius);
-                setMapLevel(newMapLevel);
-
-                // 프로그래매틱 이동 플래그 설정 (리스트는 자동으로 조회됨)
-                isProgrammaticMoveRef.current = true;
-              }}
-            >
-              <option value={1}>레벨 1</option>
-              <option value={3}>레벨 2</option>
-              <option value={5}>레벨 3</option>
-              <option value={10}>레벨 4</option>
-              <option value={20}>레벨 5</option>
-            </RadiusSelect>
-          </RadiusControls>
-          <CreateButton onClick={() => setShowCreateForm(true)}>
-            ➕ 모임 등록
-          </CreateButton>
-          <ToggleButton onClick={() => {
-            const newValue = !showList;
-            setShowList(newValue);
-            showListRef.current = newValue;
-          }}>
-            {showList ? '📋 리스트 숨기기' : '📋 리스트 보기'}
-          </ToggleButton>
-        </Controls>
-        {showRegionControls && (
-          <RegionControls>
+                    if (!result) {
+                      return; // 이메일 인증이 필요하면 확인 다이얼로그 표시되고 함수 종료
+                    }
+                    setCreateStep('location');
+                    setShowCreateForm(true);
+                    setShowList(false); // 위치 잡을 때는 리스트 숨김
+                  }}>
+                    ➕ 모임 등록
+                  </CreateButton>
+                  <ToggleButton onClick={() => {
+                    const newValue = !showList;
+                    setShowList(newValue);
+                    showListRef.current = newValue;
+                  }}>
+                    {showList ? '📋 리스트 숨기기' : '📋 리스트 보기'}
+                  </ToggleButton>
+                </>
+              ) : createStep === 'location' ? (
+                <BackButton onClick={() => {
+                  setCreateStep('none');
+                  setShowCreateForm(false);
+                  setShowList(true);
+                }}>
+                  ⬅️ 취소하고 돌아가기
+                </BackButton>
+              ) : (
+                <BackButton onClick={() => setCreateStep('location')}>
+                  ⬅️ 다시 위치 선택
+                </BackButton>
+              )}
+            </HeaderActions>
+          </HeaderTop>
+          <RegionControls $isOpen={showRegionControls}>
             {currentView === 'sido' ? (
               // 시/도 선택 화면
               <RegionButtonGrid>
@@ -1139,389 +1297,371 @@ const MeetupPage = () => {
               </RegionButtonGrid>
             )}
           </RegionControls>
-        )}
-      </Header>
+        </Header>
 
-      <ContentWrapper>
-        <MapSection>
-          {mapCenter && (
-            <MapContainer
-              services={[
-                // 모임 마커만 표시
-                ...meetups.map(m => ({
-                  idx: m.idx,
-                  name: m.title,
-                  latitude: m.latitude,
-                  longitude: m.longitude,
-                  address: m.location,
-                  type: 'meetup',
-                })),
-              ]}
-              onServiceClick={handleMarkerClick}
-              userLocation={userLocation}
-              mapCenter={mapCenter}
-              mapLevel={mapLevel}
-              onMapIdle={handleMapIdle}
-            />
-          )}
-        </MapSection>
+        <ContentWrapper>
+          <MapSection style={{ width: createStep === 'location' ? '100%' : '60%' }}>
+            {mapCenter && (
+              <MapContainer
+                services={[
+                  ...meetups.map(m => ({
+                    idx: m.idx,
+                    name: m.title,
+                    latitude: m.latitude,
+                    longitude: m.longitude,
+                    address: m.location,
+                    type: 'meetup',
+                  })),
+                ]}
+                onServiceClick={createStep === 'none' ? handleMarkerClick : undefined}
+                onMapClick={handleMapClick}
+                userLocation={userLocation}
+                mapCenter={mapCenter}
+                mapLevel={mapLevel}
+                onMapIdle={handleMapIdle}
+              />
+            )}
 
-        <ListSection style={{ display: showList ? 'flex' : 'none' }}>
-          <ListHeader>
-            {selectedLocation
-              ? `${selectedLocation.bname || selectedLocation.sigungu || '선택한 위치'} 주변 모임 (${meetups.length}개)`
-              : `주변 모임 목록 (${meetups.length}개)`}
-            {radius > 0 && <RadiusInfo>레벨 {radiusToLevel(radius)}</RadiusInfo>}
-          </ListHeader>
-          {loading ? (
-            <LoadingText>로딩 중...</LoadingText>
-          ) : meetups.length === 0 ? (
-            <EmptyText>주변에 모임이 없습니다.</EmptyText>
-          ) : (
-            <MeetupList>
-              {meetups.map((meetup) => (
-                <MeetupItem
-                  key={meetup.idx}
-                  onClick={() => handleMeetupClick(meetup)}
-                  $isSelected={selectedMeetup?.idx === meetup.idx}
-                >
-                  <MeetupTitle>{meetup.title}</MeetupTitle>
-                  <MeetupInfo>
-                    <InfoItem>📍 {meetup.location}</InfoItem>
-                    <InfoItem>🕐 {formatDate(meetup.date)}</InfoItem>
-                    <InfoItem>
-                      👥 {meetup.currentParticipants || 0}/{meetup.maxParticipants}명
-                    </InfoItem>
-                  </MeetupInfo>
-                </MeetupItem>
-              ))}
-            </MeetupList>
-          )}
-        </ListSection>
-      </ContentWrapper>
+            {createStep === 'location' && (
+              <>
+                <MapCenterPin>
+                  <PinIcon>📍</PinIcon>
+                </MapCenterPin>
 
-      {/* 모달 제거됨 - RegionControls로 대체 */}
+                <LocationFloatingBar>
+                  <FloatingAddressCard>
+                    <CardLabel>여기로 선택하시겠어요?</CardLabel>
+                    <CardAddress>{formData.location || '위치를 찾는 중...'}</CardAddress>
+                    <ConfirmLocationButton onClick={() => setCreateStep('form')}>
+                      이 위치에서 모이기 활성화 ✨
+                    </ConfirmLocationButton>
+                  </FloatingAddressCard>
 
-      {selectedMeetup && (
-        <ModalOverlay onClick={() => setSelectedMeetup(null)}>
-          <ModalContent onClick={(e) => e.stopPropagation()}>
-            <ModalHeader>
-              <ModalTitle>{selectedMeetup.title}</ModalTitle>
-              <CloseButton onClick={() => setSelectedMeetup(null)}>×</CloseButton>
-            </ModalHeader>
-
-            <ModalBody>
-              <Section>
-                <SectionTitle>📅 모임 일시</SectionTitle>
-                <SectionContent>{formatDate(selectedMeetup.date)}</SectionContent>
-              </Section>
-
-              <Section>
-                <SectionTitle>📍 모임 장소</SectionTitle>
-                <SectionContent>{selectedMeetup.location}</SectionContent>
-              </Section>
-
-              {selectedMeetup.description && (
-                <Section>
-                  <SectionTitle>📝 모임 설명</SectionTitle>
-                  <SectionContent>{selectedMeetup.description}</SectionContent>
-                </Section>
-              )}
-
-              <Section>
-                <SectionTitle>👥 참가자 ({participants.length}명)</SectionTitle>
-                {participants.length === 0 ? (
-                  <EmptyText>아직 참가자가 없습니다.</EmptyText>
-                ) : (
-                  <ParticipantsList>
-                    {participants.map((p, index) => (
-                      <ParticipantItem key={index}>
-                        <ParticipantName>{p.username}</ParticipantName>
-                        <ParticipantDate>
-                          {new Date(p.joinedAt).toLocaleDateString('ko-KR')}
-                        </ParticipantDate>
-                      </ParticipantItem>
-                    ))}
-                  </ParticipantsList>
-                )}
-              </Section>
-
-              <Section>
-                <SectionTitle>📊 모임 정보</SectionTitle>
-                <InfoGrid>
-                  <InfoItem>
-                    <Label>주최자:</Label>
-                    <Value>{selectedMeetup.organizerName || '알 수 없음'}</Value>
-                  </InfoItem>
-                  <InfoItem>
-                    <Label>참가 인원:</Label>
-                    <Value>
-                      {selectedMeetup.currentParticipants || 0}/{selectedMeetup.maxParticipants}명
-                    </Value>
-                  </InfoItem>
-                  <InfoItem>
-                    <Label>상태:</Label>
-                    <Value>
-                      {selectedMeetup.status === 'RECRUITING' ? '모집중' :
-                        selectedMeetup.status === 'CLOSED' ? '마감' : '종료'}
-                    </Value>
-                  </InfoItem>
-                </InfoGrid>
-              </Section>
-
-              {/* 참가하기 버튼 */}
-              {selectedMeetup.organizerIdx?.toString() !== user?.idx?.toString() && (
-                <ActionSection>
-                  {isParticipating ? (
-                    <CancelButton
-                      onClick={handleCancelParticipation}
-                      disabled={participationLoading}
-                    >
-                      {participationLoading ? '처리 중...' : '참가 취소'}
-                    </CancelButton>
-                  ) : (
-                    <JoinButton
-                      onClick={handleJoinMeetup}
-                      disabled={
-                        participationLoading ||
-                        (selectedMeetup.currentParticipants || 0) >= (selectedMeetup.maxParticipants || 0) ||
-                        selectedMeetup.status === 'CLOSED' ||
-                        selectedMeetup.status === 'COMPLETED'
-                      }
-                    >
-                      {participationLoading
-                        ? '처리 중...'
-                        : (selectedMeetup.currentParticipants || 0) >= (selectedMeetup.maxParticipants || 0)
-                          ? '인원 마감'
-                          : selectedMeetup.status === 'CLOSED' || selectedMeetup.status === 'COMPLETED'
-                            ? '참가 불가'
-                            : '참가하기'}
-                    </JoinButton>
-                  )}
-                </ActionSection>
-              )}
-            </ModalBody>
-          </ModalContent>
-        </ModalOverlay>
-      )}
-
-      {showCreateForm && (
-        <ModalOverlay onClick={() => setShowCreateForm(false)}>
-          <ModalContent ref={createFormModalRef} onClick={(e) => e.stopPropagation()}>
-            <ModalHeader>
-              <ModalTitle>새 모임 등록</ModalTitle>
-              <CloseButton onClick={() => setShowCreateForm(false)}>×</CloseButton>
-            </ModalHeader>
-
-            <Form onSubmit={handleCreateMeetup}>
-              <FormGroup>
-                <FormLabel>모임 제목 *</FormLabel>
-                <Input
-                  type="text"
-                  name="title"
-                  value={formData.title}
-                  onChange={handleFormChange}
-                  placeholder="예: 강아지 산책 모임"
-                  required
-                />
-                {formErrors.title && <ErrorText>{formErrors.title}</ErrorText>}
-              </FormGroup>
-
-              <FormGroup>
-                <FormLabel>모임 설명</FormLabel>
-                <TextArea
-                  name="description"
-                  value={formData.description}
-                  onChange={handleFormChange}
-                  placeholder="모임에 대한 설명을 입력해주세요"
-                  rows={4}
-                />
-              </FormGroup>
-
-              <FormGroup>
-                <FormLabel>모임 장소 *</FormLabel>
-                <Input
-                  type="text"
-                  name="location"
-                  value={formData.location}
-                  onChange={handleFormChange}
-                  placeholder="모임 장소를 입력해주세요 (예: 서울시 강남구 테헤란로)"
-                  required
-                />
-                {formErrors.location && <ErrorText>{formErrors.location}</ErrorText>}
-              </FormGroup>
-
-              <FormGroup>
-                <FormLabel>모임 일시 *</FormLabel>
-                <DatePickerWrapper className="date-picker-wrapper">
-                  <DateInputButton
-                    ref={datePickerButtonRef}
-                    type="button"
-                    onClick={handleDatePickerToggle}
-                    hasValue={!!formData.date}
-                  >
-                    {formData.date
-                      ? formatDate(formData.date)
-                      : '날짜와 시간을 선택해주세요'}
-                    <CalendarIcon>📅</CalendarIcon>
-                  </DateInputButton>
-                </DatePickerWrapper>
-                {showDatePicker && (
-                  <DatePickerDropdown
-                    className="date-picker-dropdown"
-                    style={{
-                      top: `${datePickerPosition.top}px`,
-                      left: `${datePickerPosition.left}px`,
-                    }}
-                  >
-                    <CalendarContainer>
-                      <CalendarHeader>
-                        <NavButton
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const current = selectedDate || new Date();
-                            const newDate = new Date(current.getFullYear(), current.getMonth() - 1, 1);
-                            setSelectedDate(newDate);
-                          }}
-                        >
-                          ‹
-                        </NavButton>
-                        <MonthYear>
-                          {selectedDate
-                            ? `${selectedDate.getFullYear()}년 ${selectedDate.getMonth() + 1}월`
-                            : `${new Date().getFullYear()}년 ${new Date().getMonth() + 1}월`}
-                        </MonthYear>
-                        <NavButton
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            const current = selectedDate || new Date();
-                            const newDate = new Date(current.getFullYear(), current.getMonth() + 1, 1);
-                            setSelectedDate(newDate);
-                          }}
-                        >
-                          ›
-                        </NavButton>
-                      </CalendarHeader>
-                      <CalendarGrid>
-                        {['일', '월', '화', '수', '목', '금', '토'].map((day) => (
-                          <CalendarDayHeader key={day}>{day}</CalendarDayHeader>
+                  <FloatingSearchBox ref={locationSearchInputRef}>
+                    <LocationSearchInput
+                      type="text"
+                      value={locationSearchQuery}
+                      onChange={(e) => {
+                        setLocationSearchQuery(e.target.value);
+                        searchLocation(e.target.value);
+                      }}
+                      placeholder="다른 장소 검색하기"
+                    />
+                    {showLocationSearchResults && locationSearchResults.length > 0 && (
+                      <FloatingResults>
+                        {locationSearchResults.map((result, index) => (
+                          <LocationSearchResultItem
+                            key={index}
+                            onClick={() => {
+                              handleLocationSelect(result);
+                              setMapCenter({ lat: result.latitude, lng: result.longitude });
+                            }}
+                          >
+                            <LocationIcon>📍</LocationIcon>
+                            <LocationAddress>{result.address}</LocationAddress>
+                          </LocationSearchResultItem>
                         ))}
-                        {getCalendarDays(selectedDate || new Date()).map((day, index) => {
-                          const now = new Date();
-                          const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-                          const dayDate = new Date(day.getFullYear(), day.getMonth(), day.getDate());
+                      </FloatingResults>
+                    )}
+                  </FloatingSearchBox>
+                </LocationFloatingBar>
+              </>
+            )}
+          </MapSection>
 
-                          const isToday = dayDate.getTime() === today.getTime();
-                          const isSelected = selectedDate &&
-                            dayDate.getTime() === new Date(selectedDate.getFullYear(), selectedDate.getMonth(), selectedDate.getDate()).getTime();
-                          const isPast = dayDate < today;
-                          const isCurrentMonth = day.getMonth() === (selectedDate || new Date()).getMonth();
+          <ListSection style={{ display: showList ? 'flex' : 'none' }}>
+            <>
+              <ListHeader>
+                {selectedLocation
+                  ? `${selectedLocation.bname || selectedLocation.sigungu || '선택한 위치'} 주변 모임 (${meetups.length}개)`
+                  : `주변 모임 목록 (${meetups.length}개)`}
+              </ListHeader>
+              {loading ? (
+                <LoadingText>로딩 중...</LoadingText>
+              ) : meetups.length === 0 ? (
+                <EmptyText>주변에 모임이 없습니다.</EmptyText>
+              ) : (
+                <MeetupList>
+                  {meetups.map((meetup) => (
+                    <MeetupItem
+                      key={meetup.idx}
+                      onClick={() => handleMeetupClick(meetup)}
+                      $isSelected={selectedMeetup?.idx === meetup.idx}
+                    >
+                      <MeetupTitle>{meetup.title}</MeetupTitle>
+                      <MeetupInfo>
+                        <InfoItem>📍 {meetup.location}</InfoItem>
+                        <InfoItem>🕐 {formatDate(meetup.date)}</InfoItem>
+                        <InfoItem>
+                          👥 {meetup.currentParticipants || 0}/{meetup.maxParticipants}명
+                        </InfoItem>
+                      </MeetupInfo>
+                    </MeetupItem>
+                  ))}
+                </MeetupList>
+              )}
+            </>
+          </ListSection>
+        </ContentWrapper>
 
-                          return (
-                            <CalendarDay
-                              key={index}
-                              type="button"
-                              isToday={isToday}
-                              isSelected={isSelected}
-                              isPast={isPast}
-                              isCurrentMonth={isCurrentMonth}
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                if (!isPast && isCurrentMonth) {
-                                  handleDateSelect(day);
-                                }
-                              }}
-                            >
-                              {day.getDate()}
-                            </CalendarDay>
-                          );
-                        })}
-                      </CalendarGrid>
-                      <TimeSelector>
-                        <TimeLabel>시간 선택:</TimeLabel>
-                        <TimeInputs>
-                          <TimeInput
-                            type="number"
-                            min="0"
-                            max="23"
-                            value={selectedTime.hour}
-                            onChange={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleTimeChange('hour', e.target.value);
-                            }}
-                            onBlur={(e) => {
-                              if (e.target.value === '' || parseInt(e.target.value) < 0) {
-                                handleTimeChange('hour', '0');
-                              }
-                            }}
-                          />
-                          <TimeSeparator>:</TimeSeparator>
-                          <TimeInput
-                            type="number"
-                            min="0"
-                            max="59"
-                            value={selectedTime.minute}
-                            onChange={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleTimeChange('minute', e.target.value);
-                            }}
-                            onBlur={(e) => {
-                              if (e.target.value === '' || parseInt(e.target.value) < 0) {
-                                handleTimeChange('minute', '0');
-                              }
-                            }}
-                          />
-                        </TimeInputs>
-                      </TimeSelector>
-                      <DatePickerActions>
-                        <DatePickerButton onClick={() => setShowDatePicker(false)}>
-                          확인
-                        </DatePickerButton>
-                      </DatePickerActions>
-                    </CalendarContainer>
-                  </DatePickerDropdown>
+        {/* 모임 등록 모달 */}
+        {createStep === 'form' && (
+          <ModalOverlay onClick={() => setCreateStep('location')}>
+            <ModalContent
+              ref={createFormModalRef}
+              onClick={(e) => e.stopPropagation()}
+              style={{ maxWidth: '500px' }}
+            >
+              <ModalHeader>
+                <ModalTitle>상세 정보 입력</ModalTitle>
+                <CloseButton onClick={() => setCreateStep('location')}>×</CloseButton>
+              </ModalHeader>
+              <ModalBody>
+                <SelectedLocationSummary style={{ margin: '0 0 1.5rem 0' }}>
+                  <span className="icon">📍</span>
+                  <span className="text">{formData.location}</span>
+                </SelectedLocationSummary>
+
+                <Form onSubmit={handleCreateMeetup} style={{ padding: 0 }}>
+                  <FormGroup>
+                    <FormLabel>모임 제목 *</FormLabel>
+                    <Input
+                      type="text"
+                      name="title"
+                      value={formData.title}
+                      onChange={handleFormChange}
+                      placeholder="예: 공원 산책 같이해요"
+                      required
+                    />
+                    {formErrors.title && <ErrorText>{formErrors.title}</ErrorText>}
+                  </FormGroup>
+
+                  <FormGroup>
+                    <FormLabel>모임 설명</FormLabel>
+                    <TextArea
+                      name="description"
+                      value={formData.description}
+                      onChange={handleFormChange}
+                      placeholder="간단한 소개나 준비물을 적어주세요"
+                      rows={3}
+                    />
+                  </FormGroup>
+
+                  <FormGroup>
+                    <FormLabel>모임 일시 *</FormLabel>
+                    <DatePickerWrapper className="date-picker-wrapper">
+                      <DateInputButton
+                        ref={datePickerButtonRef}
+                        type="button"
+                        onClick={() => setShowDatePicker(!showDatePicker)}
+                        hasValue={!!formData.date}
+                      >
+                        {formData.date ? formatDate(formData.date) : '날짜와 시간 선택'}
+                        <CalendarIcon>📅</CalendarIcon>
+                      </DateInputButton>
+
+                      {showDatePicker && selectedDate && (
+                        <DatePickerDropdown className="date-picker-dropdown">
+                          <CalendarContainer>
+                            <CalendarHeader>
+                              <NavButton type="button" onClick={() => {
+                                const newDate = new Date(selectedDate);
+                                newDate.setMonth(newDate.getMonth() - 1);
+                                setSelectedDate(newDate);
+                              }}>‹</NavButton>
+                              <MonthYear>{selectedDate.getFullYear()}년 {selectedDate.getMonth() + 1}월</MonthYear>
+                              <NavButton type="button" onClick={() => {
+                                const newDate = new Date(selectedDate);
+                                newDate.setMonth(newDate.getMonth() + 1);
+                                setSelectedDate(newDate);
+                              }}>›</NavButton>
+                            </CalendarHeader>
+
+                            <CalendarGrid>
+                              {['일', '월', '화', '수', '목', '금', '토'].map(d => (
+                                <CalendarDayHeader key={d}>{d}</CalendarDayHeader>
+                              ))}
+                              {getCalendarDays(selectedDate).map((day, i) => {
+                                const isSelected = formData.date && new Date(formData.date).toDateString() === day.toDateString();
+                                const isToday = new Date().toDateString() === day.toDateString();
+                                const isCurrentMonth = day.getMonth() === selectedDate.getMonth();
+                                const isPast = day < new Date(new Date().setHours(0, 0, 0, 0));
+
+                                return (
+                                  <CalendarDay
+                                    key={i}
+                                    type="button"
+                                    onClick={() => handleDateSelect(day)}
+                                    isSelected={isSelected}
+                                    isToday={isToday}
+                                    isCurrentMonth={isCurrentMonth}
+                                    disabled={isPast || !isCurrentMonth}
+                                  >
+                                    {day.getDate()}
+                                  </CalendarDay>
+                                );
+                              })}
+                            </CalendarGrid>
+
+                            <TimeSelector>
+                              <TimeLabel>⏰ 시간</TimeLabel>
+                              <TimeInputs>
+                                <TimeInput
+                                  type="number"
+                                  value={selectedTime.hour}
+                                  onChange={(e) => handleTimeChange('hour', e.target.value)}
+                                />
+                                <TimeSeparator>:</TimeSeparator>
+                                <TimeInput
+                                  type="number"
+                                  value={selectedTime.minute}
+                                  onChange={(e) => handleTimeChange('minute', e.target.value)}
+                                />
+                              </TimeInputs>
+                            </TimeSelector>
+
+                            <DatePickerActions>
+                              <DatePickerButton type="button" onClick={() => setShowDatePicker(false)}>확인</DatePickerButton>
+                            </DatePickerActions>
+                          </CalendarContainer>
+                        </DatePickerDropdown>
+                      )}
+                    </DatePickerWrapper>
+                    {formErrors.date && <ErrorText>{formErrors.date}</ErrorText>}
+                  </FormGroup>
+
+                  <FormGroup>
+                    <FormLabel>최대 인원 *</FormLabel>
+                    <Input
+                      type="number"
+                      name="maxParticipants"
+                      value={formData.maxParticipants}
+                      onChange={handleFormChange}
+                      min="1"
+                      required
+                    />
+                    {formErrors.maxParticipants && <ErrorText>{formErrors.maxParticipants}</ErrorText>}
+                  </FormGroup>
+
+                  <FormSubmitButton type="submit" disabled={formLoading}>
+                    {formLoading ? '등록 중...' : '모임 등록하기 ✨'}
+                  </FormSubmitButton>
+                </Form>
+              </ModalBody>
+            </ModalContent>
+          </ModalOverlay>
+        )}
+
+        {/* 기존 전역 DatePickerDropdown 제거 (모달 내부로 이동됨) */}
+
+        {/* 모달 제거됨 - RegionControls로 대체 */}
+
+        {selectedMeetup && (
+          <ModalOverlay onClick={() => setSelectedMeetup(null)}>
+            <ModalContent onClick={(e) => e.stopPropagation()}>
+              <ModalHeader>
+                <ModalTitle>{selectedMeetup.title}</ModalTitle>
+                <CloseButton onClick={() => setSelectedMeetup(null)}>×</CloseButton>
+              </ModalHeader>
+
+              <ModalBody>
+                <Section>
+                  <SectionTitle>📅 모임 일시</SectionTitle>
+                  <SectionContent>{formatDate(selectedMeetup.date)}</SectionContent>
+                </Section>
+
+                <Section>
+                  <SectionTitle>📍 모임 장소</SectionTitle>
+                  <SectionContent>{selectedMeetup.location}</SectionContent>
+                </Section>
+
+                {selectedMeetup.description && (
+                  <Section>
+                    <SectionTitle>📝 모임 설명</SectionTitle>
+                    <SectionContent>{selectedMeetup.description}</SectionContent>
+                  </Section>
                 )}
-                {formErrors.date && <ErrorText>{formErrors.date}</ErrorText>}
-              </FormGroup>
 
-              <FormGroup>
-                <FormLabel>최대 인원 *</FormLabel>
-                <Input
-                  type="number"
-                  name="maxParticipants"
-                  value={formData.maxParticipants}
-                  onChange={handleFormChange}
-                  min="1"
-                  max="100"
-                  required
-                />
-                {formErrors.maxParticipants && <ErrorText>{formErrors.maxParticipants}</ErrorText>}
-              </FormGroup>
+                <Section>
+                  <SectionTitle>👥 참가자 ({participants.length}명)</SectionTitle>
+                  {participants.length === 0 ? (
+                    <EmptyText>아직 참가자가 없습니다.</EmptyText>
+                  ) : (
+                    <ParticipantsList>
+                      {participants.map((p, index) => (
+                        <ParticipantItem key={index}>
+                          <ParticipantName>{p.username}</ParticipantName>
+                          <ParticipantDate>
+                            {new Date(p.joinedAt).toLocaleDateString('ko-KR')}
+                          </ParticipantDate>
+                        </ParticipantItem>
+                      ))}
+                    </ParticipantsList>
+                  )}
+                </Section>
 
-              <ButtonGroup>
-                <Button type="button" variant="secondary" onClick={() => setShowCreateForm(false)}>
-                  취소
-                </Button>
-                <Button type="submit" variant="primary" disabled={formLoading}>
-                  {formLoading ? '등록 중...' : '등록하기'}
-                </Button>
-              </ButtonGroup>
-            </Form>
-          </ModalContent>
-        </ModalOverlay>
-      )}
-    </Container>
+                <Section>
+                  <SectionTitle>📊 모임 정보</SectionTitle>
+                  <InfoGrid>
+                    <InfoItem>
+                      <Label>주최자:</Label>
+                      <Value>{selectedMeetup.organizerName || '알 수 없음'}</Value>
+                    </InfoItem>
+                    <InfoItem>
+                      <Label>참가 인원:</Label>
+                      <Value>
+                        {selectedMeetup.currentParticipants || 0}/{selectedMeetup.maxParticipants}명
+                      </Value>
+                    </InfoItem>
+                    <InfoItem>
+                      <Label>상태:</Label>
+                      <Value>
+                        {selectedMeetup.status === 'RECRUITING' ? '모집중' :
+                          selectedMeetup.status === 'CLOSED' ? '마감' : '종료'}
+                      </Value>
+                    </InfoItem>
+                  </InfoGrid>
+                </Section>
+
+                {/* 참가하기 버튼 */}
+                {selectedMeetup.organizerIdx?.toString() !== user?.idx?.toString() && (
+                  <ActionSection>
+                    {isParticipating ? (
+                      <CancelButton
+                        onClick={handleCancelParticipation}
+                        disabled={participationLoading}
+                      >
+                        {participationLoading ? '처리 중...' : '참가 취소'}
+                      </CancelButton>
+                    ) : (
+                      <JoinButton
+                        onClick={handleJoinMeetup}
+                        disabled={
+                          participationLoading ||
+                          (selectedMeetup.currentParticipants || 0) >= (selectedMeetup.maxParticipants || 0) ||
+                          selectedMeetup.status === 'CLOSED' ||
+                          selectedMeetup.status === 'COMPLETED'
+                        }
+                      >
+                        {participationLoading
+                          ? '처리 중...'
+                          : (selectedMeetup.currentParticipants || 0) >= (selectedMeetup.maxParticipants || 0)
+                            ? '인원 마감'
+                            : selectedMeetup.status === 'CLOSED' || selectedMeetup.status === 'COMPLETED'
+                              ? '참가 불가'
+                              : '참가하기'}
+                      </JoinButton>
+                    )}
+                  </ActionSection>
+                )}
+              </ModalBody>
+            </ModalContent>
+          </ModalOverlay>
+        )}
+      </Container>
+    </>
   );
 };
-
-export default MeetupPage;
 
 const Container = styled.div`
   width: 100%;
@@ -1537,53 +1677,35 @@ const Container = styled.div`
 `;
 
 const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
   padding: 1rem 2rem;
   background: ${props => props.theme.colors.surface};
   border-bottom: 1px solid ${props => props.theme.colors.border};
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+`;
 
-  @media (max-width: 768px) {
-    flex-direction: column;
-    gap: 1rem;
-    align-items: stretch;
-    padding: 1rem;
-  }
+const HeaderTop = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
 `;
 
 const Title = styled.h1`
+  margin: 0;
+  color: ${props => props.theme.colors.text};
   font-size: 1.5rem;
   font-weight: 700;
-  color: ${props => props.theme.colors.text};
-  margin: 0;
-
-  @media (max-width: 768px) {
-    font-size: 1.25rem;
-  }
 `;
 
-const Controls = styled.div`
+const HeaderActions = styled.div`
   display: flex;
-  gap: 1rem;
   align-items: center;
+  gap: 0.75rem;
   flex-wrap: wrap;
-
-  @media (max-width: 768px) {
-    width: 100%;
-    justify-content: space-between;
-    gap: 0.5rem;
-  }
-`;
-
-const RadiusSelect = styled.select`
-  padding: 0.5rem 1rem;
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: 8px;
-  background: ${props => props.theme.colors.surface};
-  color: ${props => props.theme.colors.text};
-  font-size: 0.9rem;
-  cursor: pointer;
+  justify-content: flex-end;
 `;
 
 const CreateButton = styled.button`
@@ -1607,16 +1729,29 @@ const LocationButton = styled.button`
   padding: 0.5rem 1rem;
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: 8px;
-  background: ${props => props.theme.colors.surface};
-  color: ${props => props.theme.colors.text};
   font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
+  background: ${props => props.disabled ? props.theme.colors.border : props.theme.colors.surface};
+  color: ${props => props.disabled ? props.theme.colors.textSecondary : props.theme.colors.text};
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   white-space: nowrap;
 
-  &:hover {
+  &:hover:enabled {
     background: ${props => props.theme.colors.primary};
     color: white;
+  }
+
+  &:active:enabled {
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.6;
   }
 `;
 
@@ -1624,16 +1759,24 @@ const LocationSelectButton = styled.button`
   padding: 0.5rem 1rem;
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
   background: ${props => props.theme.colors.surface};
   color: ${props => props.theme.colors.text};
-  font-size: 0.9rem;
-  cursor: pointer;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
   white-space: nowrap;
 
   &:hover {
     background: ${props => props.theme.colors.primary};
     color: white;
+  }
+
+  &:active {
+    transform: translateY(-1px);
   }
 `;
 
@@ -1647,47 +1790,64 @@ const SelectedLocationInfo = styled.div`
   white-space: nowrap;
 `;
 
-const RadiusControls = styled.div`
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  flex-wrap: wrap;
-`;
-
-const RegionControls = styled.div`
+const RegionControls = styled.div.withConfig({
+  shouldForwardProp: (prop) => prop !== '$isOpen',
+})`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
   width: 100%;
-  padding: 0.5rem 0;
+  padding: ${props => props.$isOpen ? '0.75rem 0' : '0'};
+  max-height: ${props => props.$isOpen ? '300px' : '0'};
+  overflow: hidden;
+  opacity: ${props => props.$isOpen ? '1' : '0'};
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 
 const RegionButtonGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-  gap: 0.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
   width: 100%;
-  max-height: 200px;
+  max-height: 220px;
   overflow-y: auto;
-  padding: 0.5rem;
+  padding: 0.75rem;
   position: relative;
   z-index: 1000;
   pointer-events: auto;
+  
+  /* 스크롤바 스타일링 */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: ${props => props.theme.colors.background};
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.colors.border};
+    border-radius: 3px;
+    &:hover {
+      background: ${props => props.theme.colors.primary}80;
+    }
+  }
 `;
 
 const RegionButton = styled.button.withConfig({
   shouldForwardProp: (prop) => prop !== 'active',
 })`
-  padding: 0.6rem 1rem;
-  border: 1px solid ${props => props.active ? props.theme.colors.primary : props.theme.colors.border};
-  border-radius: 8px;
+  padding: 0.65rem 1.25rem;
+  border: 2px solid ${props => props.active ? props.theme.colors.primary : props.theme.colors.border};
+  border-radius: 24px;
   font-size: 0.9rem;
-  font-weight: 500;
+  font-weight: ${props => props.active ? 600 : 500};
   cursor: pointer;
-  background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.surface};
+  background: ${props => props.active
+    ? `linear-gradient(135deg, ${props.theme.colors.primary} 0%, ${props.theme.colors.primary}dd 100%)`
+    : props.theme.colors.surface};
   color: ${props => props.active ? 'white' : props.theme.colors.text};
-  transition: all 0.2s;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
   white-space: nowrap;
   overflow: hidden;
@@ -1695,15 +1855,43 @@ const RegionButton = styled.button.withConfig({
   position: relative;
   z-index: 1000;
   pointer-events: auto;
-
+  box-shadow: ${props => props.active
+    ? `0 4px 12px ${props.theme.colors.primary}40, 0 2px 4px ${props.theme.colors.primary}20`
+    : '0 2px 4px rgba(0, 0, 0, 0.05)'};
+  
+  /* 호버 효과 */
   &:hover {
-    background: ${props => props.active ? props.theme.colors.primary + 'dd' : props.theme.colors.primary + '20'};
+    background: ${props => props.active
+    ? `linear-gradient(135deg, ${props.theme.colors.primary}dd 0%, ${props.theme.colors.primary} 100%)`
+    : `linear-gradient(135deg, ${props.theme.colors.primary}15 0%, ${props.theme.colors.primary}25 100%)`};
     border-color: ${props => props.theme.colors.primary};
     color: ${props => props.active ? 'white' : props.theme.colors.primary};
+    transform: translateY(-2px);
+    box-shadow: ${props => props.active
+    ? `0 6px 16px ${props.theme.colors.primary}50, 0 4px 8px ${props.theme.colors.primary}30`
+    : `0 4px 12px ${props.theme.colors.primary}25, 0 2px 4px ${props.theme.colors.primary}15`};
   }
 
+  /* 활성 상태 강조 */
+  ${props => props.active && `
+    &::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      border-radius: 24px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+      pointer-events: none;
+    }
+  `}
+
   &:active {
-    transform: translateY(1px);
+    transform: translateY(0px);
+    box-shadow: ${props => props.active
+    ? `0 2px 6px ${props.theme.colors.primary}40`
+    : '0 1px 2px rgba(0, 0, 0, 0.1)'};
   }
 `;
 
@@ -1713,15 +1901,24 @@ const ToggleButton = styled.button`
   padding: 0.5rem 1rem;
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
   background: ${props => props.theme.colors.surface};
   color: ${props => props.theme.colors.text};
-  font-size: 0.9rem;
-  cursor: pointer;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  white-space: nowrap;
 
   &:hover {
     background: ${props => props.theme.colors.primary};
     color: white;
+  }
+
+  &:active {
+    transform: translateY(-1px);
   }
 `;
 
@@ -1776,12 +1973,6 @@ const ListHeader = styled.div`
   font-weight: 600;
   border-bottom: 1px solid ${props => props.theme.colors.border};
   color: ${props => props.theme.colors.text};
-`;
-
-const RadiusInfo = styled.span`
-  font-size: 0.85rem;
-  font-weight: 400;
-  color: ${props => props.theme.colors.textSecondary || props.theme.colors.text}99;
 `;
 
 const MeetupList = styled.div`
@@ -2087,27 +2278,145 @@ const RegionSelect = styled.select`
   }
 `;
 
+const LocationSearchWrapper = styled.div`
+  position: relative;
+  width: 100%;
+`;
+
 const AddressInputGroup = styled.div`
   display: flex;
   gap: 0.5rem;
+  align-items: center;
+  position: relative;
 `;
 
-const SearchButton = styled.button`
-  padding: 0.75rem 1.5rem;
+const LocationSearchInput = styled.input`
+  width: 100%;
+  padding: 0.75rem;
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: 8px;
-  background: ${props => props.theme.colors.surface};
+  font-size: 1rem;
+  background: ${props => props.theme.colors.background};
   color: ${props => props.theme.colors.text};
-  font-size: 0.9rem;
+  padding-right: ${props => props.hasLoading ? '2.5rem' : '0.75rem'};
+
+  &:focus {
+    outline: none;
+    border-color: ${props => props.theme.colors.primary};
+    box-shadow: 0 0 0 2px ${props => props.theme.colors.primary}33;
+  }
+`;
+
+const SearchLoadingIcon = styled.span`
+  position: absolute;
+  right: 0.75rem;
+  font-size: 1.2rem;
+  animation: spin 1s linear infinite;
+  
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+`;
+
+const LocationSearchResults = styled.div`
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  background: ${props => props.theme.colors.surface};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  
+  /* 스크롤바 스타일링 */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+    background: ${props => props.theme.colors.background};
+    border-radius: 3px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.colors.border};
+    border-radius: 3px;
+    &:hover {
+      background: ${props => props.theme.colors.primary}80;
+    }
+  }
+`;
+
+const LocationSearchResultItem = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
   cursor: pointer;
-  white-space: nowrap;
   transition: all 0.2s;
+  border-bottom: 1px solid ${props => props.theme.colors.border};
+
+  &:last-child {
+    border-bottom: none;
+  }
 
   &:hover {
-    background: ${props => props.theme.colors.primary};
-    color: white;
-    border-color: ${props => props.theme.colors.primary};
+    background: ${props => props.theme.colors.primary}15;
   }
+
+  &:active {
+    background: ${props => props.theme.colors.primary}25;
+  }
+`;
+
+const LocationIcon = styled.span`
+  font-size: 1.2rem;
+  flex-shrink: 0;
+`;
+
+const LocationAddress = styled.div`
+  flex: 1;
+  color: ${props => props.theme.colors.text};
+  font-size: 0.95rem;
+  line-height: 1.4;
+`;
+
+const LocationSearchNoResult = styled.div`
+  padding: 1rem;
+  text-align: center;
+  color: ${props => props.theme.colors.textSecondary};
+  font-size: 0.9rem;
+`;
+
+const SelectedLocationDisplay = styled.div`
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  background: ${props => props.theme.colors.primary}10;
+  border: 1px solid ${props => props.theme.colors.primary}30;
+  border-radius: 8px;
+`;
+
+const LocationInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  color: ${props => props.theme.colors.text};
+  font-size: 0.9rem;
+
+  strong {
+    color: ${props => props.theme.colors.primary};
+    font-weight: 600;
+  }
+`;
+
+const LocationCoords = styled.div`
+  font-size: 0.8rem;
+  color: ${props => props.theme.colors.textSecondary};
+  font-family: monospace;
 `;
 
 const InfoText = styled.div`
@@ -2221,31 +2530,23 @@ const CalendarIcon = styled.span`
 `;
 
 const DatePickerDropdown = styled.div`
-  position: fixed;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 8px;
   z-index: 2000;
   background: ${props => props.theme.colors.surface};
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: 12px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
   padding: 1rem;
-  min-width: 320px;
-  animation: slideDown 0.2s ease-out;
-  
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
+  min-width: 300px;
+  animation: slideIn 0.2s ease-out;
 
-  @media (max-width: 768px) {
-    min-width: 280px;
-    max-width: 90vw;
-    padding: 0.75rem;
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 `;
 
@@ -2400,4 +2701,189 @@ const DatePickerButton = styled.button`
     background: ${props => props.theme.colors.primary}dd;
   }
 `;
+
+const MapCenterPin = styled.div`
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+`;
+
+const PinIcon = styled.div`
+  font-size: 3.5rem;
+  margin-bottom: -15px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
+  animation: float 2s ease-in-out infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+`;
+
+const LocationFloatingBar = styled.div`
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 500px;
+  z-index: 1005;
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+`;
+
+const FloatingAddressCard = styled.div`
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(10px);
+  padding: 1.5rem;
+  border-radius: 20px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  text-align: center;
+`;
+
+const CardLabel = styled.div`
+  font-size: 0.8rem;
+  color: ${props => props.theme.colors.textSecondary};
+  margin-bottom: 5px;
+  font-weight: 600;
+`;
+
+const CardAddress = styled.div`
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: ${props => props.theme.colors.text};
+  margin-bottom: 15px;
+  word-break: keep-all;
+`;
+
+const ConfirmLocationButton = styled.button`
+  width: 100%;
+  padding: 1rem;
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px ${props => props.theme.colors.primary}40;
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px ${props => props.theme.colors.primary}60;
+  }
+`;
+
+const FloatingSearchBox = styled.div`
+  position: relative;
+`;
+
+const FloatingResults = styled(LocationSearchResults)`
+  bottom: 100%;
+  top: auto;
+  margin-top: 0;
+  margin-bottom: 10px;
+`;
+
+const FormSectionWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 1.5rem;
+  overflow-y: auto;
+  background: ${props => props.theme.colors.surface};
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: ${props => props.theme.colors.border};
+    border-radius: 3px;
+  }
+`;
+
+const FormTitle = styled.h2`
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: ${props => props.theme.colors.text};
+`;
+
+const FormHeaderInfo = styled.div`
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid ${props => props.theme.colors.border};
+`;
+
+const SelectedLocationSummary = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  background: ${props => props.theme.colors.background};
+  padding: 8px 12px;
+  border-radius: 8px;
+  
+  .icon { font-size: 1rem; }
+  .text { 
+    font-size: 0.9rem; 
+    font-weight: 600;
+    color: ${props => props.theme.colors.primary};
+  }
+`;
+
+const BackButton = styled.button`
+  padding: 0.5rem 1rem;
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: 8px;
+  background: ${props => props.theme.colors.background};
+  color: ${props => props.theme.colors.text};
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.theme.colors.background};
+    border-color: ${props => props.theme.colors.primary};
+  }
+`;
+
+const FormSubmitButton = styled.button`
+  width: 100%;
+  padding: 1rem;
+  background: ${props => props.theme.colors.primary};
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 1rem;
+  transition: all 0.2s;
+
+  &:hover {
+    background: ${props => props.theme.colors.primary}dd;
+    transform: translateY(-2px);
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+  }
+`;
+
+export default MeetupPage;
 

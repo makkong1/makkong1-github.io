@@ -6,20 +6,21 @@ export const lightTheme = {
     primaryLight: '#FF9558',
     secondary: '#4A90E2',
     background: '#FFFFFF',
-    surface: '#FAFAFA', // 약간 더 부드러운 회색
-    surfaceHover: '#F5F5F5', // 호버 시 약간 더 진한 회색
-    navBg: '#FAFAFA',
-    text: '#1A1A1A', // 약간 더 부드러운 검정 (가독성 향상)
-    textSecondary: '#6B6B6B', // 더 읽기 쉬운 회색
+    surface: '#F8F9FA',
+    surfaceElevated: '#F8F9FA',
+    surfaceHover: '#F1F3F4',
+    text: '#212121',
+    textSecondary: '#757575',
     textLight: '#9E9E9E',
-    border: '#E5E5E5', // 더 부드러운 테두리
-    borderLight: '#F0F0F0',
+    border: '#E0E0E0',
+    borderLight: '#F5F5F5',
     success: '#4CAF50',
     warning: '#FF9800',
     error: '#F44336',
-    shadow: 'rgba(0, 0, 0, 0.08)', // 더 부드러운 그림자
-    shadowHover: 'rgba(0, 0, 0, 0.12)',
+    shadow: 'rgba(0, 0, 0, 0.1)',
+    shadowHover: 'rgba(0, 0, 0, 0.15)',
     gradient: 'linear-gradient(135deg, #FF7E36 0%, #FF9558 100%)',
+    overlay: 'rgba(0, 0, 0, 0.5)',
   },
   spacing: {
     xs: '4px',
@@ -55,8 +56,8 @@ export const darkTheme = {
     secondary: '#64B5F6',
     background: '#1A1A1A', // 더 밝게
     surface: '#2D2D2D', // 더 밝게
+    surfaceElevated: '#363636', // 다크 모드용 elevated 배경
     surfaceHover: '#3A3A3A', // 더 밝게
-    navBg: '#242424',
     text: '#F5F5F5', // 더 밝게
     textSecondary: '#C5C5C5', // 더 밝게
     textLight: '#A0A0A0', // 더 밝게
@@ -68,6 +69,7 @@ export const darkTheme = {
     shadow: 'rgba(0, 0, 0, 0.4)',
     shadowHover: 'rgba(0, 0, 0, 0.5)',
     gradient: 'linear-gradient(135deg, #FF7E36 0%, #FF9558 100%)',
+    overlay: 'rgba(0, 0, 0, 0.7)',
   },
   spacing: lightTheme.spacing,
   borderRadius: lightTheme.borderRadius,

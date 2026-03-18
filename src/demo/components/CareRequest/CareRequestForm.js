@@ -3,14 +3,19 @@ import styled from 'styled-components';
 import { careRequestApi } from '../../api/careRequestApi';
 import { petApiClient } from '../../api/userApi';
 import { useAuth } from '../../contexts/AuthContext';
+import { useEmailVerification } from '../../hooks/useEmailVerification';
+import { paymentApi } from '../../api/paymentApi';
 
 const CareRequestForm = ({ onCancel, onCreated }) => {
   const { user } = useAuth();
+  const { checkAndRedirect, EmailVerificationPromptComponent } = useEmailVerification('PET_CARE');
   const [form, setForm] = useState({
     title: '',
     date: '',
     description: '',
+    offeredCoins: '',
   });
+  const [coinBalance, setCoinBalance] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [pets, setPets] = useState([]);
@@ -38,6 +43,25 @@ const CareRequestForm = ({ onCancel, onCreated }) => {
         }
       };
       fetchPets();
+    }
+  }, [user]);
+
+  // 코인 잔액 불러오기
+  useEffect(() => {
+    if (user) {
+      const fetchBalance = async () => {
+        try {
+          const response = await paymentApi.getBalance();
+          // paymentApi.getBalance()는 이미 response.data를 반환하므로
+          // response.balance로 직접 접근
+          const balance = response?.balance ?? 0;
+          setCoinBalance(balance);
+        } catch (err) {
+          console.error('코인 잔액 조회 실패:', err);
+          setCoinBalance(0);
+        }
+      };
+      fetchBalance();
     }
   }, [user]);
 
@@ -266,6 +290,11 @@ const CareRequestForm = ({ onCancel, onCreated }) => {
       return;
     }
 
+    // 이메일 인증 체크
+    if (!checkAndRedirect()) {
+      return; // 이메일 인증이 필요하면 이메일 인증 페이지로 이동됨
+    }
+
     if (!form.title.trim()) {
       setError('제목을 입력해주세요.');
       return;
@@ -276,11 +305,23 @@ const CareRequestForm = ({ onCancel, onCreated }) => {
       return;
     }
 
+    if (!form.offeredCoins || parseInt(form.offeredCoins) <= 0) {
+      setError('제시할 코인 가격을 입력해주세요. (1 코인 이상)');
+      return;
+    }
+
+    const offeredCoins = parseInt(form.offeredCoins);
+    if (coinBalance !== null && offeredCoins > coinBalance) {
+      setError(`코인 잔액이 부족합니다. 현재 잔액: ${coinBalance} 코인`);
+      return;
+    }
+
     const payload = {
       title: form.title.trim(),
       description: form.description.trim(),
       userId: user.idx,
       petIdx: selectedPetIdx || null,
+      offeredCoins: offeredCoins,
     };
 
     if (form.date) {
@@ -320,7 +361,9 @@ const CareRequestForm = ({ onCancel, onCreated }) => {
   const selectedPet = pets.find(p => p.idx === selectedPetIdx);
 
   return (
-    <FormContainer ref={formContainerRef}>
+    <>
+      <EmailVerificationPromptComponent />
+      <FormContainer ref={formContainerRef}>
       <FormWrapper>
         <LeftCard>
           <Form onSubmit={handleSubmit}>
@@ -492,6 +535,32 @@ const CareRequestForm = ({ onCancel, onCreated }) => {
               />
             </Field>
 
+            <Field>
+              <Label htmlFor="care-request-coins">
+                제시할 코인 가격
+                {coinBalance !== null && (
+                  <CoinBalanceInfo> (현재 잔액: {coinBalance.toLocaleString()} 코인)</CoinBalanceInfo>
+                )}
+              </Label>
+              <CoinInputWrapper>
+                <TextInput
+                  id="care-request-coins"
+                  name="offeredCoins"
+                  type="number"
+                  min="1"
+                  value={form.offeredCoins}
+                  onChange={handleChange}
+                  placeholder="예: 100"
+                  disabled={submitting}
+                  required
+                />
+                <CoinUnit>코인</CoinUnit>
+              </CoinInputWrapper>
+              <HelperText>
+                거래 확정 시 이 금액만큼 코인이 차감되며, 거래 완료 시 제공자에게 지급됩니다.
+              </HelperText>
+            </Field>
+
             {error && <ErrorBanner>{error}</ErrorBanner>}
 
             <ButtonRow>
@@ -571,6 +640,7 @@ const CareRequestForm = ({ onCancel, onCreated }) => {
         </RightCard>
       </FormWrapper>
     </FormContainer>
+    </>
   );
 };
 
@@ -1054,5 +1124,24 @@ const DatePickerButton = styled.button`
   &:hover {
     background: ${(props) => props.theme.colors.primary}dd;
   }
+`;
+
+const CoinInputWrapper = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${(props) => props.theme.spacing.sm};
+`;
+
+const CoinUnit = styled.span`
+  font-weight: 600;
+  color: ${(props) => props.theme.colors.text};
+  white-space: nowrap;
+`;
+
+const CoinBalanceInfo = styled.span`
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: ${(props) => props.theme.colors.textSecondary};
+  margin-left: ${(props) => props.theme.spacing.xs};
 `;
 

@@ -6,6 +6,8 @@ import { reportApi } from '../../api/reportApi';
 import { uploadApi } from '../../api/uploadApi';
 import { usePermission } from '../../hooks/usePermission';
 import { useAuth } from '../../contexts/AuthContext';
+import PageNavigation from '../Common/PageNavigation';
+import UserProfileModal from '../User/UserProfileModal';
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -35,6 +37,14 @@ const CommunityDetailPage = ({
   const [commentFilePath, setCommentFilePath] = useState('');
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // 댓글 페이징 상태
+  const [commentPage, setCommentPage] = useState(0);
+  const [commentPageSize, setCommentPageSize] = useState(20);
+  const [commentTotalCount, setCommentTotalCount] = useState(0);
+  const [commentHasNext, setCommentHasNext] = useState(false);
 
   const categoryInfo = useMemo(() => {
     if (!board?.category) {
@@ -90,6 +100,9 @@ const CommunityDetailPage = ({
     setCommentFilePath('');
     setIsUploading(false);
     setUploadError('');
+    setCommentPage(0);
+    setCommentTotalCount(0);
+    setCommentHasNext(false);
   }, []);
 
   const fetchBoard = useCallback(async () => {
@@ -113,22 +126,36 @@ const CommunityDetailPage = ({
     }
   }, [boardId, viewerId, onBoardViewUpdate]);
 
-  const fetchComments = useCallback(async () => {
+  // 댓글 페이징으로 가져오기
+  const fetchComments = useCallback(async (pageNum = 0) => {
     if (!boardId) {
       return;
     }
     try {
       setLoadingComments(true);
       setCommentError('');
-      const response = await commentApi.list(boardId);
-      setComments(response.data || []);
+      const response = await commentApi.list(boardId, pageNum, commentPageSize);
+      const pageData = response.data || {};
+      const commentsData = pageData.comments || [];
+      setComments(commentsData);
+
+      setCommentTotalCount(pageData.totalCount || 0);
+      setCommentHasNext(pageData.hasNext || false);
+      setCommentPage(pageNum);
     } catch (err) {
       const message = err.response?.data?.error || err.message || '댓글을 불러오지 못했습니다.';
       setCommentError(message);
     } finally {
       setLoadingComments(false);
     }
-  }, [boardId]);
+  }, [boardId, commentPageSize]);
+
+  const handleCommentPageChange = useCallback((newPage) => {
+    const totalPages = Math.max(1, Math.ceil(commentTotalCount / commentPageSize));
+    if (newPage >= 0 && newPage < totalPages) {
+      fetchComments(newPage);
+    }
+  }, [commentTotalCount, commentPageSize, fetchComments]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -136,7 +163,7 @@ const CommunityDetailPage = ({
       return;
     }
     fetchBoard();
-    fetchComments();
+    fetchComments(0);
   }, [isOpen, boardId, fetchBoard, fetchComments, resetState]);
 
   const handleBoardReaction = useCallback(
@@ -314,8 +341,9 @@ const CommunityDetailPage = ({
         userId: user.idx,
         commentFilePath: commentFilePath || null,
       };
-      const response = await commentApi.create(boardId, payload);
-      setComments((prev) => [...prev, response.data]);
+      await commentApi.create(boardId, payload);
+      // 댓글 목록 새로고침
+      await fetchComments(0);
       setCommentContent('');
       setCommentFilePath('');
       setUploadError('');
@@ -402,7 +430,8 @@ const CommunityDetailPage = ({
       }
       try {
         await commentApi.delete(boardId, commentId);
-        setComments((prev) => prev.filter((comment) => comment.idx !== commentId));
+        // 댓글 목록 새로고침
+        await fetchComments(0);
         // 댓글 삭제 시 카운트 감소를 위해 boardId와 isDelete=true 전달
         onCommentAdded?.(boardId, true);
       } catch (err) {
@@ -412,6 +441,11 @@ const CommunityDetailPage = ({
     },
     [boardId, currentUser, onCommentAdded]
   );
+
+  const handleViewProfile = useCallback((userId) => {
+    setSelectedUserId(userId);
+    setIsProfileModalOpen(true);
+  }, []);
 
   if (!isOpen) {
     return null;
@@ -506,10 +540,10 @@ const CommunityDetailPage = ({
           <CommentSection>
             <CommentHeader>
               <CommentTitle>댓글</CommentTitle>
-              <CommentCount>{comments.length}개</CommentCount>
+              <CommentCount>{commentTotalCount > 0 ? `${comments.length} / ${commentTotalCount}개` : `${comments.length}개`}</CommentCount>
             </CommentHeader>
 
-            {loadingComments ? (
+            {loadingComments && comments.length === 0 ? (
               <LoadingState>댓글을 불러오는 중...</LoadingState>
             ) : commentError ? (
               <ErrorBanner>{commentError}</ErrorBanner>
@@ -527,7 +561,12 @@ const CommunityDetailPage = ({
                         {comment.username ? comment.username.charAt(0).toUpperCase() : 'U'}
                       </CommentAvatar>
                       <CommentAuthorInfo>
-                        <CommentAuthorName>{comment.username || '알 수 없음'}</CommentAuthorName>
+                        <CommentAuthorName
+                          onClick={() => handleViewProfile(comment.userId)}
+                          style={{ cursor: 'pointer' }}
+                        >
+                          {comment.username || '알 수 없음'}
+                        </CommentAuthorName>
                         <CommentTimestamp>
                           {comment.createdAt
                             ? new Date(comment.createdAt).toLocaleString('ko-KR')
@@ -572,6 +611,18 @@ const CommunityDetailPage = ({
                   </CommentItem>
                 ))}
               </CommentList>
+            )}
+
+            {commentTotalCount > 0 && (
+              <CommentPaginationWrapper>
+                <PageNavigation
+                  currentPage={commentPage}
+                  totalCount={commentTotalCount}
+                  pageSize={commentPageSize}
+                  onPageChange={handleCommentPageChange}
+                  loading={loadingComments}
+                />
+              </CommentPaginationWrapper>
             )}
 
             <CommentComposer>
@@ -625,6 +676,15 @@ const CommunityDetailPage = ({
           </CommentSection>
         </DetailCard>
       </PageContainer>
+
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        userId={selectedUserId}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          setSelectedUserId(null);
+        }}
+      />
     </>
   );
 };
@@ -928,6 +988,11 @@ const CommentAuthorInfo = styled.div`
 const CommentAuthorName = styled.span`
   font-weight: 600;
   color: ${(props) => props.theme.colors.text};
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: ${(props) => props.theme.colors.primary};
+  }
 `;
 
 const CommentTimestamp = styled.span`
@@ -1206,5 +1271,13 @@ const ErrorBanner = styled.div`
   border-radius: ${(props) => props.theme.borderRadius.lg};
   padding: ${(props) => props.theme.spacing.md};
   font-size: 0.95rem;
+`;
+
+const CommentPaginationWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: ${props => props.theme.spacing.md} 0;
+  margin-top: ${props => props.theme.spacing.sm};
 `;
 

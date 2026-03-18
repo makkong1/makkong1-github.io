@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import styled from 'styled-components';
 import { careRequestApi } from '../../api/careRequestApi';
+import { geocodingApi } from '../../api/geocodingApi';
+import PageNavigation from '../Common/PageNavigation';
 import CareRequestForm from './CareRequestForm';
 import CareRequestDetailPage from './CareRequestDetailPage';
 import { useAuth } from '../../contexts/AuthContext';
@@ -17,25 +19,65 @@ const CareRequestList = () => {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [isSearching, setIsSearching] = useState(false);
 
-  // API에서 케어 요청 데이터 가져오기
-  const fetchCareRequests = async () => {
+  // 페이징 상태
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalCount, setTotalCount] = useState(0);
+  
+  // 위치 필터링 관련 State
+  const [filterLocation, setFilterLocation] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
+
+  const fetchCareRequests = useCallback(async (pageNum = 0) => {
     try {
       setLoading(true);
       setError(null);
-      const response = await careRequestApi.getAllCareRequests();
-      setCareRequests(response.data || []);
-    } catch (error) {
-      console.error('케어 요청 데이터 로딩 실패:', error);
+      
+      const params = { page: pageNum, size: pageSize };
+      if (activeFilter !== 'ALL') {
+        params.status = activeFilter;
+      }
+      if (filterLocation) {
+        params.location = filterLocation;
+      }
+      
+      const response = await careRequestApi.getAllCareRequests(params);
+      const data = response.data || {};
+      setCareRequests(data.careRequests || []);
+      setTotalCount(data.totalCount || 0);
+      setPage(pageNum);
+    } catch (err) {
+      console.error('케어 요청 데이터 로딩 실패:', err);
       setError('데이터를 불러오는데 실패했습니다.');
       setCareRequests([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeFilter, filterLocation, pageSize]);
 
   useEffect(() => {
-    fetchCareRequests();
+    fetchCareRequests(0);
+  }, [activeFilter, filterLocation]);
+
+  const handlePageSizeChange = useCallback((newSize) => {
+    setPageSize(newSize);
+    setPage(0);
   }, []);
+
+  const isInitialMount = useRef(true);
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+    if (isSearching && searchKeyword.trim()) {
+      handleSearchWithPage(0);
+    } else {
+      fetchCareRequests(0);
+    }
+    // pageSize 변경 시에만 재조회
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageSize]);
 
   // 전역 이벤트 리스너: 알림에서 펫케어 요청글로 이동할 때 사용
   useEffect(() => {
@@ -54,22 +96,54 @@ const CareRequestList = () => {
   }, []);
 
   const filters = [
-    { key: 'ALL', label: '전체', count: careRequests.length },
-    { key: 'OPEN', label: '모집중', count: careRequests.filter(c => c.status === 'OPEN').length },
-    { key: 'IN_PROGRESS', label: '진행중', count: careRequests.filter(c => c.status === 'IN_PROGRESS').length },
-    { key: 'COMPLETED', label: '완료', count: careRequests.filter(c => c.status === 'COMPLETED').length }
+    { key: 'ALL', label: '전체' },
+    { key: 'OPEN', label: '모집중' },
+    { key: 'IN_PROGRESS', label: '진행중' },
+    { key: 'COMPLETED', label: '완료' }
   ];
 
-  // 작성일 기준 오래된 순으로 정렬
+  // 작성일 기준 최신순으로 정렬
   const sortedRequests = [...careRequests].sort((a, b) => {
     const dateA = new Date(a.createdAt || a.date || 0);
     const dateB = new Date(b.createdAt || b.date || 0);
-    return dateA - dateB; // 오래된 것부터
+    return dateB - dateA; // 최신 것부터
   });
 
   const filteredRequests = activeFilter === 'ALL'
     ? sortedRequests
     : sortedRequests.filter(request => request.status === activeFilter);
+
+  const handleSearchWithPage = useCallback(async (pageNum = 0) => {
+    if (!searchKeyword.trim()) {
+      fetchCareRequests(pageNum);
+      return;
+    }
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await careRequestApi.searchCareRequests(searchKeyword.trim(), pageNum, pageSize);
+      const data = response.data || {};
+      setCareRequests(data.careRequests || []);
+      setTotalCount(data.totalCount || 0);
+      setPage(pageNum);
+    } catch (err) {
+      console.error('검색 실패:', err);
+      setError('검색 중 오류가 발생했습니다.');
+    } finally {
+      setLoading(false);
+    }
+  }, [searchKeyword, pageSize, fetchCareRequests]);
+
+  const handlePageChange = useCallback((newPage) => {
+    const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
+    if (newPage >= 0 && newPage < totalPages) {
+      if (isSearching) {
+        handleSearchWithPage(newPage);
+      } else {
+        fetchCareRequests(newPage);
+      }
+    }
+  }, [totalCount, pageSize, isSearching, fetchCareRequests, handleSearchWithPage]);
 
   const handleAddButtonClick = () => {
     if (!user) {
@@ -80,11 +154,12 @@ const CareRequestList = () => {
     setSuccessMessage('');
   };
 
-  const handleCareRequestCreated = (createdRequest) => {
-    setCareRequests((prev) => [createdRequest, ...prev]);
+  const handleCareRequestCreated = () => {
     setActiveFilter('ALL');
     setIsCreating(false);
     setSuccessMessage('새 펫케어 요청이 등록되었습니다.');
+    setPage(0);
+    fetchCareRequests(0);
   };
 
   const handleDeleteRequest = async (requestId) => {
@@ -104,54 +179,110 @@ const CareRequestList = () => {
     }
   };
 
-  // 필터 변경 시 API 재호출
-  const handleFilterChange = async (filterKey) => {
+  const handleFilterChange = (filterKey) => {
     setActiveFilter(filterKey);
-    setSearchKeyword(''); // 검색어 초기화
+    setSearchKeyword('');
     setIsSearching(false);
-    try {
-      setLoading(true);
-      setError(null);
-      const params = filterKey === 'ALL' ? {} : { status: filterKey };
-      const response = await careRequestApi.getAllCareRequests(params);
-      setCareRequests(response.data || []);
-    } catch (error) {
-      console.error('필터링된 데이터 로딩 실패:', error);
-      setError('필터링된 데이터를 불러오는데 실패했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    setPage(0);
   };
 
-  // 검색 기능
+  // 내 동네 필터 토글
+  const handleLocationFilterToggle = () => {
+    if (filterLocation) {
+      // 이미 켜져있으면 끄기
+      setFilterLocation(null);
+      return;
+    }
+
+    if (!navigator.geolocation) {
+      alert('브라우저가 위치 정보를 지원하지 않습니다.');
+      return;
+    }
+
+    setLocationLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          // 역지오코딩 API 호출
+          const addressData = await geocodingApi.coordinatesToAddress(latitude, longitude);
+          
+          if (addressData && addressData.address) {
+            const fullAddress = addressData.address;
+            console.log('내 위치 주소:', fullAddress);
+            
+            // 주소에서 '구' 또는 '군' 단위 추출 (간단한 로직)
+            // 예: "서울특별시 강남구 역삼동" -> "강남구"
+            // 예: "경기도 성남시 분당구 정자동" -> "분당구"
+            const parts = fullAddress.split(' ');
+            let targetRegion = '';
+            
+            // 시/도 다음 단어가 시/군/구일 확률이 높음
+            if (parts.length >= 2) {
+              // '구'나 '군'이나 '시'로 끝나는 단어 찾기
+              // 1. '구' 포함 체크
+              const guPart = parts.find(p => p.endsWith('구'));
+              if (guPart) {
+                targetRegion = guPart;
+              } else {
+                // 2. '군' 포함 체크
+                const gunPart = parts.find(p => p.endsWith('군'));
+                if (gunPart) {
+                  targetRegion = gunPart;
+                } else {
+                   // 3. '시' 포함 체크 (시 단위일 경우)
+                   const siPart = parts.find(p => p.endsWith('시') && p !== parts[0]); // 첫단어(서울시 등) 제외
+                   if (siPart) {
+                     targetRegion = siPart;
+                   } else {
+                     // 찾지 못하면 두번째 단어 사용
+                     targetRegion = parts[1];
+                   }
+                }
+              }
+            }
+            
+            if (targetRegion) {
+              setFilterLocation(targetRegion);
+              console.log('설정된 지역 필터:', targetRegion);
+            } else {
+              alert('주소에서 지역 정보를 찾을 수 없습니다.');
+            }
+          } else {
+            alert('주소 정보를 가져오는데 실패했습니다.');
+          }
+        } catch (err) {
+          console.error('역지오코딩 에러:', err);
+          alert('위치 정보를 변환하는데 실패했습니다.');
+        } finally {
+          setLocationLoading(false);
+        }
+      },
+      (error) => {
+        console.error('위치 권한 에러:', error);
+        alert('위치 정보를 가져올 수 없습니다. 권한을 확인해주세요.');
+        setLocationLoading(false);
+      }
+    );
+  };
+
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchKeyword.trim()) {
       setIsSearching(false);
-      fetchCareRequests();
+      setPage(0);
+      fetchCareRequests(0);
       return;
     }
-
-    try {
-      setLoading(true);
-      setError(null);
-      setIsSearching(true);
-      const response = await careRequestApi.searchCareRequests(searchKeyword.trim());
-      setCareRequests(response.data || []);
-      setActiveFilter('ALL'); // 검색 시 필터 초기화
-    } catch (error) {
-      console.error('검색 실패:', error);
-      setError('검색 중 오류가 발생했습니다.');
-    } finally {
-      setLoading(false);
-    }
+    setIsSearching(true);
+    setPage(0);
+    handleSearchWithPage(0);
   };
 
-  // 검색어 초기화
   const handleClearSearch = () => {
     setSearchKeyword('');
     setIsSearching(false);
-    fetchCareRequests();
+    setPage(0);
     setActiveFilter('ALL');
   };
 
@@ -237,7 +368,7 @@ const CareRequestList = () => {
         </SearchForm>
         {isSearching && (
           <SearchResultInfo>
-            "{searchKeyword}" 검색 결과: {careRequests.length}개
+            "{searchKeyword}" 검색 결과: {totalCount}개
           </SearchResultInfo>
         )}
       </SearchSection>
@@ -249,10 +380,32 @@ const CareRequestList = () => {
             active={activeFilter === filter.key}
             onClick={() => handleFilterChange(filter.key)}
           >
-            {filter.label} ({filter.count})
+            {filter.label}
           </FilterButton>
         ))}
+        <LocationFilterButton
+          active={!!filterLocation}
+          onClick={handleLocationFilterToggle}
+          disabled={locationLoading}
+        >
+          {locationLoading ? '위치 확인 중...' : filterLocation ? `📍 ${filterLocation}만 보기` : '📍 내 동네만 보기'}
+        </LocationFilterButton>
       </FilterSection>
+
+      <PageSizeSelector>
+        <PageSizeLabel>페이지당 게시글 수:</PageSizeLabel>
+        <PageSizeButtons>
+          <PageSizeButton active={pageSize === 20} onClick={() => handlePageSizeChange(20)}>
+            20
+          </PageSizeButton>
+          <PageSizeButton active={pageSize === 50} onClick={() => handlePageSizeChange(50)}>
+            50
+          </PageSizeButton>
+          <PageSizeButton active={pageSize === 100} onClick={() => handlePageSizeChange(100)}>
+            100
+          </PageSizeButton>
+        </PageSizeButtons>
+      </PageSizeSelector>
 
       <CareGrid>
         {loading ? (
@@ -307,6 +460,13 @@ const CareRequestList = () => {
 
               <CardDescription>{request.description}</CardDescription>
 
+              {request?.offeredCoins && request.offeredCoins > 0 && (
+                <CoinInfo>
+                  <CoinIcon>💰</CoinIcon>
+                  <CoinAmount>{request.offeredCoins.toLocaleString()} 코인</CoinAmount>
+                </CoinInfo>
+              )}
+
               <CardFooter>
                 <AuthorInfo>
                   <AuthorAvatar>
@@ -331,12 +491,24 @@ const CareRequestList = () => {
         )}
       </CareGrid>
 
+      {totalCount > 0 && (
+        <PaginationWrapper>
+          <PageNavigation
+            currentPage={page}
+            totalCount={totalCount}
+            pageSize={pageSize}
+            onPageChange={handlePageChange}
+            loading={loading}
+          />
+        </PaginationWrapper>
+      )}
+
       <CareRequestDetailPage
         isOpen={selectedCareRequestId !== null}
         careRequestId={selectedCareRequestId}
         onClose={() => setSelectedCareRequestId(null)}
         onCommentAdded={() => {
-          fetchCareRequests();
+          fetchCareRequests(page);
         }}
         currentUser={user}
         onCareRequestDeleted={(deletedId) => {
@@ -429,6 +601,25 @@ const FilterButton = styled.button`
   &:hover {
     background: ${props => props.active ? props.theme.colors.primaryDark : props.theme.colors.surfaceHover};
     transform: translateY(-1px);
+  }
+`;
+
+const LocationFilterButton = styled(FilterButton)`
+  margin-left: auto; /* 우측 정렬 */
+  background: ${props => props.active ? '#fff0f5' : props.theme.colors.surface}; /* 핑크빛 배경 */
+  color: ${props => props.active ? props.theme.colors.primary : props.theme.colors.text};
+  border-color: ${props => props.active ? props.theme.colors.primary : props.theme.colors.border};
+  font-weight: 600;
+  
+  &:hover {
+    background: ${props => props.active ? '#ffe4e6' : props.theme.colors.surfaceHover};
+  }
+
+  @media (max-width: 768px) {
+    margin-left: 0;
+    width: 100%;
+    justify-content: center;
+    border-radius: 8px; /* 모바일에서는 둥글기 좀 줄임 */
   }
 `;
 
@@ -548,6 +739,27 @@ const CardDescription = styled.p`
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
+`;
+
+const CoinInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.xs};
+  margin: ${props => props.theme.spacing.sm} 0;
+  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.sm};
+  background: ${props => props.theme.colors.surfaceElevated || props.theme.colors.surface};
+  border-radius: ${props => props.theme.borderRadius.md};
+  width: fit-content;
+`;
+
+const CoinIcon = styled.span`
+  font-size: 1.1rem;
+`;
+
+const CoinAmount = styled.span`
+  color: ${props => props.theme.colors.primary};
+  font-weight: 600;
+  font-size: ${props => props.theme.typography.body1.fontSize};
 `;
 
 const CardFooter = styled.div`
@@ -801,4 +1013,53 @@ const SearchResultInfo = styled.div`
   border-radius: ${props => props.theme.borderRadius.md};
   color: ${props => props.theme.colors.textSecondary};
   font-size: ${props => props.theme.typography.body2.fontSize};
+`;
+
+const PaginationWrapper = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: ${props => props.theme.spacing.md};
+  padding: ${props => props.theme.spacing.xl} 0;
+  margin-top: ${props => props.theme.spacing.lg};
+`;
+
+const PageSizeSelector = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${props => props.theme.spacing.sm};
+  margin-bottom: ${props => props.theme.spacing.lg};
+`;
+
+const PageSizeLabel = styled.span`
+  font-size: ${props => props.theme.typography.body2.fontSize};
+  color: ${props => props.theme.colors.textSecondary};
+  font-weight: 500;
+`;
+
+const PageSizeButtons = styled.div`
+  display: flex;
+  gap: ${props => props.theme.spacing.xs};
+`;
+
+const PageSizeButton = styled.button`
+  padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.md};
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: ${props => props.theme.borderRadius.md};
+  background: ${props => props.active ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.active ? 'white' : props.theme.colors.text};
+  font-size: ${props => props.theme.typography.body2.fontSize};
+  font-weight: ${props => props.active ? 600 : 400};
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: ${props => props.active ? props.theme.colors.primary : props.theme.colors.background};
+    border-color: ${props => props.theme.colors.primary};
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
 `;

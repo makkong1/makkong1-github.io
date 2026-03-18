@@ -27,29 +27,28 @@ const ChatWidget = () => {
       const totalUnread = (data || []).reduce((sum, conv) => sum + (conv.unreadCount || 0), 0);
       setTotalUnreadCount(totalUnread);
     } catch (error) {
-      console.error('채팅방 목록 조회 실패:', error);
+      if (error.response?.status !== 401) {
+        console.error('채팅방 목록 조회 실패:', error);
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // 초기 로드
-  useEffect(() => {
-    if (isAuthenticated && user?.idx) {
-      fetchConversations();
-    }
-  }, [isAuthenticated, user?.idx]);
-
-  // 주기적으로 새로고침 (30초마다)
+  // 초기 로드 및 주기적 새로고침 (30초마다)
   useEffect(() => {
     if (!isAuthenticated || !user?.idx) return;
 
+    // 즉시 한 번 호출
+    fetchConversations();
+
+    // 30초마다 주기적으로 호출
     const interval = setInterval(() => {
       fetchConversations();
     }, 30000); // 30초
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.idx]); // user?.id → user?.idx 수정
 
   // 채팅방 클릭 핸들러
   const handleConversationClick = (conversation) => {

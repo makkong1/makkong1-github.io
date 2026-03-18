@@ -1,6 +1,10 @@
 import axios from 'axios';
+import { isDemoMode } from '../mock/isDemoMode';
+import { DEMO_USER } from '../mock/demoData';
 
 const BASE_URL = 'http://localhost:8080/api/auth';
+const DEMO_TOKEN = 'demo-access-token';
+const DEMO_REFRESH_TOKEN = 'demo-refresh-token';
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -157,9 +161,14 @@ api.interceptors.response.use(
 export const authApi = {
   // 로그인 - Access Token과 Refresh Token 모두 저장
   login: async (id, password) => {
+    if (isDemoMode()) {
+      setToken(DEMO_TOKEN);
+      setRefreshToken(DEMO_REFRESH_TOKEN);
+      return { accessToken: DEMO_TOKEN, refreshToken: DEMO_REFRESH_TOKEN, user: DEMO_USER };
+    }
     try {
       const response = await api.post('/login', { id, password });
-      const { accessToken, refreshToken, user } = response.data;
+      const { accessToken, refreshToken } = response.data;
 
       if (accessToken) {
         setToken(accessToken);
@@ -176,6 +185,9 @@ export const authApi = {
 
   // 회원가입
   register: async (userData) => {
+    if (isDemoMode()) {
+      return { success: true, message: '데모 모드에서는 회원가입이 제한됩니다.' };
+    }
     try {
       const response = await api.post('/register', userData);
       return response.data;
@@ -186,17 +198,33 @@ export const authApi = {
 
   // Access Token 검증
   validateToken: async () => {
+    if (isDemoMode()) {
+      const token = getToken();
+      if (token === DEMO_TOKEN) {
+        return { valid: true, user: DEMO_USER };
+      }
+      return { valid: false };
+    }
     try {
       const response = await api.post('/validate');
       return response.data;
     } catch (error) {
-      // 401 에러는 인터셉터에서 처리됨
       throw error;
     }
   },
 
   // Refresh Token으로 Access Token 갱신
   refreshAccessToken: async () => {
+    if (isDemoMode()) {
+      const refreshToken = getRefreshToken();
+      if (refreshToken === DEMO_REFRESH_TOKEN) {
+        setToken(DEMO_TOKEN);
+        setRefreshToken(DEMO_REFRESH_TOKEN);
+        return { accessToken: DEMO_TOKEN, refreshToken: DEMO_REFRESH_TOKEN, user: DEMO_USER };
+      }
+      removeAllTokens();
+      throw new Error('Refresh Token이 없습니다.');
+    }
     try {
       const refreshToken = getRefreshToken();
       if (!refreshToken) {
@@ -225,8 +253,11 @@ export const authApi = {
 
   // 로그아웃 - 서버에 로그아웃 요청 및 모든 토큰 제거
   logout: async () => {
+    if (isDemoMode()) {
+      removeAllTokens();
+      return;
+    }
     try {
-      // 서버에 로그아웃 요청 (Refresh Token 제거)
       const token = getToken();
       if (token) {
         await api.post('/logout', {}, {
@@ -236,8 +267,17 @@ export const authApi = {
     } catch (error) {
       console.error('로그아웃 요청 실패:', error);
     } finally {
-      // 클라이언트에서도 모든 토큰 제거
       removeAllTokens();
+    }
+  },
+
+  // 비밀번호 찾기 - 비밀번호 재설정 이메일 발송 (인증 불필요)
+  forgotPassword: async (email) => {
+    try {
+      const response = await axios.post(`${BASE_URL}/forgot-password`, { email });
+      return response.data;
+    } catch (error) {
+      throw error;
     }
   },
 
@@ -387,7 +427,39 @@ export const setupApiInterceptors = () => {
           return Promise.reject(refreshError);
         }
       } else if (error.response?.status === 403) {
-        // 403 에러 시 권한 모달 표시 이벤트 발생
+        console.log('🔍 403 에러 발생 - 응답 데이터 확인:', {
+          errorCode: error.response?.data?.errorCode,
+          message: error.response?.data?.message,
+          purpose: error.response?.data?.purpose,
+          fullResponse: error.response?.data
+        });
+        
+        // 이메일 인증 필요 예외 체크
+        if (error.response?.data?.errorCode === 'EMAIL_VERIFICATION_REQUIRED') {
+          console.warn('📧 이메일 인증 필요:', {
+            message: error.response?.data?.message,
+            purpose: error.response?.data?.purpose,
+            redirectUrl: error.response?.data?.redirectUrl,
+            timestamp: new Date().toISOString()
+          });
+          
+          // 전역 이벤트 발생 (각 페이지에서 처리하도록)
+          if (typeof window !== 'undefined') {
+            const currentUrl = window.location.pathname + window.location.search;
+            const purpose = error.response?.data?.purpose || '';
+            const event = new CustomEvent('emailVerificationRequired', {
+              detail: {
+                purpose,
+                currentUrl,
+                message: error.response?.data?.message
+              }
+            });
+            window.dispatchEvent(event);
+          }
+          return Promise.reject(error);
+        }
+        
+        // 일반 403 에러 시 권한 모달 표시 이벤트 발생
         console.warn('🚫 403 Forbidden 에러 발생:', {
           url: originalRequest?.url,
           method: originalRequest?.method,

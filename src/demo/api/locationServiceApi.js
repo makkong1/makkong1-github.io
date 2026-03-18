@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { isDemoMode } from '../mock/isDemoMode';
+import { DEMO_LOCATION_SERVICES } from '../mock/demoData';
 
 const BASE_URL = 'http://localhost:8080/api/location-services';
 
-// Access Token 가져오기
 const getToken = () => {
   return localStorage.getItem('accessToken') || localStorage.getItem('token');
 };
@@ -24,36 +25,106 @@ const addAuthToken = (config) => {
 
 api.interceptors.request.use(addAuthToken, (error) => Promise.reject(error));
 
+const adminApi = axios.create({
+  baseURL: 'http://localhost:8080/api/admin/location-services',
+  headers: { 'Content-Type': 'application/json' },
+});
+
+adminApi.interceptors.request.use(addAuthToken, (error) => Promise.reject(error));
+
+const mockResolve = (data) => Promise.resolve({ data });
+
 export const locationServiceApi = {
   /**
    * DB에서 위치 서비스 검색
-   * 지역 계층별 검색만 수행 (내 위치는 거리 계산/길찾기용으로만 사용)
+   * 위치 기반 검색 또는 지역 계층별 검색 수행
    * 
    * @param {Object} params 검색 파라미터
+   * @param {number} params.latitude 위도 (선택, 위치 기반 검색 시 필수)
+   * @param {number} params.longitude 경도 (선택, 위치 기반 검색 시 필수)
+   * @param {number} params.radius 반경 (미터 단위, 선택, 기본값: 10000m = 10km)
    * @param {string} params.sido 시도 (선택, 예: "서울특별시", "경기도")
    * @param {string} params.sigungu 시군구 (선택, 예: "노원구", "고양시 덕양구")
    * @param {string} params.eupmyeondong 읍면동 (선택, 예: "상계동", "동산동")
    * @param {string} params.roadName 도로명 (선택, 예: "상계로", "동세로")
    * @param {string} params.category 카테고리 (선택, 예: "동물약국", "미술관")
+   * @param {string} params.keyword 키워드 (선택, 이름/설명/카테고리 검색, 예: "동물병원", "카페")
    * @param {number} params.size 최대 결과 수 (선택, 기본값: 500)
    * @returns {Promise} 검색 결과
    */
-  searchPlaces: ({ 
-    sido, 
-    sigungu, 
-    eupmyeondong, 
-    roadName, 
-    category, 
-    size 
-  } = {}) =>
-    api.get('/search', {
+  searchPlaces: ({
+    latitude,
+    longitude,
+    radius,
+    sido,
+    sigungu,
+    eupmyeondong,
+    roadName,
+    category,
+    keyword,
+    size
+  } = {}) => {
+    if (isDemoMode()) {
+      return mockResolve({ services: DEMO_LOCATION_SERVICES });
+    }
+    return api.get('/search', {
       params: {
+        ...(typeof latitude === 'number' && { latitude }),
+        ...(typeof longitude === 'number' && { longitude }),
+        ...(typeof radius === 'number' && { radius }),
         ...(sido && { sido }),
         ...(sigungu && { sigungu }),
         ...(eupmyeondong && { eupmyeondong }),
         ...(roadName && { roadName }),
         ...(category && { category }),
+        ...(keyword && { keyword }),
         ...(typeof size === 'number' && { size }),
       },
-    }),
+    });
+  },
+
+  /**
+   * AI 추천 (에이전트 2)
+   * 검색 결과를 LLM에 넘겨 상위 10개 재순위화 + 각 1줄 추천 이유 추가.
+   * 권한: 로그인 필요.
+   */
+  recommendPlaces: ({
+    latitude,
+    longitude,
+    radius,
+    sido,
+    sigungu,
+    eupmyeondong,
+    roadName,
+    category,
+    keyword,
+  } = {}) => {
+    if (isDemoMode()) {
+      return mockResolve({ services: DEMO_LOCATION_SERVICES });
+    }
+    return api.get('/recommend', {
+      params: {
+        ...(typeof latitude === 'number' && { latitude }),
+        ...(typeof longitude === 'number' && { longitude }),
+        ...(typeof radius === 'number' && { radius }),
+        ...(sido && { sido }),
+        ...(sigungu && { sigungu }),
+        ...(eupmyeondong && { eupmyeondong }),
+        ...(roadName && { roadName }),
+        ...(category && { category }),
+        ...(keyword && { keyword }),
+      },
+    });
+  },
+
+  // 관리자용 API
+  listLocationServices: (params) =>
+    isDemoMode() ? mockResolve({ services: DEMO_LOCATION_SERVICES }) : adminApi.get('', { params }),
+  importPublicData: (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return adminApi.post('/import-public-data', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };

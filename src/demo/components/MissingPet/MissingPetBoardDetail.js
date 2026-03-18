@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import { missingPetApi } from '../../api/missingPetApi';
 import { reportApi } from '../../api/reportApi';
 import { startMissingPetChat } from '../../api/chatApi';
+import PageNavigation from '../Common/PageNavigation';
 import AddressMapSelector from './AddressMapSelector';
 import MapContainer from '../LocationService/MapContainer';
+import UserProfileModal from '../User/UserProfileModal';
 
 const statusLabel = {
   MISSING: '실종',
@@ -27,6 +29,64 @@ const MissingPetBoardDetail = ({
   const [showAddressMap, setShowAddressMap] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState(null);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // 댓글 페이징 상태
+  const [comments, setComments] = useState([]);
+  const [commentPage, setCommentPage] = useState(0);
+  const [commentPageSize, setCommentPageSize] = useState(20);
+  const [commentTotalCount, setCommentTotalCount] = useState(0);
+  const [commentHasNext, setCommentHasNext] = useState(false);
+  const [loadingComments, setLoadingComments] = useState(false);
+
+  const handleViewProfile = (userId) => {
+    setSelectedUserId(userId);
+    setIsProfileModalOpen(true);
+  };
+
+  // 댓글 페이징으로 가져오기
+  const fetchComments = useCallback(async (pageNum = 0) => {
+    if (!board?.idx) return;
+    
+    try {
+      setLoadingComments(true);
+      const response = await missingPetApi.getComments(board.idx, pageNum, commentPageSize);
+      const pageData = response.data || {};
+      const commentsData = pageData.comments || [];
+      setComments(commentsData);
+
+      setCommentTotalCount(pageData.totalCount || 0);
+      setCommentHasNext(pageData.hasNext || false);
+      setCommentPage(pageNum);
+    } catch (err) {
+      console.error('댓글 조회 실패:', err);
+    } finally {
+      setLoadingComments(false);
+    }
+  }, [board?.idx, commentPageSize]);
+
+  const handleCommentPageChange = useCallback((newPage) => {
+    const totalPages = Math.max(1, Math.ceil(commentTotalCount / commentPageSize));
+    if (newPage >= 0 && newPage < totalPages) {
+      fetchComments(newPage);
+    }
+  }, [commentTotalCount, commentPageSize, fetchComments]);
+
+  // 게시글 변경 시 댓글 초기화 및 로드
+  useEffect(() => {
+    if (board?.idx) {
+      // 초기 댓글은 board.comments에서 가져오거나 별도로 로드
+      if (board.comments && Array.isArray(board.comments)) {
+        setComments(board.comments);
+        setCommentTotalCount(board.commentCount || board.comments.length);
+        setCommentHasNext((board.commentCount || 0) > (board.comments.length || 0));
+      } else {
+        // board.comments가 없으면 별도 API로 로드
+        fetchComments(0);
+      }
+    }
+  }, [board?.idx, board?.comments, board?.commentCount, fetchComments]);
 
   if (!board) {
     return null;
@@ -60,6 +120,8 @@ const MissingPetBoardDetail = ({
       setCommentLat(null);
       setCommentLng(null);
       setShowAddressMap(false);
+      // 댓글 목록 새로고침
+      await fetchComments(0);
       onRefresh();
       // 알림 개수 즉시 업데이트 (다른 사용자에게 알림이 갔을 수 있음)
       window.dispatchEvent(new Event('notificationUpdate'));
@@ -96,6 +158,8 @@ const MissingPetBoardDetail = ({
     try {
       await missingPetApi.deleteComment(board.idx, commentId);
       onDeleteComment?.(commentId);
+      // 댓글 목록 새로고침
+      await fetchComments(0);
       onRefresh();
     } catch (err) {
       alert(err.response?.data?.error || err.message);
@@ -232,7 +296,7 @@ const MissingPetBoardDetail = ({
                 <InfoGrid>
                   <InfoItem>
                     <InfoLabel>제보자</InfoLabel>
-                    <InfoValue>{board.username || '알 수 없음'}</InfoValue>
+                    <InfoValue>{board.nickname || '알 수 없음'}</InfoValue>
                   </InfoItem>
                   <InfoItem>
                     <InfoLabel>실종일</InfoLabel>
@@ -378,13 +442,18 @@ const MissingPetBoardDetail = ({
             </Section>
 
             <Section>
-              <SectionTitle>댓글 및 제보</SectionTitle>
-              {board.comments && board.comments.length > 0 ? (
+              <SectionTitle>댓글 및 제보 {commentTotalCount > 0 && `(${commentTotalCount}개)`}</SectionTitle>
+              {comments.length > 0 ? (
                 <CommentList>
-                  {board.comments.map((item) => (
+                  {comments.map((item) => (
                     <CommentItem key={item.idx}>
                       <CommentHeader>
-                        <CommentAuthor>{item.username || '익명'}</CommentAuthor>
+                        <CommentAuthor
+                          onClick={() => item.userId && handleViewProfile(item.userId)}
+                          style={{ cursor: item.userId ? 'pointer' : 'default' }}
+                        >
+                          {item.nickname || '익명'}
+                        </CommentAuthor>
                         <CommentDate>
                           {item.createdAt?.replace('T', ' ').substring(0, 16)}
                         </CommentDate>
@@ -413,6 +482,18 @@ const MissingPetBoardDetail = ({
                 </CommentList>
               ) : (
                 <EmptyComments>아직 제보가 없습니다. 가장 먼저 댓글을 남겨보세요!</EmptyComments>
+              )}
+
+              {commentTotalCount > 0 && (
+                <CommentPaginationWrapper>
+                  <PageNavigation
+                    currentPage={commentPage}
+                    totalCount={commentTotalCount}
+                    pageSize={commentPageSize}
+                    onPageChange={handleCommentPageChange}
+                    loading={loadingComments}
+                  />
+                </CommentPaginationWrapper>
               )}
 
               <CommentForm onSubmit={handleAddComment}>
@@ -460,6 +541,15 @@ const MissingPetBoardDetail = ({
           </DetailBody>
         </DetailCard>
       </PageContainer>
+
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        userId={selectedUserId}
+        onClose={() => {
+          setIsProfileModalOpen(false);
+          setSelectedUserId(null);
+        }}
+      />
     </>
   );
 };
@@ -843,6 +933,11 @@ const CommentHeader = styled.div`
 const CommentAuthor = styled.span`
   font-weight: 600;
   color: ${(props) => props.theme.colors.text};
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: ${(props) => props.theme.colors.primary};
+  }
 `;
 
 const CommentDate = styled.span`
@@ -1035,5 +1130,13 @@ const CommentSubmit = styled.button`
   &:hover:not(:disabled) {
     background: ${(props) => props.theme.colors.primaryDark};
   }
+`;
+
+const CommentPaginationWrapper = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: ${props => props.theme.spacing.md} 0;
+  margin-top: ${props => props.theme.spacing.sm};
 `;
 

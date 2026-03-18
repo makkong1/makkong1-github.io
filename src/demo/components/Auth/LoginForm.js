@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
+import { authApi } from '../../api/authApi';
+import { isDemoMode } from '../../mock/isDemoMode';
 
 const LoginForm = ({ onSwitchToRegister }) => {
   const { login } = useAuth();
@@ -11,6 +13,11 @@ const LoginForm = ({ onSwitchToRegister }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
+  const [forgotPasswordLoading, setForgotPasswordLoading] = useState(false);
+  const [forgotPasswordError, setForgotPasswordError] = useState('');
+  const [forgotPasswordSuccess, setForgotPasswordSuccess] = useState('');
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -46,10 +53,41 @@ const LoginForm = ({ onSwitchToRegister }) => {
     window.location.href = `http://localhost:8080/oauth2/authorization/${provider}`;
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!forgotPasswordEmail || forgotPasswordEmail.trim().length === 0) {
+      setForgotPasswordError('이메일을 입력해주세요.');
+      return;
+    }
+
+    setForgotPasswordLoading(true);
+    setForgotPasswordError('');
+    setForgotPasswordSuccess('');
+
+    try {
+      // 비밀번호 재설정 이메일 발송
+      const response = await authApi.forgotPassword(forgotPasswordEmail);
+      
+      if (response.success) {
+        setForgotPasswordSuccess(response.message || '비밀번호 재설정 링크가 이메일로 발송되었습니다. 이메일을 확인해주세요.');
+        setForgotPasswordEmail('');
+      } else {
+        setForgotPasswordError(response.message || '비밀번호 재설정 이메일 발송에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('비밀번호 찾기 실패:', error);
+      setForgotPasswordError(error.response?.data?.message || '비밀번호 재설정 이메일 발송에 실패했습니다.');
+    } finally {
+      setForgotPasswordLoading(false);
+    }
+  };
+
   return (
     <LoginContainer>
       <Title>로그인</Title>
-      
+      {isDemoMode() && (
+        <DemoHint>데모 모드: 아무 아이디/비밀번호로 로그인 가능</DemoHint>
+      )}
       <Form onSubmit={handleSubmit}>
         <InputGroup>
           <Label htmlFor="id">아이디</Label>
@@ -77,6 +115,15 @@ const LoginForm = ({ onSwitchToRegister }) => {
           />
         </InputGroup>
 
+        <ForgotPasswordLink>
+          <a href="#" onClick={(e) => {
+            e.preventDefault();
+            setShowForgotPassword(true);
+          }}>
+            비밀번호 찾기
+          </a>
+        </ForgotPasswordLink>
+
         {error && <ErrorMessage>{error}</ErrorMessage>}
         {success && <SuccessMessage>{success}</SuccessMessage>}
 
@@ -85,31 +132,35 @@ const LoginForm = ({ onSwitchToRegister }) => {
         </Button>
       </Form>
 
-      <Divider>
-        <DividerLine />
-        <DividerText>또는</DividerText>
-        <DividerLine />
-      </Divider>
+      {!isDemoMode() && (
+        <>
+          <Divider>
+            <DividerLine />
+            <DividerText>또는</DividerText>
+            <DividerLine />
+          </Divider>
 
-      <SocialLoginContainer>
-        <SocialButton 
-          type="button"
-          onClick={() => handleSocialLogin('google')}
-          google
-        >
-          <SocialIcon>G</SocialIcon>
-          Google로 로그인
-        </SocialButton>
-        
-        <SocialButton 
-          type="button"
-          onClick={() => handleSocialLogin('naver')}
-          naver
-        >
-          <SocialIcon>N</SocialIcon>
-          Naver로 로그인
-        </SocialButton>
-      </SocialLoginContainer>
+          <SocialLoginContainer>
+            <SocialButton 
+              type="button"
+              onClick={() => handleSocialLogin('google')}
+              google
+            >
+              <SocialIcon>G</SocialIcon>
+              Google로 로그인
+            </SocialButton>
+            
+            <SocialButton 
+              type="button"
+              onClick={() => handleSocialLogin('naver')}
+              naver
+            >
+              <SocialIcon>N</SocialIcon>
+              Naver로 로그인
+            </SocialButton>
+          </SocialLoginContainer>
+        </>
+      )}
 
       <LinkText>
         계정이 없으신가요?{' '}
@@ -120,6 +171,52 @@ const LoginForm = ({ onSwitchToRegister }) => {
           회원가입
         </a>
       </LinkText>
+
+      {showForgotPassword && (
+        <ForgotPasswordModal>
+          <ForgotPasswordContent>
+            <ForgotPasswordTitle>비밀번호 찾기</ForgotPasswordTitle>
+            <ForgotPasswordForm onSubmit={handleForgotPassword}>
+              <InputGroup>
+                <Label htmlFor="forgotPasswordEmail">이메일</Label>
+                <Input
+                  type="email"
+                  id="forgotPasswordEmail"
+                  value={forgotPasswordEmail}
+                  onChange={(e) => {
+                    setForgotPasswordEmail(e.target.value);
+                    setForgotPasswordError('');
+                  }}
+                  placeholder="가입하신 이메일을 입력하세요"
+                  required
+                  disabled={forgotPasswordLoading}
+                />
+              </InputGroup>
+
+              {forgotPasswordError && <ErrorMessage>{forgotPasswordError}</ErrorMessage>}
+              {forgotPasswordSuccess && <SuccessMessage>{forgotPasswordSuccess}</SuccessMessage>}
+
+              <ButtonGroup>
+                <Button type="submit" disabled={forgotPasswordLoading}>
+                  {forgotPasswordLoading ? '발송 중...' : '비밀번호 재설정 링크 보내기'}
+                </Button>
+                <CancelButton
+                  type="button"
+                  onClick={() => {
+                    setShowForgotPassword(false);
+                    setForgotPasswordEmail('');
+                    setForgotPasswordError('');
+                    setForgotPasswordSuccess('');
+                  }}
+                  disabled={forgotPasswordLoading}
+                >
+                  취소
+                </CancelButton>
+              </ButtonGroup>
+            </ForgotPasswordForm>
+          </ForgotPasswordContent>
+        </ForgotPasswordModal>
+      )}
     </LoginContainer>
   );
 };
@@ -145,6 +242,16 @@ const Title = styled.h2`
   text-align: center;
   margin-bottom: 2rem;
   color: #333;
+`;
+
+const DemoHint = styled.div`
+  text-align: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-radius: 6px;
+  font-size: 0.875rem;
 `;
 
 const Form = styled.form`
@@ -303,5 +410,89 @@ const LinkText = styled.p`
     &:hover {
       text-decoration: underline;
     }
+  }
+`;
+
+const ForgotPasswordLink = styled.div`
+  text-align: right;
+  margin-top: -0.5rem;
+  margin-bottom: 0.5rem;
+  
+  a {
+    color: #666;
+    font-size: 0.875rem;
+    text-decoration: none;
+    
+    &:hover {
+      color: #007bff;
+      text-decoration: underline;
+    }
+  }
+`;
+
+const ForgotPasswordModal = styled.div`
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+`;
+
+const ForgotPasswordContent = styled.div`
+  background: white;
+  border-radius: 12px;
+  padding: 2rem;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+`;
+
+const ForgotPasswordTitle = styled.h3`
+  text-align: center;
+  margin-bottom: 1.5rem;
+  color: #333;
+`;
+
+const ForgotPasswordForm = styled.form`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+`;
+
+const ButtonGroup = styled.div`
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+`;
+
+const CancelButton = styled.button`
+  padding: 0.75rem 1.5rem;
+  background: #6c757d;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  
+  &:hover:not(:disabled) {
+    background: #5a6268;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(108, 117, 125, 0.3);
+  }
+  
+  &:disabled {
+    background: #6c757d;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.6;
   }
 `;

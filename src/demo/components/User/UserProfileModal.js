@@ -68,17 +68,17 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
       if (isMyProfile) {
         // 내 프로필인 경우 getMyProfile 사용
         const response = await userProfileApi.getMyProfile();
-        setProfile({ user: response.data });
+        setProfile(response.data); // UserProfileWithReviewsDTO 전체 객체
         setEditFormData({
-          nickname: response.data.nickname || '',
-          email: response.data.email || '',
-          phone: response.data.phone || '',
-          location: response.data.location || '',
+          nickname: response.data.user?.nickname || '',
+          email: response.data.user?.email || '',
+          phone: response.data.user?.phone || '',
+          location: response.data.user?.location || '',
         });
       } else {
         // 다른 사용자 프로필인 경우 getUserProfile 사용
-      const response = await userProfileApi.getUserProfile(userId);
-      setProfile(response.data);
+        const response = await userProfileApi.getUserProfile(userId);
+        setProfile(response.data);
       }
     } catch (err) {
       const message = err.response?.data?.error || err.message || '프로필을 불러오는데 실패했습니다.';
@@ -104,7 +104,8 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
     try {
       setSaving(true);
       const updated = await userProfileApi.updateMyProfile(editFormData);
-      setProfile({ user: updated });
+      // updateMyProfile은 UsersDTO만 반환하므로, 프로필 전체를 다시 불러옴
+      await fetchProfile();
       setIsEditMode(false);
       if (onUpdated) {
         onUpdated(updated);
@@ -325,6 +326,12 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
                     <LocationIcon>📍</LocationIcon>
                     {profile.user.location}
                   </UserLocation>
+                )}
+                {profile.user?.petCoinBalance !== undefined && (
+                  <UserCoinBalance>
+                    <CoinIcon>💰</CoinIcon>
+                    {profile.user.petCoinBalance?.toLocaleString() || 0} 코인
+                  </UserCoinBalance>
                 )}
                 {profile.user?.role && (
                   <UserRole>
@@ -638,7 +645,7 @@ const Backdrop = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 1200;
   padding: ${(props) => props.theme.spacing.lg};
 `;
 
@@ -755,6 +762,22 @@ const UserLocation = styled.div`
 
 const LocationIcon = styled.span`
   font-size: 0.9rem;
+`;
+
+const UserCoinBalance = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${(props) => props.theme.spacing.xs};
+  color: ${(props) => props.theme.colors.primary || '#FF7E36'};
+  font-size: 1rem;
+  font-weight: 600;
+  padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
+  background: ${(props) => props.theme.colors.surfaceElevated || '#f8f9fa'};
+  border-radius: ${(props) => props.theme.borderRadius.md};
+`;
+
+const CoinIcon = styled.span`
+  font-size: 1rem;
 `;
 
 const UserRole = styled.div`

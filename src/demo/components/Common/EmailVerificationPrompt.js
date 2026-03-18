@@ -1,29 +1,52 @@
 import React from 'react';
 import styled from 'styled-components';
 
-const PermissionDeniedModal = ({ isOpen, onClose }) => {
+const PURPOSE_LABELS = {
+  REGISTRATION: '회원가입 완료',
+  PASSWORD_RESET: '비밀번호 변경',
+  PET_CARE: '펫케어 서비스 이용',
+  MEETUP: '모임 서비스 이용',
+  LOCATION_REVIEW: '리뷰 작성',
+  BOARD_EDIT: '게시글 수정/삭제',
+  COMMENT_EDIT: '댓글 수정/삭제',
+  MISSING_PET: '실종 제보 작성',
+};
+
+const EmailVerificationPrompt = ({ isOpen, onConfirm, onCancel, purpose }) => {
   if (!isOpen) return null;
 
+  const purposeLabel = purpose && PURPOSE_LABELS[purpose] 
+    ? PURPOSE_LABELS[purpose] 
+    : '이 기능을 이용';
+
   return (
-    <ModalOverlay onClick={onClose}>
+    <ModalOverlay onClick={onCancel}>
       <ModalContent onClick={(e) => e.stopPropagation()}>
         <ModalHeader>
-          <ModalIcon>⚠️</ModalIcon>
-          <ModalTitle>권한 없음</ModalTitle>
+          <ModalIcon>✉️</ModalIcon>
+          <ModalTitle>이메일 인증이 필요합니다</ModalTitle>
         </ModalHeader>
         <ModalBody>
-          <Message>당신 접근하면 안돼요!</Message>
-          <SubMessage>이 기능을 사용하려면 적절한 권한이 필요합니다.</SubMessage>
+          <Message>
+            {purposeLabel}하려면 이메일 인증이 필요합니다.
+            <br />
+            이메일 인증 페이지로 이동하시겠습니까?
+          </Message>
         </ModalBody>
         <ModalFooter>
-          <CloseButton onClick={onClose}>확인</CloseButton>
+          <Button onClick={onCancel} variant="secondary">
+            취소
+          </Button>
+          <Button onClick={onConfirm} variant="primary">
+            이동하기
+          </Button>
         </ModalFooter>
       </ModalContent>
     </ModalOverlay>
   );
 };
 
-export default PermissionDeniedModal;
+export default EmailVerificationPrompt;
 
 const ModalOverlay = styled.div`
   position: fixed;
@@ -52,7 +75,7 @@ const ModalContent = styled.div`
   background: ${props => props.theme.colors.surface};
   border-radius: ${props => props.theme.borderRadius.xl};
   padding: ${props => props.theme.spacing.xl};
-  max-width: 400px;
+  max-width: 500px;
   width: 90%;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   animation: slideUp 0.3s ease;
@@ -93,15 +116,9 @@ const ModalBody = styled.div`
 
 const Message = styled.p`
   color: ${props => props.theme.colors.text};
-  font-size: ${props => props.theme.typography.h4.fontSize};
-  font-weight: 600;
-  margin-bottom: ${props => props.theme.spacing.sm};
-`;
-
-const SubMessage = styled.p`
-  color: ${props => props.theme.colors.textSecondary};
-  font-size: ${props => props.theme.typography.body2.fontSize};
-  margin: 0;
+  font-size: ${props => props.theme.typography.body1.fontSize};
+  margin-bottom: ${props => props.theme.spacing.md};
+  line-height: 1.6;
 `;
 
 const ModalFooter = styled.div`
@@ -110,9 +127,15 @@ const ModalFooter = styled.div`
   gap: ${props => props.theme.spacing.md};
 `;
 
-const CloseButton = styled.button`
-  background: ${props => props.theme.colors.primary};
-  color: white;
+const Button = styled.button`
+  background: ${props =>
+    props.variant === 'secondary'
+      ? props.theme.colors.border
+      : props.theme.colors.primary};
+  color: ${props =>
+    props.variant === 'secondary'
+      ? props.theme.colors.text
+      : 'white'};
   border: none;
   padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.xl};
   border-radius: ${props => props.theme.borderRadius.lg};
@@ -123,7 +146,10 @@ const CloseButton = styled.button`
   min-width: 120px;
   
   &:hover {
-    background: ${props => props.theme.colors.primaryDark};
+    background: ${props =>
+    props.variant === 'secondary'
+      ? props.theme.colors.borderDark
+      : props.theme.colors.primaryDark};
     transform: translateY(-2px);
     box-shadow: 0 4px 12px rgba(255, 126, 54, 0.3);
   }

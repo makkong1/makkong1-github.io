@@ -311,7 +311,7 @@ const CareRequestDetailPage = ({
         title: null,
         participantUserIds: [currentUser.idx, otherUserId]
       });
-      
+
       // 채팅 위젯 열기 (ChatWidget가 전역적으로 관리된다고 가정)
       if (window.openChatWidget) {
         window.openChatWidget(conversation.idx);
@@ -321,7 +321,7 @@ const CareRequestDetailPage = ({
           window.setActiveTab('chat');
         }
       }
-      
+
       alert('채팅방이 열렸습니다.');
     } catch (err) {
       const message = err.response?.data?.error || err.message || '채팅 시작에 실패했습니다.';
@@ -423,6 +423,15 @@ const CareRequestDetailPage = ({
                     </DateValue>
                   </DateInfo>
                 ) : null}
+                {careRequest?.offeredCoins && careRequest.offeredCoins > 0 && (
+                  <CoinInfoSection>
+                    <CoinInfo>
+                      <CoinIcon>💰</CoinIcon>
+                      <CoinLabel>제시 코인</CoinLabel>
+                      <CoinAmount>{careRequest.offeredCoins.toLocaleString()} 코인</CoinAmount>
+                    </CoinInfo>
+                  </CoinInfoSection>
+                )}
               </ContentSection>
 
               {careRequest?.pet && (
@@ -431,8 +440,8 @@ const CareRequestDetailPage = ({
                   <PetInfoCard>
                     <PetImageWrapper>
                       {careRequest.pet.profileImageUrl ? (
-                        <PetImage 
-                          src={careRequest.pet.profileImageUrl} 
+                        <PetImage
+                          src={careRequest.pet.profileImageUrl}
                           alt={careRequest.pet.petName}
                           onError={(e) => {
                             e.target.src = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="200"%3E%3Crect width="200" height="200" fill="%23e2e8f0"/%3E%3Ctext x="100" y="100" font-family="Arial" font-size="16" fill="%2394a3b8" text-anchor="middle" dominant-baseline="middle"%3E사진 없음%3C/text%3E%3C/svg%3E';
@@ -447,11 +456,11 @@ const CareRequestDetailPage = ({
                     <PetDetails>
                       <PetName>{careRequest.pet.petName}</PetName>
                       <PetDetail>
-                        {careRequest.pet.petType === 'DOG' ? '강아지' : 
-                         careRequest.pet.petType === 'CAT' ? '고양이' : 
-                         careRequest.pet.petType === 'BIRD' ? '새' :
-                         careRequest.pet.petType === 'RABBIT' ? '토끼' :
-                         careRequest.pet.petType === 'HAMSTER' ? '햄스터' : '기타'}
+                        {careRequest.pet.petType === 'DOG' ? '강아지' :
+                          careRequest.pet.petType === 'CAT' ? '고양이' :
+                            careRequest.pet.petType === 'BIRD' ? '새' :
+                              careRequest.pet.petType === 'RABBIT' ? '토끼' :
+                                careRequest.pet.petType === 'HAMSTER' ? '햄스터' : '기타'}
                         {' · '}
                         {careRequest.pet.breed || '품종 미상'}
                       </PetDetail>
@@ -500,7 +509,7 @@ const CareRequestDetailPage = ({
                           onClick={() => handleViewProfile(comment.userId)}
                           style={{ cursor: 'pointer' }}
                         >
-                          {comment.username || '알 수 없음'}
+                          {comment.nickname || '알 수 없음'}
                           {comment.userRole === 'SERVICE_PROVIDER' && (
                             <ProviderBadge>서비스 제공자</ProviderBadge>
                           )}
@@ -940,6 +949,33 @@ const DateValue = styled.span`
 const TimeIcon = styled.span`
   font-size: 1.1rem;
   line-height: 1;
+`;
+
+const CoinInfoSection = styled.div`
+  margin-top: ${(props) => props.theme.spacing.md};
+  padding-top: ${(props) => props.theme.spacing.md};
+  border-top: 1px solid ${(props) => props.theme.colors.borderLight};
+`;
+
+const CoinInfo = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${(props) => props.theme.spacing.sm};
+`;
+
+const CoinIcon = styled.span`
+  font-size: 1.3rem;
+`;
+
+const CoinLabel = styled.span`
+  color: ${(props) => props.theme.colors.textSecondary};
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
+`;
+
+const CoinAmount = styled.span`
+  color: ${(props) => props.theme.colors.primary};
+  font-weight: 600;
+  font-size: ${(props) => props.theme.typography.h3.fontSize};
 `;
 
 const CommentSection = styled.section`
