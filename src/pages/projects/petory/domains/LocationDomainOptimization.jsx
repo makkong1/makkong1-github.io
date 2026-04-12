@@ -61,11 +61,13 @@ function LocationDomainOptimization() {
                 </ul>
               </div>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginTop: '1rem', marginBottom: 0 }}>
-                검색 분기·통합 지도·API 대조는{' '}
+                장문 스펙·인덱스·앱 레벨 최적화 요약은 저장소{' '}
+                <a href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/location.md" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--link-color)', textDecoration: 'none' }}><code>docs/domains/location.md</code> §7</a>
+                와 맞춘다. 검색 분기·통합 지도는{' '}
                 <Link to="/domains/location" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>Location 도메인</Link>
-                {' '}페이지의 「아키텍처」를, 백엔드 B 방향 분기·정규화 서사는{' '}
+                {' '}「아키텍처」, 백엔드 B 방향은{' '}
                 <Link to="/domains/location/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링</Link>
-                {' '}페이지의 「백엔드 검색 분기」를 본다. (이 페이지는 초기 로드 수치·재현에 집중한다.)
+                {' '}「백엔드 검색 분기」를 본다. 이 페이지는 초기 로드 수치·재현에 집중한다.
               </p>
             </div>
           </section>

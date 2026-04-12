@@ -182,6 +182,18 @@ function LocationDomainRefactoring() {
                   </strong>
                   — 남은 리스크·백로그 메모(시점에 따라 이미 반영된 항목 포함)
                 </li>
+                <li>
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/location.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--link-color)" }}
+                  >
+                    docs/domains/location.md
+                  </a>
+                  <strong style={{ color: "var(--text-color)" }}> §9</strong>
+                  — 최근 리팩토링 내역(하이브리드·키워드·상태·거리·검색 단순화) 목차와 동일 계열
+                </li>
               </ol>
             </div>
           </section>
