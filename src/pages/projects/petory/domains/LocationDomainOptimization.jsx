@@ -60,6 +60,13 @@ function LocationDomainOptimization() {
                   <li>• <strong style={{ color: 'var(--text-color)' }}>확장성 문제</strong>: 데이터가 증가할수록 로딩 시간이 선형적으로 증가</li>
                 </ul>
               </div>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginTop: '1rem', marginBottom: 0 }}>
+                검색 분기·통합 지도·API 대조는{' '}
+                <Link to="/domains/location" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>Location 도메인</Link>
+                {' '}페이지의 「아키텍처」를, 백엔드 B 방향 분기·정규화 서사는{' '}
+                <Link to="/domains/location/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링</Link>
+                {' '}페이지의 「백엔드 검색 분기」를 본다. (이 페이지는 초기 로드 수치·재현에 집중한다.)
+              </p>
             </div>
           </section>
 

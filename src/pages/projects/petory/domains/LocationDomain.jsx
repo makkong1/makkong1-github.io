@@ -5,6 +5,7 @@ import TableOfContents from '../../../../components/Common/TableOfContents';
 function LocationDomain() {
   const sections = [
     { id: 'intro', title: '도메인 소개' },
+    { id: 'architecture', title: '아키텍처 (프론트·백엔드)' },
     { id: 'features', title: '주요 기능' },
     { id: 'troubleshooting', title: '트러블슈팅' },
     { id: 'refactoring', title: '리팩토링' },
@@ -59,6 +60,26 @@ function LocationDomain() {
         LocalDateTime updatedAt
     }`;
 
+  const unifiedMapFlow = `flowchart LR
+  subgraph FE["Frontend"]
+    U[UnifiedPetMapPage]
+    UM[unifiedMapApi.fetchActiveMapItems]
+    LS[locationServiceApi]
+    MU[meetupApi]
+    CR[careRequestApi]
+    MC[MapContainer]
+  end
+  subgraph BE["Backend APIs"]
+    LAPI["/api/location-services/search"]
+    MAPI["/api/meetups/nearby"]
+    CAPI["/api/care-requests/nearby"]
+  end
+  U --> UM
+  UM -->|location| LS --> LAPI
+  UM -->|meetup| MU --> MAPI
+  UM -->|care| CR --> CAPI
+  UM --> MC`;
+
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
       <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
@@ -102,6 +123,126 @@ function LocationDomain() {
                   <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>78.90 MB → 28.6 MB</strong> (63.8% 감소)</li>
                 </ul>
               </div>
+            </div>
+          </section>
+
+          {/* 아키텍처 (프론트·백엔드) */}
+          <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처 (프론트·백엔드)</h2>
+            <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+              아래 요약은 저장소의{' '}
+              <a
+                href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/architecture/%EC%9C%84%EC%B9%98%20%EA%B8%B0%EB%B0%98%20%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{ color: 'var(--link-color)' }}
+              >
+                위치 기반 서비스 아키텍처
+              </a>
+              문서와 맞춘다. 문서 우선순위: 아키텍처 → 현행 vs 설계 비교 → 알고리즘 설계안 → 잠재 이슈(백로그 메모).
+            </p>
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>범위</h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <th style={{ padding: '0.5rem', textAlign: 'left', color: 'var(--text-color)' }}>구분</th>
+                      <th style={{ padding: '0.5rem', textAlign: 'left', color: 'var(--text-color)' }}>설명</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={{ padding: '0.5rem' }}>Location (시설)</td>
+                      <td style={{ padding: '0.5rem' }}>POI 검색, 카테고리·키워드·반경·지역 계층, AI 추천(<code>/recommend</code>)</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={{ padding: '0.5rem' }}>Geocoding</td>
+                      <td style={{ padding: '0.5rem' }}>주소↔좌표, 길찾기 (서버 <code>NaverMapService</code>)</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={{ padding: '0.5rem' }}>Location Review</td>
+                      <td style={{ padding: '0.5rem' }}>시설 리뷰 CRUD, 시설 <code>rating</code> 집계</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '0.5rem' }}>통합 탐색 (프론트)</td>
+                      <td style={{ padding: '0.5rem' }}><code>UnifiedPetMap</code> — 탭별로 도메인 REST만 조합 (단일 BFF 없음)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>통합 탐색 지도 데이터 흐름</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '1rem' }}>
+                활성 탭에 대해서만 API를 호출한다. 통합 지도 UI(<code>UnifiedPetMapPage</code>)는 주변서비스·모임·펫케어를 각각 다른 엔드포인트에 연결한다.
+              </p>
+              <MermaidDiagram chart={unifiedMapFlow} />
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginTop: '1rem', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>반경 단위</strong>: 백엔드 <code>radius</code>는 미터(m). 통합 지도 UI는 km를 쓰면 <code>radius × 1000</code>으로 변환해 검색에 넘긴다.
+              </p>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1.5rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>검색 분기 (B 방향)와 파라미터</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <code>LocationServiceService.searchLocationServices</code> 단일 진입점 기준: <strong style={{ color: 'var(--text-color)' }}>위치(lat·lng·반경) → 지역 계층 → 키워드 단독(FULLTEXT fallback) → 전체 평점순</strong>.
+                위치·지역 경로에서는 <code>keyword</code>·<code>category</code>가 SQL WHERE에서 함께 걸린다. 위치 정보가 없을 때만 FULLTEXT 전국 검색으로 내려간다.
+              </p>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>정규화</strong>: <code>keyword</code>, <code>category</code>, 지역 필드는 진입 시 빈 문자열을 <code>null</code>로 두어 SQL <code>IS NULL</code> 조건이 기대대로 동작한다.
+              </p>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0' }}>
+                <strong style={{ color: 'var(--text-color)' }}>문서 정합성</strong>: 과거 메모에서 지적된 「지역 경로 카테고리를 Java에서만 필터」하는 형태는, 현행 비교 문서 기준으로 SQL로 옮겨졌다. 배치 임포트의 배치 커밋은 <code>LocationServiceBatchWriter</code> 별도 빈에서 <code>REQUIRES_NEW</code>가 적용된다. 세부는{' '}
+                <a
+                  href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/location/%EC%A3%BC%EB%B3%80%EC%84%9C%EB%B9%84%EC%8A%A4-%ED%98%84%ED%96%89vs%EC%84%A4%EA%B3%84%EC%95%88-%EB%B9%84%EA%B5%90.md"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: 'var(--link-color)' }}
+                >
+                  주변서비스 현행 vs 설계안 비교
+                </a>
+                를 본다.
+              </p>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>운영·보안 체크리스트 (요약)</h3>
+              <ul style={{
+                listStyle: 'none',
+                padding: 0,
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontSize: '0.9rem'
+              }}>
+                <li>• <code>GET /search</code>의 <code>size</code>: 기본 100, 0 이하이면 상한 없음 — 클라이언트에서 상한 정책 검토</li>
+                <li>• Geocoding·외부 API 실패 시 메시지·HTTP 상태 일관성</li>
+                <li>• 네이버 키는 서버 설정에 두고 프론트에 심지 않음</li>
+              </ul>
             </div>
           </section>
 
@@ -290,6 +431,9 @@ function LocationDomain() {
             }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>키워드 검색 (FULLTEXT 인덱스 활용)</h3>
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <p style={{ marginBottom: '0.5rem' }}>
+                  위치·지역이 <strong style={{ color: 'var(--text-color)' }}>없을 때만</strong> 진입하는 전국 FULLTEXT fallback이다. 반경·지역 검색 중에는 동일 키워드라도 이름 <code>LIKE</code> 위주로 좁히며, 경로에 따라 결과가 달라질 수 있다.
+                </p>
                 <p style={{ marginBottom: '0.5rem' }}>이름, 설명, 카테고리를 모두 검색하는 전문 검색 기능입니다.</p>
                 <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>검색 범위:</strong></p>
                 <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
@@ -444,6 +588,7 @@ function LocationDomain() {
                   <li>• <strong style={{ color: 'var(--text-color)' }}>상태 관리 개선</strong>: 24개의 개별 useState를 3개의 useReducer로 그룹화</li>
                   <li>• <strong style={{ color: 'var(--text-color)' }}>프론트엔드 검색 로직 단순화</strong>: 300줄 함수를 전략별 함수로 분리 (약 80줄 + 4개 전략 함수)</li>
                   <li>• <strong style={{ color: 'var(--text-color)' }}>하이브리드 전략 일관성 개선</strong>: 지역 선택 시 항상 백엔드 재요청하여 일관성 확보</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>백엔드 검색 분기(B 방향)·정규화</strong>: 위치 우선, 빈 문자열 null 처리, 카테고리·키워드 SQL 통합</li>
                   <li>• <strong style={{ color: 'var(--text-color)' }}>키워드 검색 품질 검증</strong>: FULLTEXT 인덱스 정상 작동 확인</li>
                 </ul>
               </div>
@@ -801,6 +946,8 @@ function LocationDomain() {
             <div>• 부적절한 위치 서비스 정보 신고, ReportTargetType.LOCATION_SERVICE로 구분</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Statistics 도메인:</strong></div>
             <div>• 일별 통계에 위치 서비스 수 포함, 리뷰 작성 수 집계</div>
+            <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Meetup / Care (지도만 공유):</strong></div>
+            <div>• 통합 지도 탭은 각각 <code>/api/meetups/nearby</code>, <code>/api/care-requests/nearby</code>를 호출한다. Location 엔티티와 직접 FK로 묶이지 않는다.</div>
           </div>
         </div>
       </section>
@@ -827,12 +974,13 @@ function LocationDomain() {
               파라미터: latitude, longitude, radius (기본값 10000m), sido, sigungu, eupmyeondong, roadName, category, keyword, size (기본값 100)
             </div>
             <div style={{ marginLeft: '1rem', marginTop: '0.5rem', fontSize: '0.85rem' }}>
-              하이브리드 전략: latitude/longitude/radius 있으면 위치 기반 검색, keyword 있으면 키워드 검색 우선, 없으면 지역 계층별 검색
+              분기(B 방향): 위치(lat·lng·radius) 우선 → 지역(sido/sigungu/…) → 위치·지역 모두 없을 때만 FULLTEXT 키워드 → 전체 평점순. 위치·지역 경로에서 keyword·category는 SQL WHERE로 함께 적용.
             </div>
             <div style={{ marginLeft: '1rem', marginTop: '0.5rem', fontSize: '0.85rem' }}>
               거리 정보 포함: 위치 기반 검색 시 백엔드에서 거리 계산 후 DTO에 포함하여 반환 ✅
             </div>
-            <div style={{ marginTop: '1rem' }}>• GET /popular - 인기 서비스 조회 (category 파라미터, <code>@Cacheable</code> 적용)</div>
+            <div style={{ marginTop: '1rem' }}>• GET /popular — 인기 서비스 (category, DB <code>LIMIT 10</code>, <code>@Cacheable</code>)</div>
+            <div style={{ marginTop: '0.5rem' }}>• GET /recommend — AI 추천 (로그인 필요, 후보 검색 후 LLM 재정렬·fallback)</div>
             <div style={{ marginTop: '1rem' }}>• DELETE /{'{serviceIdx}'} - 위치 서비스 삭제 (Soft Delete)</div>
           </div>
         </div>
@@ -885,6 +1033,31 @@ function LocationDomain() {
           padding: '1rem',
           backgroundColor: 'var(--card-bg)',
           borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
+          marginBottom: '0.75rem'
+        }}>
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.9', fontSize: '0.95rem' }}>
+            <li style={{ marginBottom: '0.5rem' }}>
+              <a href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/architecture/%EC%9C%84%EC%B9%98%20%EA%B8%B0%EB%B0%98%20%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>→ 위치 기반 서비스 아키텍처 (프론트·백엔드 대조)</a>
+            </li>
+            <li style={{ marginBottom: '0.5rem' }}>
+              <a href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/location/%EC%A3%BC%EB%B3%80%EC%84%9C%EB%B9%84%EC%8A%A4-%ED%98%84%ED%96%89vs%EC%84%A4%EA%B3%84%EC%95%88-%EB%B9%84%EA%B5%90.md" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>→ 주변 서비스 현행 vs 설계안 비교</a>
+            </li>
+            <li style={{ marginBottom: '0.5rem' }}>
+              <a href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/location/%EC%A3%BC%EB%B3%80%EC%84%9C%EB%B9%84%EC%8A%A4-%EC%95%8C%EA%B3%A0%EB%A6%AC%EC%A6%98-%EC%84%A4%EA%B3%84%EC%95%88.md" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>→ 주변 서비스 알고리즘 설계안</a>
+            </li>
+            <li style={{ marginBottom: '0.5rem' }}>
+              <a href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/location/location-domain-potential-issues-refactoring.md" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>→ Location 잠재 이슈·백로그 메모</a>
+            </li>
+            <li>
+              <a href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/location/location-portfolio-pages-source-map.md" target="_blank" rel="noopener noreferrer" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>→ 포트폴리오 페이지 ↔ 문서 매핑</a>
+            </li>
+          </ul>
+        </div>
+        <div className="section-card" style={{
+          padding: '1rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
           border: '1px solid var(--nav-border)'
         }}>
           <a 
@@ -896,7 +1069,7 @@ function LocationDomain() {
               textDecoration: 'none'
             }}
           >
-            → Location 도메인 상세 문서 보기
+            → Location 도메인 상세 문서 (레거시 경로)
           </a>
         </div>
           </section>
