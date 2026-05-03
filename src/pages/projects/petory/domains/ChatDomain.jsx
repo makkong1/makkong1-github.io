@@ -16,43 +16,47 @@ function ChatDomain() {
     { id: 'docs', title: '관련 문서' }
   ];
   const entityDiagram = `erDiagram
-    Conversation ||--o{ ConversationParticipant : "has"
-    Conversation ||--o{ Message : "has"
-    Users ||--o{ ConversationParticipant : "participates"
-    Users ||--o{ Message : "sends"
+    Conversation ||--o{ ConversationParticipant : "참여자"
+    Conversation ||--o{ ChatMessage : "메시지"
+    Users ||--o{ ConversationParticipant : "참여"
+    Users ||--o{ ChatMessage : "발신"
+    ChatMessage ||--o| ChatMessage : "replyTo"
     
     Conversation {
         Long idx PK
         ConversationType conversationType
-        String relatedType
+        ConversationStatus status
+        RelatedType relatedType
         Long relatedIdx
         String title
+        LocalDateTime lastMessageAt
+        String lastMessagePreview
+        Boolean isDeleted
         LocalDateTime createdAt
         LocalDateTime updatedAt
     }
     
     ConversationParticipant {
         Long idx PK
-        Long conversation_idx FK
-        Long user_idx FK
         ParticipantRole role
         ParticipantStatus status
         Integer unreadCount
-        Long lastReadMessageIdx FK
         LocalDateTime lastReadAt
         LocalDateTime joinedAt
         LocalDateTime leftAt
         Boolean dealConfirmed
         LocalDateTime dealConfirmedAt
+        Boolean isDeleted
+        LocalDateTime createdAt
+        LocalDateTime updatedAt
     }
     
     ChatMessage {
         Long idx PK
-        Long conversation_idx FK
-        Long sender_idx FK
         MessageType messageType
         String content
-        Long replyToMessageIdx FK
+        Boolean isDeleted
+        LocalDateTime deletedAt
         LocalDateTime createdAt
         LocalDateTime updatedAt
     }`;
@@ -136,12 +140,13 @@ function ChatDomain() {
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                 <p style={{ marginBottom: '0.5rem' }}>다양한 타입의 채팅방을 생성하고 관리할 수 있습니다.</p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 1:1 일반 채팅 (DIRECT) - 기존 채팅방 재사용, 펫케어/실종제보와 연동 가능</li>
-                  <li>• 펫케어 요청 채팅 (CARE_REQUEST) - 거래 확정 기능 지원</li>
-                  <li>• 실종제보 채팅 (MISSING_PET) - 제보자-목격자 조합별 개별 채팅방</li>
-                  <li>• 산책모임 채팅 (MEETUP) - 모임 참여 시 자동 참여, 모임 나가기 시 채팅방에서도 나감</li>
-                  <li>• 그룹 채팅 (GROUP) - 관리자 지정 가능</li>
-                  <li>• 채팅방 참여/나가기, 참여자 관리</li>
+                  <li>• 1:1 일반 채팅 (DIRECT) — 기존 방 재사용, relatedType/relatedIdx로 펫케어·실종 등과 연동 가능</li>
+                  <li>• 펫케어 채팅 (CARE_REQUEST) — 펫케어 채팅방 생성 API는 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>RelatedType.CARE_APPLICATION</code> + 지원 ID로 조회/생성; <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>CARE_REQUEST</code>는 거래 확정 등 다른 흐름에서 사용</li>
+                  <li>• 실종제보 (MISSING_PET) — <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>MISSING_PET_BOARD</code> + 게시글 ID, 제보자·목격자 조합별 개별 방</li>
+                  <li>• 산책모임 (MEETUP) — 참여 시 자동 참여, 나가기 시 채팅방에서도 LEFT 처리</li>
+                  <li>• 그룹 (GROUP) — <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>ParticipantRole</code> MEMBER/ADMIN 등 역할 조정 가능</li>
+                  <li>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>ADMIN_SUPPORT</code>는 enum만 존재 (chat.md 1절)</li>
+                  <li>• 채팅방 참여/나가기, 재참여 시 joinedAt 이후 메시지만 조회</li>
                 </ul>
               </div>
             </div>
@@ -413,7 +418,8 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
                   padding: '1rem',
                   backgroundColor: 'var(--bg-color)',
                   borderRadius: '6px',
-                  border: '1px solid var(--link-color)'
+                  border: '1px solid var(--link-color)',
+                  marginBottom: '1rem'
                 }}>
                   <a
                     href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/recordType/chat/dto-record-refactoring.md"
@@ -429,13 +435,57 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
                     → DTO → record 리팩토링 상세 문서 보기
                   </a>
                 </div>
+
+                <div style={{
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-color)',
+                  borderRadius: '6px',
+                  border: '1px solid var(--link-color)'
+                }}>
+                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>보안·트랜잭션·검색 (2026-04-14)</h4>
+                  <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: '1.7', marginBottom: '0.75rem' }}>
+                    REST IDOR 제거, ACTIVE 참여자 검증, <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>REQUIRES_NEW</code> 분리, 실종 N+1·FULLTEXT 검색, readOnly·WebSocket 예외 정리 등은 리팩토링 전용 페이지에 요약해 두었습니다.
+                  </p>
+                  <Link
+                    to="/domains/chat/refactoring"
+                    style={{
+                      color: 'var(--link-color)',
+                      textDecoration: 'none',
+                      fontWeight: 'bold',
+                      display: 'inline-block',
+                      marginBottom: '0.5rem'
+                    }}
+                  >
+                    → Chat 백엔드 리팩토링 상세 페이지 보기
+                  </Link>
+                  <div style={{ fontSize: '0.85rem', lineHeight: '1.7' }}>
+                    <a
+                      href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/chat/chat-code-review-2026-04-14.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--link-color)', textDecoration: 'none', display: 'block' }}
+                    >
+                      GitHub: chat-code-review-2026-04-14.md
+                    </a>
+                    <a
+                      href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/chat/chat-backend-security-transaction-2026-04-14.md"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: 'var(--link-color)', textDecoration: 'none', display: 'block' }}
+                    >
+                      GitHub: chat-backend-security-transaction-2026-04-14.md
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
 
-          {/* 6. Entity 구조 */}
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
+            <h2 style={{ marginBottom: '0.75rem', color: 'var(--text-color)' }}>Entity 구조</h2>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              필드·관계는 <strong style={{ color: 'var(--text-color)' }}>docs/domains/chat.md</strong> 4.1절 엔티티 설명과 맞춥니다. MessageReadStatus 엔티티는 제거되었고, 읽음은 참여자의 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>unreadCount</code>·<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>lastReadMessage</code>로 관리합니다.
+            </p>
             <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
@@ -444,6 +494,69 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
               marginBottom: '1.5rem'
             }}>
               <MermaidDiagram chart={entityDiagram} />
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. Conversation</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• conversationType, title, relatedType, relatedIdx</div>
+                <div>• status (ACTIVE/CLOSED), lastMessageAt, lastMessagePreview</div>
+                <div>• isDeleted, deletedAt — BaseTimeEntity 미사용, @PrePersist/@PreUpdate</div>
+                <div>• OneToMany → ConversationParticipant, ChatMessage</div>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>2. ConversationParticipant</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• role (MEMBER/ADMIN), unreadCount, lastReadMessage, lastReadAt</div>
+                <div>• status (ACTIVE/LEFT), joinedAt, leftAt</div>
+                <div>• dealConfirmed, dealConfirmedAt (펫케어 거래 확정)</div>
+                <div>• isDeleted, deletedAt — BaseTimeEntity 미사용</div>
+                <div>• ManyToOne → Conversation, Users</div>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. ChatMessage</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• messageType (TEXT/IMAGE/FILE/SYSTEM/NOTICE), content(Lob)</div>
+                <div>• replyToMessage (답장), isDeleted, deletedAt</div>
+                <div>• BaseTimeEntity — createdAt, updatedAt</div>
+                <div>• ManyToOne → Conversation, Users(sender)</div>
+              </div>
             </div>
           </section>
 
@@ -462,9 +575,10 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
                 color: 'var(--text-secondary)',
                 lineHeight: '1.8'
               }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>WebSocket 인증</strong>: 연결 시 JWT 토큰 검증</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>채팅방 접근 권한</strong>: 참여자만 메시지 조회/전송 가능</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>메시지 삭제 권한</strong>: 본인 메시지만 삭제 가능</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>사용자 식별</strong>: REST는 <strong style={{ color: 'var(--text-color)' }}>SecurityContext principal(Long 문자열)</strong>만 사용. <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>userId</code>·<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>senderIdx</code> 등 클라이언트 스푸핑 파라미터 없음 (chat.md 4.6)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>ACTIVE 참여자</strong>: 메시지 목록·커서·검색·읽음·삭제·unread-count·채팅방 상태 PATCH는 ACTIVE 참여자 검증 후에만 동작</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>WebSocket</strong>: 핸드셰이크 후 JWT 인터셉터 검증. <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>ChatWebSocketController</code>는 Principal로 발신자 결정</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>메시지 삭제</strong>: 본인 메시지만 Soft Delete</li>
               </ul>
             </div>
           </section>
@@ -483,9 +597,9 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>User 도메인:</strong></div>
             <div>• Users가 채팅방 참여, 메시지 전송/수신</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Care 도메인:</strong></div>
-            <div>• 펫케어 요청 관련 채팅방 생성 (RelatedType.CARE_APPLICATION), 거래 확정 기능 지원</div>
+            <div>• 펫케어 채팅방 생성은 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>RelatedType.CARE_APPLICATION</code> + 지원 ID; 거래 확정은 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>confirmCareDeal()</code>·Payment 에스크로와 연동 (chat.md 2.1, 3.1)</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>MissingPet 도메인:</strong></div>
-            <div>• "목격했어요" 버튼으로 제보자-목격자 간 1:1 채팅 시작 (제보자-목격자 조합별 개별 채팅방)</div>
+            <div>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>POST /api/missing-pets/{'{boardIdx}'}/start-chat</code> — 목격자는 JWT principal만 (witnessId 파라미터 없음)</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Meetup 도메인:</strong></div>
             <div>• 모임 생성 시 그룹 채팅방 자동 생성, 모임 참여 시 자동 참여, 모임 나가기 시 채팅방에서도 나감</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Notification 도메인:</strong></div>
@@ -494,9 +608,12 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
         </div>
       </section>
 
-          {/* 8. API 엔드포인트 */}
           <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              아래 경로·동작은 <strong style={{ color: 'var(--text-color)' }}>docs/domains/chat.md</strong> 4.6절 REST·WebSocket 표와 동일합니다.
+            </p>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
+
             <div className="section-card" style={{
               padding: '1.5rem',
               backgroundColor: 'var(--card-bg)',
@@ -511,17 +628,17 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
                 fontFamily: 'monospace',
                 fontSize: '0.9rem'
               }}>
-                <div>• GET / - 내 채팅방 목록 (userId 파라미터)</div>
-                <div>• GET /{'{conversationIdx}'} - 채팅방 상세 (userId 파라미터)</div>
-                <div>• POST / - 채팅방 생성 (범용)</div>
-                <div>• POST /care-request - 펫케어 채팅방 생성 (careApplicationIdx, requesterId, providerId 파라미터)</div>
-                <div>• POST /direct - 1:1 채팅방 생성/조회 (user1Id, user2Id 파라미터)</div>
-                <div>• POST /{'{conversationIdx}'}/leave - 채팅방 나가기 (userId 파라미터, 응답: 204 No Content)</div>
-                <div>• DELETE /{'{conversationIdx}'} - 채팅방 삭제 (userId 파라미터, 응답: 204 No Content)</div>
-                <div>• PATCH /{'{conversationIdx}'}/status - 채팅방 상태 변경 (status 파라미터)</div>
-                <div>• POST /meetup/{'{meetupIdx}'}/join - 산책모임 채팅방 참여 (userId 파라미터)</div>
-                <div>• GET /meetup/{'{meetupIdx}'}/participant-count - 산책모임 채팅방 참여 인원 수 조회 (응답: Integer)</div>
-                <div>• POST /{'{conversationIdx}'}/confirm-deal - 펫케어 거래 확정 (userId 파라미터, 양쪽 모두 확정 시 자동 승인, 응답: 204 No Content)</div>
+                <div>• GET /api/chat/conversations — 내 목록 (JWT principal = user idx, 쿼리 없음)</div>
+                <div>• GET /api/chat/conversations/{'{conversationIdx}'} — 상세 (동일)</div>
+                <div>• POST /api/chat/conversations — 범용 생성 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>participantUserIds</code>에 로그인 사용자 포함 필수)</div>
+                <div>• POST /api/chat/conversations/care-request — 펫케어 방 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>careApplicationIdx</code>만; 당사자 검증은 서버)</div>
+                <div>• POST /api/chat/conversations/direct — 1:1 생성/조회 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>otherUserId</code>만)</div>
+                <div>• POST /api/chat/conversations/{'{conversationIdx}'}/leave — 나가기 (204)</div>
+                <div>• DELETE /api/chat/conversations/{'{conversationIdx}'} — 삭제 (204)</div>
+                <div>• PATCH /api/chat/conversations/{'{conversationIdx}'}/status — 상태 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>status</code>, ACTIVE 참여자만)</div>
+                <div>• POST /api/chat/conversations/meetup/{'{meetupIdx}'}/join — 산책모임 참여</div>
+                <div>• GET /api/chat/conversations/meetup/{'{meetupIdx}'}/participant-count — 참여 인원 (Integer)</div>
+                <div>• POST /api/chat/conversations/{'{conversationIdx}'}/confirm-deal — 펫케어 거래 확정 (204)</div>
               </div>
             </div>
 
@@ -539,13 +656,31 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
                 fontFamily: 'monospace',
                 fontSize: '0.9rem'
               }}>
-                <div>• POST / - 메시지 전송 (senderIdx 파라미터, RequestBody: SendMessageRequest)</div>
-                <div>• GET /conversation/{'{conversationIdx}'} - 메시지 목록 조회 (페이징, userId 파라미터, page 기본값 0, size 기본값 50)</div>
-                <div>• GET /conversation/{'{conversationIdx}'}/before - 메시지 목록 조회 (커서 기반, beforeDate 파라미터 ISO 형식, size 기본값 50)</div>
-                <div>• POST /conversation/{'{conversationIdx}'}/read - 메시지 읽음 처리 (userId, lastMessageIdx 파라미터, 응답: 204 No Content)</div>
-                <div>• DELETE /{'{messageIdx}'} - 메시지 삭제 (userId 파라미터, 응답: 204 No Content)</div>
-                <div>• GET /conversation/{'{conversationIdx}'}/search - 메시지 검색 (keyword 파라미터)</div>
-                <div>• GET /conversation/{'{conversationIdx}'}/unread-count - 읽지 않은 메시지 수 조회 (userId 파라미터, 응답: Long)</div>
+                <div>• POST /api/chat/messages — 전송 (Body: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>SendMessageRequest</code>; 발신자는 JWT)</div>
+                <div>• GET /api/chat/messages/conversation/{'{conversationIdx}'} — 목록 (page 기본 0, size 기본 50)</div>
+                <div>• GET /api/chat/messages/conversation/{'{conversationIdx}'}/before — 커서 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>beforeDate</code> ISO, size 기본 50)</div>
+                <div>• POST /api/chat/messages/conversation/{'{conversationIdx}'}/read — 읽음 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>lastMessageIdx</code> 선택, 204)</div>
+                <div>• DELETE /api/chat/messages/{'{messageIdx}'} — 삭제 (204)</div>
+                <div>• GET /api/chat/messages/conversation/{'{conversationIdx}'}/search — 검색 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>keyword</code> 필수, FULLTEXT 전제)</div>
+                <div>• GET /api/chat/messages/conversation/{'{conversationIdx}'}/unread-count — unread (Long)</div>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 제보 (Missing pet)</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• POST /api/missing-pets/{'{boardIdx}'}/start-chat — 실종 채팅 시작 (목격자 = JWT principal, witnessId 없음)</div>
               </div>
             </div>
 
@@ -555,19 +690,22 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
               borderRadius: '8px',
               border: '1px solid var(--nav-border)'
             }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>WebSocket (/app/chat, /topic/conversation)</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>WebSocket (chat.md 4.6)</h3>
               <div style={{
                 color: 'var(--text-secondary)',
                 lineHeight: '1.8',
                 fontFamily: 'monospace',
                 fontSize: '0.9rem'
               }}>
-                <div>• /app/chat.send - 실시간 메시지 전송</div>
-                <div>• /app/chat.read - 실시간 읽음 처리</div>
-                <div>• /app/chat.typing - 타이핑 표시</div>
-                <div>• /topic/conversation/{'{conversationIdx}'} - 채팅방 메시지 구독</div>
-                <div>• /user/{'{userId}'}/queue/errors - 에러 메시지 수신</div>
+                <div>• /app/chat.send — 실시간 메시지 전송</div>
+                <div>• /app/chat.read — 실시간 읽음</div>
+                <div>• /app/chat.typing — 타이핑</div>
+                <div>• /topic/conversation/{'{conversationIdx}'} — 방 메시지 구독</div>
+                <div>• /user/{'{loginId}'}/queue/errors — 전송 실패 시 (Principal#getName() = 로그인 ID 문자열, 숫자 userId 아님)</div>
               </div>
+              <p style={{ marginTop: '0.75rem', marginBottom: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontFamily: 'inherit', lineHeight: '1.6' }}>
+                서버 → 클라이언트 타이핑 브로드캐스트는 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>/topic/conversation/{'{conversationIdx}'}/typing</code> (chat.md 4.7절).
+              </p>
             </div>
           </section>
 
@@ -586,10 +724,49 @@ void incrementUnreadCount(@Param("conversationIdx") Long conversationIdx,
             rel="noopener noreferrer"
             style={{ 
               color: 'var(--link-color)',
-              textDecoration: 'none'
+              textDecoration: 'none',
+              display: 'block',
+              marginBottom: '0.5rem'
             }}
           >
             → Chat 도메인 상세 문서
+          </a>
+          <Link
+            to="/domains/chat/refactoring"
+            style={{
+              color: 'var(--link-color)',
+              textDecoration: 'none',
+              display: 'block',
+              marginBottom: '0.5rem',
+              fontWeight: 'bold'
+            }}
+          >
+            → Chat 백엔드 리팩토링 요약 페이지
+          </Link>
+          <a 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/chat/chat-code-review-2026-04-14.md" 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: 'var(--link-color)',
+              textDecoration: 'none',
+              display: 'block',
+              marginBottom: '0.5rem'
+            }}
+          >
+            → Chat 코드 리뷰 (GitHub 원문)
+          </a>
+          <a 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/chat/chat-backend-security-transaction-2026-04-14.md" 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: 'var(--link-color)',
+              textDecoration: 'none',
+              display: 'block'
+            }}
+          >
+            → Chat 보안·트랜잭션·검색 정리 (GitHub 원문)
           </a>
         </div>
           </section>

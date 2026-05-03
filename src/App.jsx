@@ -28,6 +28,7 @@ import MeetupDomainOptimization from './pages/projects/petory/domains/MeetupDoma
 import MeetupDomainRefactoring from './pages/projects/petory/domains/MeetupDomainRefactoring';
 import ChatDomain from './pages/projects/petory/domains/ChatDomain';
 import ChatDomainOptimization from './pages/projects/petory/domains/ChatDomainOptimization';
+import ChatDomainRefactoring from './pages/projects/petory/domains/ChatDomainRefactoring';
 import './styles/global.css';
 
 function App() {
@@ -69,6 +70,7 @@ function App() {
             <Route path="/domains/meetup/refactoring" element={<MeetupDomainRefactoring />} />
             <Route path="/domains/chat" element={<ChatDomain />} />
             <Route path="/domains/chat/optimization" element={<ChatDomainOptimization />} />
+            <Route path="/domains/chat/refactoring" element={<ChatDomainRefactoring />} />
             
             {/* MCP 파일 링크 페이지 */}
             <Route path="/docs" element={<MCPFilesPage />} />

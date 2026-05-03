@@ -9,7 +9,7 @@
 - **외부 PG 직접 연동 없음**: 개발 단계에서는 실제 결제 없이 시뮬레이션
 - **에스크로 시스템**: 거래 확정 시 코인을 임시 보관하여 거래 안전성 확보
 - **완전한 거래 내역 기록**: 모든 코인 거래가 `pet_coin_transaction` 테이블에 기록됨
-- **트랜잭션 일관성**: 모든 상태 변경과 결제 처리가 원자적으로 처리됨
+- **트랜잭션 일관성**: 지급·환불 등 `CareRequestService` 경로는 코인 처리와 상태 변경이 한 트랜잭션으로 묶이나, **거래 확정 시 최초 에스크로 생성**은 `ConversationService`에서 예외를 삼킬 수 있어 그 구간만 완전한 원자성을 보장하지 않을 수 있음(§4.1, §7.2)
 - **동시성 제어**: 비관적 락을 사용하여 Race Condition 방지
 - **확장 가능한 구조**: 실제 결제 연동 시 충전 단계만 교체하면 됨
 
@@ -130,11 +130,12 @@ if (offeredCoins != null && offeredCoins > 0) {
 
 **트랜잭션 관리**:
 - `ConversationService.confirmCareDeal()`에 `@Transactional` 적용
-- 에스크로 생성 실패 시 전체 트랜잭션 롤백 (상태 변경도 함께 롤백)
+- 에스크로 단계는 위 **try/catch** 때문에 실패해도 **거래 확정 흐름이 롤백되지 않을 수 있음** (코드 주석에도 동일 취지)
 
 **주의사항**:
-- `offeredCoins`가 null이거나 0이면 거래 확정 불가
-- 이미 에스크로가 있으면 `IllegalStateException` 발생
+- `offeredCoins`가 null이거나 0이면 **에스크로·차감 없이** 경고 로그만 남기고, 거래 확정(상태 전환 등)은 그대로 진행될 수 있음
+- 이미 에스크로가 있으면 `PaymentConflictException.escrowAlreadyExists` 발생
+- **에스크로 생성 실패 시**: `ConversationService`는 `createEscrow`를 **try/catch**로 감싸 예외를 삼키고 로그만 남김 → **코인 차감·에스크로 없이도 `CareRequest`가 `IN_PROGRESS`로 커밋될 수 있음**(운영 시 예외 전파·롤백 정책 검토 권장)
 
 ### 4.2 거래 완료 시 (`CareRequestService.updateStatus()`)
 
@@ -208,7 +209,7 @@ if (newStatus == CareRequestStatus.CANCELLED) {
 careRequestService.updateStatus(
     request.getIdx(), 
     "COMPLETED", 
-    null // 스케줄러는 시스템 작업이므로 currentUserId 없음
+    null // 시스템 작업: CareRequestService에서 currentUserId == null이면 권한 검사 생략
 );
 ```
 
@@ -219,8 +220,8 @@ careRequestService.updateStatus(
 4. 에스크로 처리 (4.2와 동일)
 
 **트랜잭션 관리**:
-- 각 요청을 개별 트랜잭션으로 처리하여 실패 시 다른 요청에 영향 없음
-- 개별 요청별 예외 처리 추가
+- `CareRequestScheduler`의 만료 처리 메서드에 `@Transactional`이 있어 **배치 단위**로 트랜잭션 경계가 잡힐 수 있음(스프링 설정·프록시 동작은 런타임 참고)
+- 루프 안에서 `updateStatus` 실패는 **try/catch**로 잡아 로그만 남기고 다음 건 진행 — “요청마다 완전히 독립 트랜잭션”이라고 단정하지 않음
 
 ## 5. 서비스 로직
 
@@ -228,13 +229,14 @@ careRequestService.updateStatus(
 **역할**: 코인 충전, 차감, 지급, 환불 등 모든 코인 거래 처리
 
 **주요 메서드**:
-- `chargeCoins()`: 코인 충전
+- `chargeCoins()`: 코인 충전 (findByIdForUpdate 비관적 락, PaymentValidationException.chargeAmountInvalid)
 - `deductCoins()`: 코인 차감 (에스크로로 이동)
-  - **비관적 락 사용**: `findByIdForUpdate()`로 Race Condition 방지
-  - 잔액 부족 시 `IllegalStateException` 발생
+  - **비관적 락 사용**: `UsersRepository.findByIdForUpdate()`로 Race Condition 방지
+  - 잔액 부족 시 **`InsufficientBalanceException.of(balanceBefore, amount)`** (HTTP 400, `errorCode=INSUFFICIENT_BALANCE`)
 - `payoutCoins()`: 코인 지급 (에스크로에서 제공자에게)
 - `refundCoins()`: 코인 환불 (에스크로에서 요청자에게)
-- `getBalance()`: 잔액 조회
+- `getBalance()`: 잔액 조회 (user.getPetCoinBalance() 직접 반환, 추가 쿼리 없음)
+- `getTransactionDetail()`: 거래 상세 조회 (본인 거래만, CARE_REQUEST 시 상대방 정보 포함, PetCoinTransactionNotFoundException, PaymentForbiddenException.ownTransactionOnly)
 
 **트랜잭션 관리**:
 - 모든 메서드에 `@Transactional` 적용
@@ -249,14 +251,17 @@ careRequestService.updateStatus(
 
 **주요 메서드**:
 - `createEscrow()`: 에스크로 생성 (거래 확정 시)
-  - 중복 에스크로 생성 방지 (`findByCareRequest()`로 확인)
-  - 요청자 코인 차감 후 에스크로 생성
+  - 중복 에스크로 생성 방지 (`findByCareRequest()` → PaymentConflictException.escrowAlreadyExists)
+  - PaymentValidationException.escrowAmountInvalid
+  - 요청자 코인 차감 후 에스크로 생성 (deductCoins 호출)
 - `releaseToProvider()`: 제공자에게 지급 (거래 완료 시)
   - **비관적 락 사용**: `findByIdForUpdate()`로 중복 지급 방지
-  - `HOLD` 상태만 지급 가능
+  - `HOLD` 상태만 지급 가능 (아닐 시 **`IllegalStateException`**)
+  - PetCoinEscrowNotFoundException
 - `refundToRequester()`: 요청자에게 환불 (거래 취소 시)
   - **비관적 락 사용**: `findByIdForUpdate()`로 중복 환불 방지
-  - `HOLD` 상태만 환불 가능
+  - `HOLD` 상태만 환불 가능 (아닐 시 PaymentConflictException.holdStatusRequiredForRefund)
+  - PetCoinEscrowNotFoundException
 - `findByCareRequest()`: CareRequest로 에스크로 조회 (읽기 전용)
 - `findByCareRequestForUpdate()`: **비관적 락을 사용한 조회** (동시성 제어용)
 
@@ -325,7 +330,7 @@ careRequestService.updateStatus(
 - `PetCoinEscrowService.releaseToProvider()`: `@Transactional` (기본값 `REQUIRED`)
 - `PetCoinEscrowService.findByCareRequestForUpdate()`: `@Transactional` (기본값 `REQUIRED`)
 
-**결과**: 모두 같은 트랜잭션에 참여합니다. `releaseToProvider()` 내부에서 예외가 발생하면 전체가 롤백되어 `CareRequest` 상태 변경도 함께 롤백됩니다.
+**결과**: `CareRequestService.updateStatus()`와 같은 트랜잭션에 참여합니다. `releaseToProvider()` / `refundToRequester()`에서 예외가 나면 `CareRequestService`에서 `CarePaymentException`으로 감싸져 **상위 트랜잭션이 롤백**될 수 있습니다(실제 구현은 `CareRequestService` 참고).
 
 **`REQUIRES_NEW` 사용 시 문제점**:
 - 만약 `releaseToProvider()`에 `REQUIRES_NEW`를 적용하면:
@@ -339,9 +344,9 @@ careRequestService.updateStatus(
 
 ### 7.2 롤백 처리
 
-**에스크로 생성 실패 시**:
-- `ConversationService.confirmCareDeal()`에서 예외 발생
-- 전체 트랜잭션 롤백 (`CareRequest` 상태 변경, `CareApplication` 상태 변경 모두 롤백)
+**에스크로 생성 실패 시** (`거래 확정` 경로):
+- `createEscrow`는 **try/catch**로 감싸져 있어, 실패 시 **예외가 상위로 전파되지 않음**
+- 따라서 **`CareRequest`가 `IN_PROGRESS`로 바뀐 뒤 커밋**될 수 있고, 코인 차감·에스크로 없이 상태만 진행된 **불일치**가 남을 수 있음(§4.1 주의사항과 동일)
 
 **코인 지급 실패 시**:
 - `CareRequestService.updateStatus()`에서 예외 발생
@@ -351,17 +356,79 @@ careRequestService.updateStatus(
 - `CareRequestService.updateStatus()`에서 예외 발생
 - 전체 트랜잭션 롤백 (`CareRequest` 상태 변경 롤백)
 
-## 8. API 엔드포인트
+## 8. 도메인 구조 및 API
 
-### 8.1 사용자용 API (`PetCoinController`)
-- `GET /api/payment/balance`: 코인 잔액 조회
-- `GET /api/payment/transactions`: 거래 내역 조회 (페이징)
-- `POST /api/payment/charge`: 코인 충전 (시뮬레이션)
+### 8.1 도메인 구조
+```
+domain/payment/
+  ├── controller/
+  │   ├── PetCoinController.java
+  │   └── AdminPaymentController.java
+  ├── service/
+  │   ├── PetCoinService.java
+  │   └── PetCoinEscrowService.java
+  ├── entity/
+  │   ├── PetCoinTransaction.java
+  │   ├── PetCoinEscrow.java
+  │   ├── TransactionType.java (CHARGE, DEDUCT, PAYOUT, REFUND)
+  │   ├── TransactionStatus.java (PENDING, COMPLETED, FAILED, CANCELLED)
+  │   └── EscrowStatus.java (HOLD, RELEASED, REFUNDED)
+  ├── repository/
+  │   ├── PetCoinTransactionRepository.java
+  │   ├── PetCoinEscrowRepository.java
+  │   ├── JpaPetCoinTransactionAdapter.java
+  │   ├── JpaPetCoinEscrowAdapter.java
+  │   ├── SpringDataJpaPetCoinTransactionRepository.java
+  │   └── SpringDataJpaPetCoinEscrowRepository.java
+  ├── dto/
+  │   ├── PetCoinBalanceResponse.java
+  │   ├── PetCoinChargeRequest.java
+  │   ├── PetCoinTransactionDTO.java
+  │   └── PetCoinTransactionDetailDTO.java
+  ├── converter/
+  │   └── PetCoinTransactionConverter.java
+  └── exception/
+      ├── PaymentValidationException.java
+      ├── PaymentConflictException.java
+      ├── PaymentForbiddenException.java
+      ├── InsufficientBalanceException.java
+      ├── PetCoinTransactionNotFoundException.java
+      └── PetCoinEscrowNotFoundException.java
+```
 
-### 8.2 관리자용 API (`AdminPaymentController`)
-- `POST /api/admin/payment/charge`: 관리자 코인 지급
-- `GET /api/admin/payment/balance/{userId}`: 특정 사용자 잔액 조회
-- `GET /api/admin/payment/transactions/{userId}`: 특정 사용자 거래 내역 조회 (페이징)
+### 8.2 예외 처리
+| 예외 | 발생 시점 |
+|------|-----------|
+| `PaymentValidationException` | chargeAmountInvalid, deductAmountInvalid, payoutAmountInvalid, refundAmountInvalid, escrowAmountInvalid, userIdRequired |
+| `PaymentConflictException` | escrowAlreadyExists, holdStatusRequiredForRefund |
+| `PaymentForbiddenException` | ownTransactionOnly (거래 상세 조회 시 본인 거래 아님) |
+| `PetCoinTransactionNotFoundException` | 거래 조회 실패 (getTransactionDetail) |
+| `PetCoinEscrowNotFoundException` | 에스크로 조회 실패 (releaseToProvider, refundToRequester) |
+| `InsufficientBalanceException` | `deductCoins` 시 잔액 부족 (`INSUFFICIENT_BALANCE`) |
+| `UserNotFoundException` | 사용자 조회 실패 |
+| `UnauthenticatedException` | 인증 정보 없음 (PetCoinController) |
+| `IllegalStateException` | `releaseToProvider`에서 HOLD가 아닌 에스크로 지급 시도 등(메시지: HOLD만 지급 가능) |
+
+**Care 연동**: `CareRequestService`에서 에스크로 지급·환불 실패 시 `CarePaymentException.paymentFailed` / `CarePaymentException.refundFailed`로 래핑(care 도메인 예외, §7.1).
+
+### 8.3 사용자용 API (`PetCoinController`)
+**인증·현재 사용자**: 클래스 단 `@PreAuthorize`는 없음. `GET` 잔액·거래·상세는 `getCurrentUser()`로 **본인 데이터만** 조회. `getCurrentUser()`는 `Authentication.getName()`을 **로그인 ID(문자열)** 로 보고 `usersRepository.findByIdString`으로 조회 → `UnauthenticatedException`, `UserNotFoundException`.
+
+**변경 (2026-04-14)**: `POST /api/payment/charge`에 **`@PreAuthorize("isAuthenticated()")`** 메서드 단위 부여(명시적 인가). 나머지 엔드포인트는 기존처럼 `SecurityConfig`의 `/api/**` 인증 + 서비스 레벨 본인 검증에 의존.
+
+| 엔드포인트 | Method | 설명 |
+|-----------|--------|------|
+| `GET /api/payment/balance` | GET | 코인 잔액 조회 |
+| `GET /api/payment/transactions` | GET | 거래 내역 조회 (페이징, PageableDefault size=20) |
+| `GET /api/payment/transactions/{id}` | GET | 거래 상세 조회 (상대방 정보 포함, 본인 거래만 조회 가능) |
+| `POST /api/payment/charge` | POST | 코인 충전 (`@PreAuthorize("isAuthenticated()")`, `PaymentValidationException.chargeAmountInvalid`) |
+
+### 8.4 관리자용 API (`AdminPaymentController`, ADMIN/MASTER)
+| 엔드포인트 | Method | 설명 |
+|-----------|--------|------|
+| `POST /api/admin/payment/charge` | POST | 관리자 코인 지급 (userId, amount 필수) |
+| `GET /api/admin/payment/balance/{userId}` | GET | 특정 사용자 잔액 조회 |
+| `GET /api/admin/payment/transactions/{userId}` | GET | 특정 사용자 거래 내역 조회 (페이징) |
 
 ## 9. 실제 결제 연동 시 확장 방안
 
@@ -382,10 +449,15 @@ careRequestService.updateStatus(
 
 ## 10. 보안 고려사항
 
+### 10.0 API 인가 (2026-04-14 반영)
+- 사용자 충전 `POST /api/payment/charge`는 **`@PreAuthorize("isAuthenticated()")`** 로 메서드에 명시됨.
+- 관리자 API는 `AdminPaymentController` 클래스 레벨 `hasAnyRole('ADMIN', 'MASTER')` 유지.
+
 ### 10.1 트랜잭션 안전성
 - 모든 코인 거래는 `@Transactional`로 보호됨
 - 잔액 업데이트와 거래 내역 기록이 원자적으로 처리됨
-- 에스크로 생성/지급/환불 실패 시 자동 롤백
+- **에스크로 지급·환불** 실패 시 `CareRequestService`에서 예외로 **상위 롤백** 가능
+- **거래 확정 시 에스크로 생성** 실패는 `ConversationService`에서 **삼켜질 수 있어** 자동 롤백과 다를 수 있음(§7.2)
 
 ### 10.2 잔액 검증
 - 차감 시 잔액 부족 체크
@@ -407,4 +479,13 @@ careRequestService.updateStatus(
 
 ## ✨ 한 줄 요약
 
-**"실제 결제 시스템 연동 없이 시뮬레이션으로 구현했으며, 비관적 락을 사용한 동시성 제어와 트랜잭션 일관성을 보장하는 펫코인 결제 시스템. 실제 운영 시 충전 단계만 PG로 대체하면 되도록 설계됨"**
+**"실제 결제 시스템 연동 없이 시뮬레이션으로 구현했으며, 비관적 락으로 동시성을 제어하고, 에스크로 지급·환불은 `CareRequestService` 트랜잭션과 묶입니다(거래 확정 시 최초 에스크로 생성은 §4.1·§7.2). 실제 운영 시 충전 단계만 PG로 대체하면 되도록 설계됨"**
+
+---
+
+## 관련 문서
+
+- **코드 리뷰 (2026-04-14)**: `docs/refactoring/care/care-payment-code-review-2026-04-14.md`
+- **리팩토링 기록**(위치 → 개선 코드 → 완료): `docs/refactoring/care/care-payment-refactoring-2026-04-14.md`
+- **Race Condition 분석**: `docs/refactoring/payment/petcoin-service-race-condition.md`
+- **성능 최적화**: `docs/refactoring/payment/payment-backend-performance-optimization.md`

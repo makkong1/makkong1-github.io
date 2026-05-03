@@ -16,9 +16,9 @@ function MeetupDomain() {
     { id: 'docs', title: '관련 문서' }
   ];
   const entityDiagram = `erDiagram
-    Users ||--o{ Meetup : "organizes"
-    Meetup ||--o{ MeetupParticipants : "has"
-    Users ||--o{ MeetupParticipants : "participates"
+    Users ||--o{ Meetup : "주최"
+    Meetup ||--o{ MeetupParticipants : "참여"
+    Users ||--o{ MeetupParticipants : "참여자"
     
     Meetup {
         Long idx PK
@@ -32,6 +32,8 @@ function MeetupDomain() {
         Integer maxParticipants
         Integer currentParticipants
         MeetupStatus status
+        Boolean isDeleted
+        LocalDateTime deletedAt
         LocalDateTime createdAt
         LocalDateTime updatedAt
     }
@@ -104,7 +106,7 @@ function MeetupDomain() {
                   <li>• 모임 생성 (제목, 설명, 장소, 일시, 최대 인원) - 이메일 인증 필요</li>
                   <li>• 주최자 자동 참여 및 그룹 채팅방 자동 생성</li>
                   <li>• 여러 사용자가 참여 가능 (최대 인원 제한)</li>
-                  <li>• 모임 참여/취소 (이메일 인증 필요)</li>
+                  <li>• 모임 참여/취소 (이메일 인증 필요); 참여 후 채팅 입장은 Chat API 별도 호출(meetup.md 2.1)</li>
                   <li>• 중복 참여 방지 (Unique 제약조건)</li>
                   <li>• 모임 일시 지남 시 자동 완료 (스케줄러)</li>
                 </ul>
@@ -122,9 +124,9 @@ function MeetupDomain() {
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                 <p style={{ marginBottom: '0.5rem' }}>모임의 상태를 관리하여 모집 중, 마감, 완료 상태를 구분합니다.</p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• RECRUITING (모집 중) - 모임 생성 시 기본 상태</li>
-                  <li>• CLOSED (마감) - 최대 인원 도달 또는 수동 마감</li>
-                  <li>• COMPLETED (완료) - 모임 일시 지남 시 자동 완료</li>
+                  <li>• RECRUITING (모집 중) — 생성 시 기본값</li>
+                  <li>• CLOSED (마감) — 정원 마감 등 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>MeetupScheduler</code> 매시 정각 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>{'cron = "0 0 * * * ?"'}</code>)</li>
+                  <li>• COMPLETED (완료) — 모임 일시 경과 시 스케줄러가 전이</li>
                 </ul>
               </div>
             </div>
@@ -140,10 +142,10 @@ function MeetupDomain() {
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
                 <p style={{ marginBottom: '0.5rem' }}>내 위치 기반으로 주변 모임을 검색할 수 있습니다.</p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 반경 기반 검색 (Haversine 공식으로 거리 계산, 기본값 5.0km)</li>
-                  <li>• 지역별 검색 (위도/경도 범위)</li>
-                  <li>• 키워드 검색 (제목/설명)</li>
-                  <li>• 거리순 정렬, 같으면 날짜순 정렬</li>
+                  <li>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>GET /api/meetups/nearby</code> — Haversine(6371km), <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>radius</code> 기본 5.0km, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>maxResults</code> 기본 500(서비스에서 1~1000 클램프)</li>
+                  <li>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>GET /api/meetups/location</code> — 경계 박스, 삭제 제외, 일시 오름차순</li>
+                  <li>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>GET /api/meetups/search</code> — 제목·설명 키워드(JPQL LIKE)</li>
+                  <li>• 근처 조회: 모임 일시가 현재 이후인 글만, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>COMPLETED</code> 제외 (meetup.md 2.3)</li>
                 </ul>
               </div>
             </div>
@@ -156,13 +158,12 @@ function MeetupDomain() {
             }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. 그룹 채팅방 자동 생성 및 연동</h3>
               <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>모임 생성 시 그룹 채팅방이 자동으로 생성되고, 모임 참여/취소 시 채팅방도 자동으로 연동됩니다.</p>
+                <p style={{ marginBottom: '0.5rem' }}>모임 생성·참가와 채팅 입장은 책임이 나뉩니다 (meetup.md 2.1, 8.6절).</p>
                 <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 모임 생성 시 그룹 채팅방 자동 생성 (이벤트 기반 비동기 처리)</li>
-                  <li>• 주최자를 ADMIN 역할로 설정</li>
-                  <li>• 모임 참여 시 채팅방 자동 참여</li>
-                  <li>• 모임 참여 취소 시 채팅방 자동 나가기</li>
-                  <li>• 채팅방 생성 실패해도 모임 생성은 성공 (핵심 도메인 보장)</li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>자동 생성</strong>: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>MeetupCreatedEvent</code> → <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>MeetupChatRoomEventListener</code>가 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>ConversationType.MEETUP</code> + <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>RelatedType.MEETUP</code> 방 생성, 주최자 <strong style={{ color: 'var(--text-color)' }}>ADMIN</strong></li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>모임 참가</strong>: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>MeetupService.joinMeetup()</code>은 채팅을 건드리지 않음 — 채팅 입장은 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>POST /api/chat/conversations/meetup/{'{meetupIdx}'}/join?userId=…</code>를 <strong style={{ color: 'var(--text-color)' }}>별도 호출</strong></li>
+                  <li>• <strong style={{ color: 'var(--text-color)' }}>모임 참가 취소</strong>: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>leaveMeetupChat</code> 호출; 실패해도 모임 취소는 성공</li>
+                  <li>• 채팅방 생성 실패해도 모임 생성은 커밋됨(이벤트 비동기, 핵심 도메인 보호)</li>
                 </ul>
               </div>
             </div>
@@ -503,9 +504,11 @@ List<Meetup> findAllWithOrganizerAndParticipants();`}
             </div>
           </section>
 
-          {/* 6. Entity 구조 */}
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
+            <h2 style={{ marginBottom: '0.75rem', color: 'var(--text-color)' }}>Entity 구조</h2>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              필드·관계는 <strong style={{ color: 'var(--text-color)' }}>docs/domains/meetup.md</strong> 4.1절·4.3절 ERD와 동일합니다. <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>MeetupParticipants</code>는 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>@IdClass(MeetupParticipantsId)</code> 복합 키입니다.
+            </p>
         
         <div className="section-card" style={{
           padding: '1.5rem',
@@ -560,13 +563,32 @@ List<Meetup> findAllWithOrganizerAndParticipants();`}
             <div>• meetup (모임, 복합 키), user (참여자, 복합 키), joinedAt</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
             <div>• ManyToOne → Meetup, Users</div>
-            <div>• 복합 키: @IdClass(MeetupParticipantsId) - (meetup_idx, user_idx)</div>
-            <div>• 중복 참여 방지: 복합 키로 자연스럽게 중복 방지</div>
+            <div>• 복합 키: @IdClass(MeetupParticipantsId) — (meetup_idx, user_idx)</div>
+            <div>• 중복 참여: PK + 서비스 선검사(<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>exists</code>)</div>
           </div>
         </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginTop: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. MeetupStatus (enum)</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• RECRUITING — 모집 중(생성 시 기본)</div>
+                <div>• CLOSED — 마감(정원 도달 등)</div>
+                <div>• COMPLETED — 종료(일시 경과 등, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>MeetupScheduler</code> 매시 정각 전이)</div>
+              </div>
+            </div>
       </section>
 
-          {/* 5. 보안 및 권한 체계 */}
           <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
             <div className="section-card" style={{
@@ -581,10 +603,11 @@ List<Meetup> findAllWithOrganizerAndParticipants();`}
                 color: 'var(--text-secondary)',
                 lineHeight: '1.8'
               }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>이메일 인증</strong>: 모임 생성 및 참여 시 이메일 인증 필요</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>주최자만 수정/취소 가능</strong>: 모임 주최자만 본인 모임 수정/취소 가능</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>참여 권한</strong>: 모든 사용자가 모임 참여 가능 (최대 인원 제한 내)</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>소프트 삭제</strong>: isDeleted 플래그로 논리 삭제</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>인증</strong>: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>MeetupController</code>에 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>{'@PreAuthorize("isAuthenticated()")'}</code> — <strong style={{ color: 'var(--text-color)' }}>모든 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>/api/meetups/**</code> 인증 필요</strong> (meetup.md 4.4)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>현재 사용자</strong>: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>Authentication.getName()</code>은 <strong style={{ color: 'var(--text-color)' }}>로그인 ID(문자열)</strong> → <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>usersRepository.findByIdString</code></li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>수정·삭제</strong>: 서비스에서 <strong style={{ color: 'var(--text-color)' }}>주최자 또는 ADMIN/MASTER</strong>만 허용, 그 외 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>MeetupForbiddenException.notOrganizer()</code></li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>이메일 인증</strong>: 모임 생성·참여 시 필요(도메인 예외, meetup.md 3.1)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>Soft Delete</strong>: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>isDeleted</code>, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>deletedAt</code></li>
               </ul>
             </div>
           </section>
@@ -607,13 +630,15 @@ List<Meetup> findAllWithOrganizerAndParticipants();`}
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Report 도메인:</strong></div>
             <div>• 부적절한 모임 신고, ReportTargetType.MEETUP으로 구분</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Chat 도메인:</strong></div>
-            <div>• 모임 생성 시 그룹 채팅방 자동 생성, 모임 참여자 간 채팅</div>
+            <div>• 모임 생성 이벤트로 MEETUP 채팅방 비동기 생성; 일반 참가자 채팅 입장은 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>POST /api/chat/conversations/meetup/{'{meetupIdx}'}/join</code> 별도 호출 (meetup.md 8.6, chat.md)</div>
           </div>
         </div>
       </section>
 
-          {/* 8. API 엔드포인트 */}
           <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              경로·응답 형식은 <strong style={{ color: 'var(--text-color)' }}>docs/domains/meetup.md</strong> 4.4절 REST 표와 동일합니다.
+            </p>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
         
         <div className="section-card" style={{
@@ -630,16 +655,37 @@ List<Meetup> findAllWithOrganizerAndParticipants();`}
             fontFamily: 'monospace',
             fontSize: '0.9rem'
           }}>
-            <div>• GET / - 모든 모임 조회</div>
-            <div>• GET /{'{meetupIdx}'} - 특정 모임 조회</div>
-            <div>• POST / - 모임 생성</div>
-            <div>• PUT /{'{meetupIdx}'} - 모임 수정</div>
-            <div>• DELETE /{'{meetupIdx}'} - 모임 삭제</div>
-            <div>• GET /nearby - 반경 기반 모임 조회 (lat, lng, radius 파라미터, radius 기본값 5.0km)</div>
-            <div>• GET /location - 지역별 모임 조회 (minLat, maxLat, minLng, maxLng 파라미터)</div>
-            <div>• GET /search - 키워드 검색 (keyword 파라미터)</div>
-            <div>• GET /available - 참여 가능한 모임 조회</div>
-            <div>• GET /organizer/{'{organizerIdx}'} - 주최자별 모임 조회</div>
+            <div>• POST /api/meetups — 생성 → {'{ meetup, message }'}</div>
+            <div>• PUT /api/meetups/{'{meetupIdx}'} — 수정 → {'{ meetup, message }'}</div>
+            <div>• DELETE /api/meetups/{'{meetupIdx}'} — 삭제 → {'{ message }'}</div>
+            <div>• GET /api/meetups — 전체 목록 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>page</code>/<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>size</code> 기본 0·20, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>createdAt</code> DESC)</div>
+            <div>• GET /api/meetups/{'{meetupIdx}'} — 단건 → {'{ meetup }'}</div>
+            <div>• GET /api/meetups/nearby — 반경 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>lat</code>, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>lng</code>, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>radius</code> 기본 5.0km, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>maxResults</code> 기본 500)</div>
+            <div>• GET /api/meetups/location — 경계 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>minLat</code>~<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>maxLat</code>, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>minLng</code>~<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>maxLng</code>)</div>
+            <div>• GET /api/meetups/search — 키워드 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>keyword</code>)</div>
+            <div>• GET /api/meetups/available — 참여 가능 Slice (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>page</code>/<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>size</code> 기본 0·20, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>date</code> ASC, <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>hasNext</code>)</div>
+            <div>• GET /api/meetups/organizer/{'{organizerIdx}'} — 주최자별</div>
+          </div>
+        </div>
+
+        <div className="section-card" style={{
+          padding: '1.5rem',
+          backgroundColor: 'var(--card-bg)',
+          borderRadius: '8px',
+          border: '1px solid var(--nav-border)',
+          marginBottom: '1rem'
+        }}>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>참가자 (/api/meetups/{'{meetupIdx}'}/participants)</h3>
+          <div style={{ 
+            color: 'var(--text-secondary)',
+            lineHeight: '1.8',
+            fontFamily: 'monospace',
+            fontSize: '0.9rem'
+          }}>
+            <div>• GET /api/meetups/{'{meetupIdx}'}/participants — 목록</div>
+            <div>• POST /api/meetups/{'{meetupIdx}'}/participants — 참여</div>
+            <div>• DELETE /api/meetups/{'{meetupIdx}'}/participants — 참여 취소</div>
+            <div>• GET /api/meetups/{'{meetupIdx}'}/participants/check — {'{ isParticipating }'}</div>
           </div>
         </div>
 
@@ -649,18 +695,19 @@ List<Meetup> findAllWithOrganizerAndParticipants();`}
           borderRadius: '8px',
           border: '1px solid var(--nav-border)'
         }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>모임 참여 (/api/meetups/{'{meetupIdx}'}/participants)</h3>
-          <div style={{ 
+          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅 (Chat 도메인, 모임과 별도)</h3>
+          <div style={{
             color: 'var(--text-secondary)',
             lineHeight: '1.8',
             fontFamily: 'monospace',
             fontSize: '0.9rem'
           }}>
-            <div>• GET / - 참가자 목록 조회</div>
-            <div>• POST / - 모임 참여</div>
-            <div>• DELETE / - 모임 참여 취소</div>
-            <div>• GET /check - 참여 여부 확인</div>
+            <div>• POST /api/chat/conversations/meetup/{'{meetupIdx}'}/join?userId=… — 산책모임 채팅방 참여 (모임 참가 후 별도 호출, meetup.md 4.4)</div>
+            <div>• GET /api/chat/conversations/meetup/{'{meetupIdx}'}/participant-count — 채팅 참여 인원</div>
           </div>
+          <p style={{ marginTop: '0.75rem', marginBottom: 0, fontSize: '0.85rem', color: 'var(--text-secondary)', fontFamily: 'inherit', lineHeight: '1.6' }}>
+            Chat REST의 사용자 식별 정책은 <strong style={{ color: 'var(--text-color)' }}>docs/domains/chat.md</strong> 4.6절과 일치하는지 배포 버전을 확인하세요(meetup 문서에는 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>userId</code> 쿼리가 명시됨).
+          </p>
         </div>
       </section>
 
@@ -678,10 +725,24 @@ List<Meetup> findAllWithOrganizerAndParticipants();`}
             rel="noopener noreferrer"
             style={{ 
               color: 'var(--link-color)',
-              textDecoration: 'none'
+              textDecoration: 'none',
+              display: 'block',
+              marginBottom: '0.5rem'
             }}
           >
             → Meetup 도메인 상세 문서 보기
+          </a>
+          <a 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/chat.md" 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: 'var(--link-color)',
+              textDecoration: 'none',
+              display: 'block'
+            }}
+          >
+            → Chat 도메인 문서 (모임 채팅·인증)
           </a>
         </div>
           </section>

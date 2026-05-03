@@ -16,15 +16,15 @@ function CareDomain() {
     { id: 'docs', title: '관련 문서' }
   ];
   const entityDiagram = `erDiagram
-    Users ||--o{ CareRequest : "requests"
-    Pet ||--o{ CareRequest : "related"
-    CareRequest ||--o{ CareApplication : "has"
-    CareRequest ||--o{ CareRequestComment : "has"
-    CareRequest ||--|| CareReview : "has"
-    Users ||--o{ CareApplication : "applies"
-    Users ||--o{ CareRequestComment : "writes"
-    Users ||--o{ CareReview : "writes"
-    Users ||--o{ CareReview : "receives"
+    Users ||--o{ CareRequest : "요청"
+    Pet ||--o{ CareRequest : "관련 펫"
+    CareRequest ||--o{ CareApplication : "지원"
+    CareRequest ||--o{ CareRequestComment : "댓글"
+    CareApplication ||--o| CareReview : "리뷰"
+    Users ||--o{ CareApplication : "제공자"
+    Users ||--o{ CareRequestComment : "댓글작성"
+    Users ||--o{ CareReview : "reviewer"
+    Users ||--o{ CareReview : "reviewee"
     
     CareRequest {
         Long idx PK
@@ -33,6 +33,7 @@ function CareDomain() {
         String title
         String description
         LocalDateTime date
+        Integer offered_coins
         CareRequestStatus status
         LocalDateTime createdAt
         LocalDateTime updatedAt
@@ -41,8 +42,8 @@ function CareDomain() {
     
     CareApplication {
         Long idx PK
-        Long careRequest_idx FK
-        Long applicant_idx FK
+        Long care_request_idx FK
+        Long provider_idx FK
         String message
         CareApplicationStatus status
         LocalDateTime createdAt
@@ -51,7 +52,7 @@ function CareDomain() {
     
     CareRequestComment {
         Long idx PK
-        Long careRequest_idx FK
+        Long care_request_idx FK
         Long user_idx FK
         String content
         LocalDateTime createdAt
@@ -60,7 +61,7 @@ function CareDomain() {
     
     CareReview {
         Long idx PK
-        Long careRequest_idx FK
+        Long care_application_idx FK
         Long reviewer_idx FK
         Long reviewee_idx FK
         Integer rating
@@ -706,86 +707,11 @@ List<CareRequest> findAllWithUserAndPet();`}
             </div>
           </section>
 
-          {/* 6. Entity 구조 */}
           <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1.5rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 요청 및 지원</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>사용자가 펫케어 요청을 생성하고, 다른 사용자들이 지원할 수 있습니다.</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
-                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>펫케어 요청 생성 (제목, 설명, 날짜, 펫 정보)</li>
-                  <li>상태 관리 (OPEN → IN_PROGRESS → COMPLETED)</li>
-                  <li>여러 사용자가 지원 가능</li>
-                  <li>요청자가 1명만 승인</li>
-                  <li>승인 시 상태 변경 (OPEN → IN_PROGRESS)</li>
-                  <li>날짜 지난 요청 자동 완료 (스케줄러)</li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
-                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>펫케어 요청 생성 (제목, 설명, 날짜, 펫 정보)</li>
-                  <li>여러 사용자가 지원</li>
-                  <li>요청자가 1명만 승인</li>
-                  <li>승인 시 상태 변경 (OPEN → IN_PROGRESS)</li>
-                </ol>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1.5rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 리뷰 시스템</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>펫케어 완료 후 요청자가 돌봄 제공자에게 리뷰를 작성할 수 있습니다.</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
-                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>펫케어 완료 (COMPLETED 상태) 후 리뷰 작성</li>
-                  <li>평점 및 후기 관리 (평점 1-5, 내용)</li>
-                  <li>평균 평점 계산 및 표시</li>
-                  <li>사용자별 평균 평점 캐싱</li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>사용자 시나리오:</strong></p>
-                <ol style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>펫케어 완료 (COMPLETED 상태)</li>
-                  <li>요청자가 리뷰 작성 (평점 1-5, 내용)</li>
-                  <li>평균 평점 계산 및 표시</li>
-                </ol>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>댓글 기반 채팅</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>댓글 작성으로 지원 의사를 표현하고, 댓글에서 1:1 채팅을 시작할 수 있습니다.</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 기능:</strong></p>
-                <ul style={{ marginLeft: '1.5rem', marginBottom: '0.5rem' }}>
-                  <li>댓글 작성으로 지원 의사 표현</li>
-                  <li>댓글에서 "채팅하기" 버튼으로 1:1 채팅 시작</li>
-                  <li>기존 채팅방이 있으면 재사용</li>
-                </ul>
-              </div>
-            </div>
-      </section>
-
-          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
+            <h2 style={{ marginBottom: '0.75rem', color: 'var(--text-color)' }}>Entity 구조</h2>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              ERD·필드 요약은 <strong style={{ color: 'var(--text-color)' }}>docs/domains/care.md</strong> 엔티티 절과 동일한 관계·용어를 사용합니다.
+            </p>
         
         <div className="section-card" style={{
           padding: '1.5rem',
@@ -813,13 +739,13 @@ List<CareRequest> findAllWithUserAndPet();`}
           }}>
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
             <div>• idx (PK), user (요청자), pet (관련 펫, Optional)</div>
-            <div>• title, description, date (돌봄 필요 날짜)</div>
-            <div>• status (OPEN/IN_PROGRESS/COMPLETED/CANCELLED)</div>
-            <div>• createdAt, updatedAt, isDeleted</div>
+            <div>• title, description, date (돌봄 필요 날짜), offeredCoins (제시 코인)</div>
+            <div>• status (OPEN/IN_PROGRESS/COMPLETED/CANCELLED), completedAt (완료 시각)</div>
+            <div>• 위도/경도/주소 (지도·nearby 등, Optional)</div>
+            <div>• createdAt, updatedAt, isDeleted, deletedAt</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
             <div>• ManyToOne → Users, Pet</div>
             <div>• OneToMany → CareApplication, CareRequestComment</div>
-            <div>• OneToOne → CareReview</div>
           </div>
         </div>
 
@@ -838,11 +764,12 @@ List<CareRequest> findAllWithUserAndPet();`}
             fontSize: '0.9rem'
           }}>
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), careRequest (요청), applicant (지원자)</div>
-            <div>• message (지원 메시지), status (PENDING/APPROVED/REJECTED)</div>
+            <div>• idx (PK), careRequest (요청), provider (케어 제공자)</div>
+            <div>• message (지원 메시지), status (PENDING/ACCEPTED/REJECTED)</div>
             <div>• createdAt, updatedAt</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• ManyToOne → CareRequest, Users</div>
+            <div>• ManyToOne → CareRequest, Users(provider)</div>
+            <div>• CareApplication당 리뷰 최대 1건 (CareReview, Optional)</div>
           </div>
         </div>
 
@@ -882,12 +809,11 @@ List<CareRequest> findAllWithUserAndPet();`}
             fontSize: '0.9rem'
           }}>
             <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), careRequest (요청, OneToOne)</div>
-            <div>• reviewer (리뷰 작성자, 요청자), reviewee (리뷰 대상, 돌봄 제공자)</div>
-            <div>• rating (1-5점), content, createdAt</div>
+            <div>• idx (PK), careApplication (승인된 지원, 1:1)</div>
+            <div>• reviewer (요청자), reviewee (제공자)</div>
+            <div>• rating (1-5), comment(내용), createdAt, updatedAt</div>
             <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• OneToOne → CareRequest</div>
-            <div>• ManyToOne → Users (리뷰 작성자 및 대상)</div>
+            <div>• ManyToOne → CareApplication, Users(reviewer), Users(reviewee)</div>
           </div>
         </div>
       </section>
@@ -907,9 +833,11 @@ List<CareRequest> findAllWithUserAndPet();`}
                 color: 'var(--text-secondary)',
                 lineHeight: '1.8'
               }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>작성자만 수정/삭제 가능</strong>: 요청자만 본인 요청 수정/삭제 가능</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>승인 권한</strong>: 요청자만 지원 승인/거절 가능</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>리뷰 작성 권한</strong>: 요청자만 리뷰 작성 가능</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>요청 수정/삭제</strong>: 작성자만 (관리자는 우회 가능)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>상태 변경</strong>: 작성자 또는 ACCEPTED 제공자만 (관리자 우회). 소프트 삭제된 요청은 변경 불가</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>댓글 작성</strong>: SERVICE_PROVIDER 역할만, 파일 첨부 시 첫 파일만 저장</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>리뷰 작성</strong>: 요청자만, CareApplication당 1건</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>인증</strong>: 변경·삭제·POST·PATCH 및 내 요청 조회는 인증 필요 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>@PreAuthorize</code> 등, care.md 보안 절 참고)</li>
               </ul>
             </div>
           </section>
@@ -929,130 +857,142 @@ List<CareRequest> findAllWithUserAndPet();`}
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Pet 도메인:</strong></div>
             <div>• CareRequest에 Pet 연결 (어떤 반려동물을 돌봐줄지)</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>File 도메인:</strong></div>
-            <div>• CareRequest에 펫 사진 첨부</div>
+            <div>• 펫케어 요청 댓글에 파일 첨부 (<code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>FileTargetType.CARE_COMMENT</code> 등, care.md 참고)</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Notification 도메인:</strong></div>
-            <div>• 지원 시 요청자에게 알림, 승인/거절 시 지원자에게 알림, 리뷰 작성 시 대상자에게 알림</div>
+            <div>• 예: 펫케어 요청 댓글 작성 시 요청자에게 알림(작성자가 요청자가 아닐 때만)</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Report 도메인:</strong></div>
             <div>• 부적절한 요청/댓글 신고</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Chat 도메인:</strong></div>
             <div>• 댓글에서 "채팅하기" 버튼으로 1:1 채팅 시작, 거래 확정 시 CareApplication 생성 및 상태 변경</div>
             <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Payment 도메인:</strong></div>
-            <div>• 펫코인 차감 및 에스크로 생성 (거래 확정 시), 펫코인 지급 (서비스 완료 시)</div>
+            <div>• 거래 확정 시 요청자 코인 차감·에스크로(HOLD), 완료 시 제공자 지급(RELEASED), 취소 시 요청자 환불(REFUNDED) — payment.md·ConversationService·CareRequestService 연동</div>
           </div>
         </div>
       </section>
 
           <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <p style={{ marginBottom: '1rem', color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.6' }}>
+              경로는 <strong style={{ color: 'var(--text-color)' }}>docs/domains/care.md</strong> · <strong style={{ color: 'var(--text-color)' }}>docs/domains/payment.md</strong>의 API 표와 동일합니다. 지원 생성·거래 확정은 채팅 API를 통해 처리됩니다.
+            </p>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
-        
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 요청 (/api/care/requests)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>• GET / - 요청 목록 (페이징, 상태 필터)</div>
-            <div>• GET /{'{id}'} - 요청 상세</div>
-            <div>• POST / - 요청 생성</div>
-            <div>• PUT /{'{id}'} - 요청 수정</div>
-            <div>• DELETE /{'{id}'} - 요청 삭제</div>
-            <div>• GET /me - 내 요청 목록</div>
-            <div>• GET /applied - 내가 지원한 요청</div>
-          </div>
-        </div>
 
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 지원 (/api/care/requests/{'{requestId}'}/applications)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>• GET / - 지원자 목록</div>
-            <div>• POST / - 지원하기</div>
-            <div>• PUT /{'{applicationId}'}/approve - 승인</div>
-            <div>• PUT /{'{applicationId}'}/reject - 거절</div>
-            <div>• DELETE /{'{applicationId}'} - 지원 취소</div>
-          </div>
-        </div>
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 요청 (/api/care-requests)</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• GET /api/care-requests — 목록 (페이징, status·location 등)</div>
+                <div>• GET /api/care-requests/{'{id}'} — 단건</div>
+                <div>• POST /api/care-requests — 생성 (이메일 인증)</div>
+                <div>• PUT /api/care-requests/{'{id}'} — 수정</div>
+                <div>• DELETE /api/care-requests/{'{id}'} — 삭제 (Soft Delete)</div>
+                <div>• GET /api/care-requests/my-requests — 내 요청 (쿼리 userId 없음)</div>
+                <div>• PATCH /api/care-requests/{'{id}'}/status — 상태 변경 (OPEN/IN_PROGRESS/COMPLETED/CANCELLED)</div>
+                <div>• GET /api/care-requests/search — 키워드 검색 (페이징, keyword·page·size)</div>
+              </div>
+            </div>
 
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 상태 (/api/care/requests/{'{requestId}'}/status)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>• PUT /start - 돌봄 시작</div>
-            <div>• PUT /complete - 돌봄 완료</div>
-            <div>• PUT /cancel - 요청 취소</div>
-          </div>
-        </div>
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 댓글 (/api/care-requests/{'{careRequestId}'}/comments)</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• GET …/comments — 목록</div>
+                <div>• POST …/comments — 작성 (SERVICE_PROVIDER, 첫 첨부 파일만 저장)</div>
+                <div>• DELETE …/comments/{'{commentId}'} — Soft Delete</div>
+              </div>
+            </div>
 
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 댓글 (/api/care/requests/{'{requestId}'}/comments)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>• GET / - 댓글 목록</div>
-            <div>• POST / - 댓글 작성</div>
-            <div>• PUT /{'{commentId}'} - 댓글 수정</div>
-            <div>• DELETE /{'{commentId}'} - 댓글 삭제</div>
-          </div>
-        </div>
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅 · 거래 확정 (Chat)</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• POST /api/chat/conversations/{'{conversationIdx}'}/confirm-deal?userId=… — 거래 확정 (양쪽 확정 시 CareApplication·상태·에스크로, chat.md 참고)</div>
+              </div>
+            </div>
 
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 리뷰 (/api/care/reviews)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>• POST / - 리뷰 작성</div>
-            <div>• GET /request/{'{requestId}'} - 요청별 리뷰</div>
-            <div>• GET /user/{'{userId}'} - 사용자별 리뷰 (받은 리뷰)</div>
-            <div>• GET /user/{'{userId}'}/rating - 평균 평점</div>
-            <div>• PUT /{'{reviewId}'} - 리뷰 수정</div>
-            <div>• DELETE /{'{reviewId}'} - 리뷰 삭제</div>
-          </div>
-        </div>
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫케어 리뷰 (/api/care-reviews)</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• POST /api/care-reviews</div>
+                <div>• GET /api/care-reviews/reviewee/{'{revieweeIdx}'}</div>
+                <div>• GET /api/care-reviews/reviewer/{'{reviewerIdx}'}</div>
+                <div>• GET /api/care-reviews/average-rating/{'{revieweeIdx}'}</div>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              marginBottom: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>펫코인 (Payment, /api/payment)</h3>
+              <div style={{
+                color: 'var(--text-secondary)',
+                lineHeight: '1.8',
+                fontFamily: 'monospace',
+                fontSize: '0.9rem'
+              }}>
+                <div>• GET /api/payment/balance</div>
+                <div>• GET /api/payment/transactions — 페이징 (기본 size 20)</div>
+                <div>• GET /api/payment/transactions/{'{id}'} — 상세 (본인 거래만)</div>
+                <div>• POST /api/payment/charge — 충전 (시뮬레이션)</div>
+                <div style={{ marginTop: '0.75rem', fontFamily: 'inherit', fontSize: '0.85rem' }}>관리자 지급·조회는 AdminPaymentController — payment.md 8.4절 참고.</div>
+              </div>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1rem',
+              backgroundColor: 'var(--bg-color)',
+              borderRadius: '8px',
+              border: '1px solid var(--nav-border)',
+              fontSize: '0.85rem',
+              color: 'var(--text-secondary)',
+              lineHeight: '1.7'
+            }}>
+              관리자용 Care API(<code style={{ backgroundColor: 'var(--card-bg)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>/api/admin/care-requests/...</code>)는 care.md의 AdminCareRequestController 표를 따릅니다.
+            </div>
       </section>
 
           <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
@@ -1083,10 +1023,23 @@ List<CareRequest> findAllWithUserAndPet();`}
             style={{ 
               color: 'var(--link-color)',
               textDecoration: 'none',
-              display: 'block'
+              display: 'block',
+              marginBottom: '0.5rem'
             }}
           >
             → Care 도메인 상세 문서
+          </a>
+          <a 
+            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/payment.md" 
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ 
+              color: 'var(--link-color)',
+              textDecoration: 'none',
+              display: 'block'
+            }}
+          >
+            → Payment 도메인 상세 문서 (PetCoin·에스크로)
           </a>
         </div>
           </section>
