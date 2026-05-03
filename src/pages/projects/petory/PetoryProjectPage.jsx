@@ -145,9 +145,15 @@ function PetoryProjectPage() {
     },
     {
       name: 'Location',
-      description: '공공데이터 기반 위치 서비스, 네이버맵 API 연동, 리뷰 시스템',
+      description: '공공데이터 기반 위치 서비스, 통합 검색·AI 추천(에이전트), 네이버맵·리뷰',
       link: '/domains/location',
-      features: ['공공데이터 연동', '지역 계층 탐색', '네이버맵 API', '길찾기', '리뷰 시스템']
+      features: ['통합 검색 분기', '반경·지역·FULLTEXT', '/location-services/recommend', '네이버맵 API', '리뷰·UX 원칙']
+    },
+    {
+      name: 'Recommendation',
+      description: '외부 Pet Data API로 추천 받기 — Petory는 요청만 전달하고 JSON을 그대로 내려줌',
+      link: '/domains/recommendation',
+      features: ['GET /api/recommend', 'BFF(프록시)', '별도 Python 서비스', 'Location 추천과 구분']
     },
     {
       name: 'Meetup',

@@ -190,6 +190,48 @@ function LocationDomain() {
                   </li>
                 </ul>
               </div>
+              <div
+                style={{
+                  marginTop: "1.25rem",
+                  padding: "1rem",
+                  backgroundColor: "var(--bg-color)",
+                  borderRadius: "6px",
+                  border: "1px solid var(--nav-border)",
+                }}
+              >
+                <h3
+                  style={{
+                    marginBottom: "0.75rem",
+                    color: "var(--text-color)",
+                    fontSize: "1rem",
+                  }}
+                >
+                  제품 UX 원칙 (<code>location.md</code> §1)
+                </h3>
+                <ul
+                  style={{
+                    marginLeft: "1.25rem",
+                    color: "var(--text-secondary)",
+                    lineHeight: "1.85",
+                    fontSize: "0.9rem",
+                    paddingLeft: "0.5rem",
+                  }}
+                >
+                  <li>
+                    지도 이동만으로는 API를 호출하지 않고, 「이 지역 검색」 등 사용자
+                    확인 후 실행
+                  </li>
+                  <li>
+                    InitialLoadSearch(시스템 주도)와 UserTriggeredSearch(사용자
+                    주도) 분리
+                  </li>
+                  <li>
+                    결과 0건·위치 권한 거부·범위 과다 등 빈 상태 안내와 대안
+                  </li>
+                  <li>클러스터 제거, 개별 핀으로 장소 표시</li>
+                  <li>마커와 리스트 양방향 스크롤·하이라이트 동기화</li>
+                </ul>
+              </div>
             </div>
           </section>
 
@@ -432,8 +474,18 @@ function LocationDomain() {
                     <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
                       <td style={{ padding: "0.5rem" }}>Location</td>
                       <td style={{ padding: "0.5rem" }}>
-                        POI 검색, 카테고리·키워드, AI 추천{" "}
-                        <code>/recommend</code>
+                        POI 통합 검색, 카테고리·키워드, 주변 AI 추천{" "}
+                        <code>GET /api/location-services/recommend</code>
+                        (Petory DB 후보 +{" "}
+                        <code>LocationRecommendAgentService</code> /
+                        Ollama). Pet Data API 프록시 추천은 별도{" "}
+                        <Link
+                          to="/domains/recommendation"
+                          style={{ color: "var(--link-color)" }}
+                        >
+                          Recommendation 도메인
+                        </Link>{" "}
+                        (<code>GET /api/recommend</code>).
                       </td>
                     </tr>
                     <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
@@ -859,6 +911,48 @@ function LocationDomain() {
                 <code>location.md</code> §7.1.
               </p>
             </div>
+            <div
+              className="section-card"
+              style={{
+                marginTop: "1rem",
+                padding: "1.25rem",
+                backgroundColor: "var(--card-bg)",
+                borderRadius: "8px",
+                border: "1px solid var(--nav-border)",
+              }}
+            >
+              <h3
+                style={{
+                  marginBottom: "0.65rem",
+                  color: "var(--text-color)",
+                  fontSize: "1rem",
+                }}
+              >
+                추천 API 로드맵 (<code>location.md</code> §4.4 /{" "}
+                <Link
+                  to="/domains/recommendation"
+                  style={{ color: "var(--link-color)" }}
+                >
+                  recommendation.md §1.4
+                </Link>
+                )
+              </h3>
+              <p
+                style={{
+                  color: "var(--text-secondary)",
+                  lineHeight: "1.8",
+                  fontSize: "0.9rem",
+                  margin: 0,
+                }}
+              >
+                사용자 관점에서 주변 시설 추천은{" "}
+                <code>/api/location-services/recommend</code>와{" "}
+                <code>/api/recommend</code>(Pet Data API BFF)가 같은 목적 영역에서
+                겹친다. Pet Data API가 기대 동작으로 안정 검증된 뒤 Location 쪽
+                엔드포인트·에이전트·통합 지도 AI 모드를 한쪽 계약으로 합치고
+                제거할 예정이며, 당분간 두 경로를 모두 유지한다.
+              </p>
+            </div>
           </section>
 
           <section
@@ -1003,11 +1097,27 @@ function LocationDomain() {
                   </strong>{" "}
                   — 시설 이미지·신고·집계
                 </div>
-                <div>
+                <div style={{ marginBottom: "0.5rem" }}>
                   <strong style={{ color: "var(--text-color)" }}>
                     Meetup / Care
                   </strong>{" "}
                   — 통합 지도 탭만 공유, 별도 API·엔티티
+                </div>
+                <div>
+                  <strong style={{ color: "var(--text-color)" }}>
+                    Recommendation
+                  </strong>{" "}
+                  —{" "}
+                  <Link
+                    to="/domains/recommendation"
+                    style={{ color: "var(--link-color)" }}
+                  >
+                    <code>GET /api/recommend</code>
+                  </Link>
+                  는 외부 Pet Data API 프록시; Location의{" "}
+                  <code>/location-services/recommend</code>와 목적이 겹치며
+                  로드맵상 통합 검토 중(
+                  <code>recommendation.md</code> §1.4).
                 </div>
               </div>
             </div>
@@ -1059,7 +1169,19 @@ function LocationDomain() {
               >
                 <div>GET /search — 분기 §1.1</div>
                 <div>GET /popular — 인기, LIMIT 10, 캐시</div>
-                <div>GET /recommend — AI(후보→LLM), 스펙·보안은 코드 확인</div>
+                <div>
+                  GET /recommend — <code>/api/**</code> 인증. 검색 분기는
+                  /search와 동일, 후보 최대 30건 → LLM으로 최대 10건+이유(
+                  <code>LocationRecommendAgentService</code>, Spring AI / Ollama).
+                  실패 시 원본 상위 유지. Pet Data 연동 추천은{" "}
+                  <Link
+                    to="/domains/recommendation"
+                    style={{ color: "var(--link-color)" }}
+                  >
+                    Recommendation
+                  </Link>
+                  .
+                </div>
                 <div>DELETE /{"{serviceIdx}"} — Soft Delete</div>
               </div>
             </div>
@@ -1205,6 +1327,27 @@ function LocationDomain() {
                     docs/domains/location.md
                   </a>{" "}
                   — 통합 스펙
+                </li>
+                <li style={{ marginBottom: "0.5rem" }}>
+                  <Link
+                    to="/domains/recommendation"
+                    style={{
+                      color: "var(--link-color)",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    Recommendation 도메인 페이지
+                  </Link>{" "}
+                  —{" "}
+                  <a
+                    href={`${GH}/docs/domains/recommendation.md`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--link-color)", textDecoration: "none" }}
+                  >
+                    recommendation.md
+                  </a>
                 </li>
                 <li style={{ marginBottom: "0.5rem" }}>
                   <a
