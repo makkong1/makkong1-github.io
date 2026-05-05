@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function LocationDomainOptimization() {
@@ -322,15 +321,7 @@ function LocationDomainOptimization() {
                 lineHeight: '1.6',
                 margin: '0.5rem 0'
               }}>
-{`// LocationServiceRepository.java
-@Query(value = "SELECT * FROM locationservice WHERE " +
-        "latitude IS NOT NULL AND longitude IS NOT NULL AND " +
-        "ST_Distance_Sphere(POINT(longitude, latitude), POINT(?2, ?1)) <= ?3 " +
-        "ORDER BY rating DESC", nativeQuery = true)
-List<LocationService> findByRadius(
-    @Param("latitude") Double latitude,
-    @Param("longitude") Double longitude,
-    @Param("radiusInMeters") Double radiusInMeters);`}
+{`// SpringDataJpaLocationServiceRepository.java — 개선 전 (초기 로드 최적화 당시)\n// keyword·category 필터 없음, 단순 ST_Distance_Sphere 단일 조건\n@Query(value = "SELECT * FROM locationservice WHERE " +\n        "latitude IS NOT NULL AND longitude IS NOT NULL AND " +\n        "ST_Distance_Sphere(POINT(longitude, latitude), POINT(?2, ?1)) <= ?3 " +\n        "ORDER BY rating DESC", nativeQuery = true)\nList<LocationService> findByRadius(\n    @Param("latitude") Double latitude,\n    @Param("longitude") Double longitude,\n    @Param("radiusInMeters") Double radiusInMeters);\n\n// 현재 (B 방향 리팩토링 이후)\n// ST_Within(POLYGON bbox) + ST_Distance_Sphere 이중 조건 (공간 인덱스 활용)\n// keyword·category SQL WHERE 포함, sort 파라미터로 정렬 분기\n@Query(value = "SELECT * FROM locationservice WHERE " +\n        "ST_Within(location, ST_GeomFromText(CONCAT('POLYGON((...))'), 4326)) " +\n        "AND ST_Distance_Sphere(location, ...) <= :radiusInMeters " +\n        "AND (:keyword IS NULL OR name LIKE CONCAT('%', :keyword, '%')) " +\n        "AND (:category IS NULL OR category3 = :category " +\n        "     OR category2 = :category OR category1 = :category) " +\n        "ORDER BY ... (sort 파라미터 분기)", nativeQuery = true)\nList<LocationService> findByRadius(\n    @Param("latitude") Double latitude, @Param("longitude") Double longitude,\n    @Param("radiusInMeters") Double radiusInMeters,\n    @Param("keyword") String keyword, @Param("category") String category,\n    @Param("sort") String sort);`}
               </pre>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                 <strong style={{ color: 'var(--text-color)' }}>구현 요약:</strong>

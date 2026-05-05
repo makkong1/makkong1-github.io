@@ -1,18 +1,100 @@
 import { Link } from "react-router-dom";
 import TableOfContents from "../../../../components/Common/TableOfContents";
 
+const badge = {
+  done: {
+    label: "✅ 완료",
+    color: "#16a34a",
+    bg: "rgba(22,163,74,0.1)",
+  },
+  wip: {
+    label: "🔄 진행 중",
+    color: "#d97706",
+    bg: "rgba(217,119,6,0.1)",
+  },
+  plan: {
+    label: "📋 계획",
+    color: "#6366f1",
+    bg: "rgba(99,102,241,0.1)",
+  },
+};
+
+function StatusBadge({ type }) {
+  const b = badge[type];
+  return (
+    <span
+      style={{
+        fontSize: "0.75rem",
+        fontWeight: "600",
+        padding: "0.2rem 0.6rem",
+        borderRadius: "999px",
+        color: b.color,
+        backgroundColor: b.bg,
+        marginLeft: "0.6rem",
+        verticalAlign: "middle",
+      }}
+    >
+      {b.label}
+    </span>
+  );
+}
+
+function Card({ children, style }) {
+  return (
+    <div
+      className="section-card"
+      style={{
+        padding: "1.5rem",
+        backgroundColor: "var(--card-bg)",
+        borderRadius: "8px",
+        border: "1px solid var(--nav-border)",
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CodeBlock({ children }) {
+  return (
+    <pre
+      style={{
+        padding: "0.85rem 1rem",
+        backgroundColor: "var(--bg-color)",
+        borderRadius: "6px",
+        fontSize: "0.82rem",
+        fontFamily: "monospace",
+        lineHeight: "1.65",
+        color: "var(--text-secondary)",
+        overflowX: "auto",
+        margin: "0.75rem 0 0",
+        whiteSpace: "pre-wrap",
+        wordBreak: "break-word",
+      }}
+    >
+      {children}
+    </pre>
+  );
+}
+
 function LocationDomainRefactoring() {
   const sections = [
-    { id: "intro", title: "리팩토링 개요" },
-    { id: "doc-sources", title: "문서 참조 순서" },
-    { id: "backend-search", title: "백엔드 검색 분기 (B 방향)" },
-    { id: "distance-calculation", title: "거리 계산 중복 제거" },
-    { id: "state-management", title: "상태 관리 개선" },
-    { id: "search-logic", title: "프론트엔드 검색 로직 단순화" },
-    { id: "hybrid-strategy", title: "하이브리드 전략 일관성 개선" },
-    { id: "keyword-search", title: "키워드 검색 품질 검증" },
-    { id: "summary", title: "리팩토링 요약" },
+    { id: "intro", title: "개요" },
+    { id: "backend-search", title: "검색 분기 & SQL 필터" },
+    { id: "distance-calculation", title: "거리 계산" },
+    { id: "state-management", title: "상태 관리" },
+    { id: "search-logic", title: "검색 로직 단순화" },
+    { id: "hybrid-strategy", title: "하이브리드 전략" },
+    { id: "sort-options", title: "반경 검색 정렬 옵션" },
+    { id: "query-roadmap", title: "후속 쿼리 리팩토링" },
+    { id: "map-workflow", title: "지도 검색 워크플로우" },
+    { id: "summary", title: "요약" },
   ];
+
+  const li = (text) => (
+    <li style={{ marginBottom: "0.35rem" }}>• {text}</li>
+  );
 
   return (
     <div className="domain-page-wrapper" style={{ padding: "2rem 0" }}>
@@ -24,1273 +106,343 @@ function LocationDomainRefactoring() {
           <div style={{ marginBottom: "1rem" }}>
             <Link
               to="/domains/location"
-              style={{
-                color: "var(--link-color)",
-                textDecoration: "none",
-                fontSize: "0.9rem",
-              }}
+              style={{ color: "var(--link-color)", textDecoration: "none", fontSize: "0.9rem" }}
             >
               ← Location 도메인으로 돌아가기
             </Link>
           </div>
-          <h1 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+          <h1 style={{ marginBottom: "0.5rem", color: "var(--text-color)" }}>
             Location 도메인 리팩토링
           </h1>
+          <p style={{ color: "var(--text-secondary)", lineHeight: "1.7", marginBottom: "2.5rem", fontSize: "0.95rem" }}>
+            검색 정확도·성능·코드 구조 문제를 식별하고 개선한 작업 목록입니다.
+            아키텍처·API 전체 구조는{" "}
+            <Link to="/domains/location" style={{ color: "var(--link-color)" }}>
+              Location 도메인
+            </Link>
+            , 초기 로드 수치는{" "}
+            <Link to="/domains/location/optimization" style={{ color: "var(--link-color)" }}>
+              성능 최적화
+            </Link>{" "}
+            페이지를 참고하세요.
+          </p>
 
-          {/* 1. 리팩토링 개요 */}
-          <section
-            id="intro"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              리팩토링 개요
-            </h2>
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-              }}
-            >
-              <p
-                style={{
-                  lineHeight: "1.8",
-                  color: "var(--text-secondary)",
-                  marginBottom: "1rem",
-                }}
-              >
-                Location 도메인에서 수행한 주요 리팩토링 작업들을 정리했습니다.
-                성능 개선, 코드 품질 향상, 일관성 확보를 목표로 진행되었습니다.
-              </p>
-              <div
-                style={{
-                  padding: "1rem",
-                  backgroundColor: "var(--bg-color)",
-                  borderRadius: "6px",
-                  marginTop: "1rem",
-                  border: "1px solid var(--nav-border)",
-                }}
-              >
-                <h3
-                  style={{
-                    marginBottom: "0.75rem",
-                    color: "var(--text-color)",
-                    fontSize: "1rem",
-                  }}
-                >
-                  리팩토링 목표
-                </h3>
-                <ul
-                  style={{
-                    listStyle: "none",
-                    padding: 0,
-                    color: "var(--text-secondary)",
-                    lineHeight: "1.8",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <li>
-                    •{" "}
-                    <strong style={{ color: "var(--text-color)" }}>
-                      성능 최적화
-                    </strong>
-                    : 중복 계산 제거, 불필요한 네트워크 요청 감소
-                  </li>
-                  <li>
-                    •{" "}
-                    <strong style={{ color: "var(--text-color)" }}>
-                      코드 품질 향상
-                    </strong>
-                    : 복잡한 함수 분리, 상태 관리 개선
-                  </li>
-                  <li>
-                    •{" "}
-                    <strong style={{ color: "var(--text-color)" }}>
-                      일관성 확보
-                    </strong>
-                    : 검색 결과의 일관성 보장
-                  </li>
-                  <li>
-                    •{" "}
-                    <strong style={{ color: "var(--text-color)" }}>
-                      유지보수성 향상
-                    </strong>
-                    : 코드 가독성 및 테스트 용이성 개선
-                  </li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* 문서 참조 순서 */}
-          <section
-            id="doc-sources"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              문서 참조 순서
-            </h2>
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-              }}
-            >
-              <p
-                style={{
-                  lineHeight: "1.8",
-                  color: "var(--text-secondary)",
-                  marginBottom: "1rem",
-                }}
-              >
-                같은 주제라도 목적이 다른 문서를 섞어 쓰면 서술이 충돌할 수 있다. 아래 순서로 읽는 것을 권장한다.
-              </p>
-              <ol
-                style={{
-                  marginLeft: "1.25rem",
-                  color: "var(--text-secondary)",
-                  lineHeight: "1.9",
-                  padding: 0,
-                }}
-              >
-                <li style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    위치 기반 서비스 아키텍처
-                  </strong>
-                  — 프론트·백엔드 모듈·API·통합 지도·검색 분기 요약의 기준선
-                </li>
-                <li style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    주변서비스 현행 vs 설계안 비교
-                  </strong>
-                  — 리팩토링 전후·✅/⚠️ 구현 상태
-                </li>
-                <li style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    주변서비스 알고리즘 설계안
-                  </strong>
-                  — 이상형·확장( SearchMode 등)
-                </li>
-                <li>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    location-domain-potential-issues
-                  </strong>
-                  — 남은 리스크·백로그 메모(시점에 따라 이미 반영된 항목 포함)
-                </li>
-                <li>
-                  <a
-                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/location.md"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "var(--link-color)" }}
-                  >
-                    docs/domains/location.md
-                  </a>
-                  <strong style={{ color: "var(--text-color)" }}> §9</strong>
-                  — 최근 리팩토링 내역(하이브리드·키워드·상태·거리·검색 단순화) 목차와 동일 계열
-                </li>
-              </ol>
-            </div>
-          </section>
-
-          {/* 백엔드 검색 분기 */}
-          <section
-            id="backend-search"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              백엔드 검색 분기 (B 방향)
-            </h2>
-            <p
-              style={{
-                lineHeight: "1.8",
-                color: "var(--text-secondary)",
-                marginBottom: "1rem",
-              }}
-            >
-              프론트엔드 검색 로직 단순화와 별개로, 서버{" "}
-              <code>LocationServiceService</code>의 분기·정규화·SQL 필터 통합이
-              맞물려 있다. 아래는{" "}
-              <a
-                href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/location/%EC%A3%BC%EB%B3%80%EC%84%9C%EB%B9%84%EC%8A%A4-%ED%98%84%ED%96%89vs%EC%84%A4%EA%B3%84%EC%95%88-%EB%B9%84%EA%B5%90.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{ color: "var(--link-color)" }}
-              >
-                주변서비스 현행 vs 설계안 비교
-              </a>{" "}
-              문서를 옮긴 요약이다.
-            </p>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3
-                style={{ marginBottom: "1rem", color: "var(--text-color)" }}
-              >
-                검색 분기: 현행(문제) vs 구현(B 방향)
-              </h3>
-              <div
-                style={{
-                  display: "grid",
-                  gap: "1rem",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                }}
-              >
-                <div>
-                  <h4
-                    style={{
-                      marginBottom: "0.5rem",
-                      color: "var(--text-color)",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    이전: keyword가 최우선
-                  </h4>
-                  <pre
-                    style={{
-                      margin: 0,
-                      padding: "0.75rem",
-                      backgroundColor: "var(--bg-color)",
-                      borderRadius: "6px",
-                      fontSize: "0.75rem",
-                      lineHeight: 1.5,
-                      overflow: "auto",
-                      color: "var(--text-secondary)",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {`keyword 있음? → FULLTEXT (위·반경 무시)\n없음 → lat+lng+radius? → 반경\n없음 → 지역 계층 → 전체 평점순`}
-                  </pre>
-                </div>
-                <div>
-                  <h4
-                    style={{
-                      marginBottom: "0.5rem",
-                      color: "var(--text-color)",
-                      fontSize: "0.95rem",
-                    }}
-                  >
-                    이후: 위치·지역 우선
-                  </h4>
-                  <pre
-                    style={{
-                      margin: 0,
-                      padding: "0.75rem",
-                      backgroundColor: "var(--bg-color)",
-                      borderRadius: "6px",
-                      fontSize: "0.75rem",
-                      lineHeight: 1.5,
-                      overflow: "auto",
-                      color: "var(--text-secondary)",
-                      whiteSpace: "pre-wrap",
-                      wordBreak: "break-word",
-                    }}
-                  >
-                    {`정규화(keyword, category, 지역 "" → null)\n위치 있음? → 반경 (keyword·category SQL)\n없음 → 지역? → 지역 쿼리 (동일)\n없음 → keyword? → FULLTEXT fallback\n없음 → 전체 평점순`}
-                  </pre>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3
-                style={{ marginBottom: "1rem", color: "var(--text-color)" }}
-              >
-                빈 문자열 정규화
-              </h3>
-              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}>
-                <code>keyword=&quot;&quot;</code>가 SQL에 그대로 넘어가면{" "}
-                <code>name LIKE &apos;%%&apos;</code>로 전체 이름에 매칭되는
-                문제가 있었다. 진입 시 <code>normalize()</code>로 빈 문자열을{" "}
-                <code>null</code>로 두면 <code>:keyword IS NULL</code> 분기가
-                의도대로 동작한다.
-              </p>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-              }}
-            >
-              <h3
-                style={{ marginBottom: "1rem", color: "var(--text-color)" }}
-              >
-                변경 범위 요약 (비교 문서 표 기준)
-              </h3>
-              <div style={{ overflowX: "auto" }}>
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    fontSize: "0.85rem",
-                    color: "var(--text-secondary)",
-                  }}
-                >
-                  <thead>
-                    <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                      <th
-                        style={{
-                          padding: "0.5rem",
-                          textAlign: "left",
-                          color: "var(--text-color)",
-                        }}
-                      >
-                        항목
-                      </th>
-                      <th
-                        style={{
-                          padding: "0.5rem",
-                          textAlign: "left",
-                          color: "var(--text-color)",
-                        }}
-                      >
-                        상태
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                      <td style={{ padding: "0.5rem" }}>검색 분기</td>
-                      <td style={{ padding: "0.5rem" }}>위치 우선, keyword는 필터</td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                      <td style={{ padding: "0.5rem" }}>빈 문자열</td>
-                      <td style={{ padding: "0.5rem" }}>normalize() → null</td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                      <td style={{ padding: "0.5rem" }}>반경·지역 쿼리</td>
-                      <td style={{ padding: "0.5rem" }}>
-                        keyword·category SQL 통합 (bbox+거리 구조는 성능상 유지)
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                      <td style={{ padding: "0.5rem" }}>카테고리</td>
-                      <td style={{ padding: "0.5rem" }}>
-                        Java <code>applyCategoryFilter</code> 제거, SQL WHERE
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                      <td style={{ padding: "0.5rem" }}>인기 Top10</td>
-                      <td style={{ padding: "0.5rem" }}>DB LIMIT 10</td>
-                    </tr>
-                    <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                      <td style={{ padding: "0.5rem" }}>배치 임포트</td>
-                      <td style={{ padding: "0.5rem" }}>
-                        <code>LocationServiceBatchWriter</code> 별도 빈, 배치
-                        크기 설정 외부화
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: "0.5rem" }}>관리자 목록</td>
-                      <td style={{ padding: "0.5rem" }}>
-                        <code>q</code> 키워드를 서비스로 넘겨 SQL 처리
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section>
-
-          {/* 2. 거리 계산 중복 제거 */}
-          <section
-            id="distance-calculation"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              거리 계산 중복 제거
-            </h2>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                문제점
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    이전 구현
-                  </strong>
-                  :
-                </p>
-                <ul style={{ marginLeft: "1.5rem", marginBottom: "0.5rem" }}>
-                  <li>
-                    백엔드: <code>ST_Distance_Sphere</code>로 반경 필터링만 수행
-                    (거리 값 미반환)
-                  </li>
-                  <li>
-                    프론트엔드: <code>Haversine</code> 공식으로 거리 재계산
-                  </li>
-                  <li>문제: 동일한 계산을 두 번 수행하여 성능 낭비</li>
-                </ul>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                해결 방법
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  백엔드에서 거리 정보를 계산하여 DTO에 포함하여 반환하고,
-                  프론트엔드에서는 백엔드에서 받은 거리 정보를 우선 사용하도록
-                  변경.
-                </p>
-                <div
-                  style={{
-                    padding: "1rem",
-                    backgroundColor: "var(--bg-color)",
-                    borderRadius: "6px",
-                    marginTop: "1rem",
-                    fontFamily: "monospace",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <div
-                    style={{
-                      marginBottom: "0.5rem",
-                      color: "var(--text-color)",
-                    }}
-                  >
-                    백엔드 변경:
-                  </div>
-                  <div>
-                    • DTO 변환 시 거리 계산 후 <code>distance</code> 필드 설정
-                  </div>
-                  <div
-                    style={{
-                      marginTop: "0.5rem",
-                      marginBottom: "0.5rem",
-                      color: "var(--text-color)",
-                    }}
-                  >
-                    프론트엔드 변경:
-                  </div>
-                  <div>
-                    • 백엔드에서 받은 <code>service.distance</code> 우선 사용
-                  </div>
-                  <div>
-                    • 거리 정보가 없을 때만 프론트엔드에서 계산 (하위 호환성)
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                개선 효과
-              </h3>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  color: "var(--text-secondary)",
-                  lineHeight: "1.8",
-                  fontSize: "0.9rem",
-                }}
-              >
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    프론트엔드 계산 제거
-                  </strong>
-                  : 대부분의 경우 프론트엔드에서 거리 계산 불필요
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    일관성 확보
-                  </strong>
-                  : 백엔드와 프론트엔드의 거리 계산 결과 일치
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    하위 호환성
-                  </strong>
-                  : 거리 정보가 없으면 프론트엔드에서 계산 (fallback)
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          {/* 3. 상태 관리 개선 */}
-          <section
-            id="state-management"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              상태 관리 개선
-            </h2>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                문제점
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    상태 개수
-                  </strong>
-                  :
-                </p>
-                <ul style={{ marginLeft: "1.5rem", marginBottom: "0.5rem" }}>
-                  <li>
-                    <code>useState</code>: 약 24개
-                  </li>
-                  <li>
-                    <code>useRef</code>: 약 6개
-                  </li>
-                  <li>총 30개의 상태 관리 훅 사용</li>
-                </ul>
-                <p style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>문제점</strong>
-                  :
-                </p>
-                <ul style={{ marginLeft: "1.5rem", marginBottom: "0.5rem" }}>
-                  <li>상태가 많아 코드 가독성 저하</li>
-                  <li>관련된 상태들이 분산되어 있어 관리 어려움</li>
-                  <li>상태 업데이트 로직이 복잡함</li>
-                </ul>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                해결 방법
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  관련된 상태들을 논리적으로 그룹화하여 <code>useReducer</code>
-                  로 통합.
-                </p>
-                <div
-                  style={{
-                    padding: "1rem",
-                    backgroundColor: "var(--bg-color)",
-                    borderRadius: "6px",
-                    marginTop: "1rem",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <div
-                    style={{
-                      marginBottom: "0.5rem",
-                      color: "var(--text-color)",
-                    }}
-                  >
-                    그룹화된 상태:
-                  </div>
-                  <div>
-                    • <strong>검색 상태</strong> (5개 → 1개 reducer): keyword,
-                    categoryType, searchMode 등
-                  </div>
-                  <div>
-                    • <strong>지역 선택 상태</strong> (4개 → 1개 reducer):
-                    selectedSido, selectedSigungu 등
-                  </div>
-                  <div>
-                    • <strong>UI 상태</strong> (8개 → 1개 reducer): loading,
-                    error, selectedService 등
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                개선 효과
-              </h3>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  color: "var(--text-secondary)",
-                  lineHeight: "1.8",
-                  fontSize: "0.9rem",
-                }}
-              >
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    코드 가독성 향상
-                  </strong>
-                  : 24개의 개별 useState → 3개의 useReducer
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    상태 업데이트 로직 중앙화
-                  </strong>
-                  : 관련된 상태를 함께 관리
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    버그 감소
-                  </strong>
-                  : 상태 업데이트 로직이 명확해짐
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    유지보수성 향상
-                  </strong>
-                  : 상태 그룹별로 관리하여 수정 용이
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          {/* 4. 프론트엔드 검색 로직 단순화 */}
-          <section
-            id="search-logic"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              프론트엔드 검색 로직 단순화
-            </h2>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                문제점
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    현재 상황
-                  </strong>
-                  :
-                </p>
-                <ul style={{ marginLeft: "1.5rem", marginBottom: "0.5rem" }}>
-                  <li>
-                    <code>fetchServices</code> 함수가 약 300줄
-                  </li>
-                  <li>4가지 검색 전략이 하나의 함수에 혼재</li>
-                  <li>여러 조건 분기가 중첩되어 예측하기 어려움</li>
-                </ul>
-                <p style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    검색 전략
-                  </strong>
-                  :
-                </p>
-                <ol style={{ marginLeft: "1.5rem", marginBottom: "0.5rem" }}>
-                  <li>
-                    초기 로드 (<code>isInitialLoad</code>)
-                  </li>
-                  <li>
-                    위치 기반 검색 (<code>latitude</code>,{" "}
-                    <code>longitude</code>, <code>radius</code>)
-                  </li>
-                  <li>
-                    지역 검색 (<code>region</code>)
-                  </li>
-                  <li>
-                    하이브리드 전략 (<code>allServices.length &gt; 0</code>)
-                  </li>
-                </ol>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                해결 방법
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  각 검색 전략을 별도 함수로 분리하여 가독성과 유지보수성을
-                  향상.
-                </p>
-                <div
-                  style={{
-                    padding: "1rem",
-                    backgroundColor: "var(--bg-color)",
-                    borderRadius: "6px",
-                    marginTop: "1rem",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <div
-                    style={{
-                      marginBottom: "0.5rem",
-                      color: "var(--text-color)",
-                    }}
-                  >
-                    분리된 함수:
-                  </div>
-                  <div>
-                    • <code>handleInitialLoad</code> - 초기 로드 전략 (약 80줄)
-                  </div>
-                  <div>
-                    • <code>handleLocationBasedSearch</code> - 위치 기반 검색
-                    전략 (약 50줄)
-                  </div>
-                  <div>
-                    • <code>handleRegionSearch</code> - 지역 검색 전략 (약 40줄)
-                  </div>
-                  <div>
-                    • <code>handleHybridSearch</code> - 하이브리드 전략 (약
-                    50줄)
-                  </div>
-                  <div style={{ marginTop: "0.5rem" }}>
-                    메인 함수: 약 300줄 → 약 80줄
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                개선 효과
-              </h3>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  color: "var(--text-secondary)",
-                  lineHeight: "1.8",
-                  fontSize: "0.9rem",
-                }}
-              >
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    가독성 향상
-                  </strong>
-                  : 각 전략이 명확하게 분리됨
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    유지보수성 향상
-                  </strong>
-                  : 각 전략을 독립적으로 수정 가능
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    테스트 용이성 향상
-                  </strong>
-                  : 각 전략을 독립적으로 테스트 가능
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    조건 분기 깊이 감소
-                  </strong>
-                  : 4단계 중첩 → 1단계
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          {/* 5. 하이브리드 전략 일관성 개선 */}
-          <section
-            id="hybrid-strategy"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              하이브리드 전략 일관성 개선
-            </h2>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                문제점
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    이전 구현
-                  </strong>
-                  :
-                </p>
-                <ul style={{ marginLeft: "1.5rem", marginBottom: "0.5rem" }}>
-                  <li>
-                    초기 로드가 위치 기반(5km 반경)이면 <code>allServices</code>
-                    에 반경 내 데이터만 포함됨
-                  </li>
-                  <li>
-                    이후 지역 선택 시 하이브리드 전략이 프론트엔드 필터링만
-                    수행하면 반경 밖 서비스가 누락됨
-                  </li>
-                  <li>
-                    문제: 같은 지역을 선택해도 초기 로드 방식에 따라 다른 결과가
-                    나옴
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                해결 방법
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  지역 선택 시 항상 백엔드 재요청하도록 하이브리드 전략을
-                  수정하여 일관성 확보.
-                </p>
-                <div
-                  style={{
-                    padding: "1rem",
-                    backgroundColor: "var(--bg-color)",
-                    borderRadius: "6px",
-                    marginTop: "1rem",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <div
-                    style={{
-                      marginBottom: "0.5rem",
-                      color: "var(--text-color)",
-                    }}
-                  >
-                    개선 내용:
-                  </div>
-                  <div>• 지역 선택이 있으면 항상 백엔드 재요청</div>
-                  <div>• 초기 로드 방식과 무관하게 동일한 결과 제공</div>
-                  <div>
-                    • 지역 선택이 없을 때는 기존 하이브리드 전략 유지 (성능
-                    최적화)
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                개선 효과
-              </h3>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  color: "var(--text-secondary)",
-                  lineHeight: "1.8",
-                  fontSize: "0.9rem",
-                }}
-              >
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    일관성 확보
-                  </strong>
-                  : 같은 지역 선택 시 항상 동일한 결과
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    사용자 경험 향상
-                  </strong>
-                  : 예측 가능한 동작
-                </li>
-                <li>
-                  •{" "}
-                  <strong style={{ color: "var(--text-color)" }}>
-                    성능 최적화 유지
-                  </strong>
-                  : 지역 선택이 없을 때는 기존 하이브리드 전략 유지
-                </li>
-              </ul>
-            </div>
-          </section>
-
-          {/* 6. 키워드 검색 품질 검증 */}
-          <section
-            id="keyword-search"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              키워드 검색 품질 검증
-            </h2>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                검증 목적
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  FULLTEXT 인덱스가 실제로 name, description, category를 모두
-                  검색하는지 확인.
-                </p>
-              </div>
-            </div>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginBottom: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                검증 결과
-              </h3>
-              <div
-                style={{ color: "var(--text-secondary)", lineHeight: "1.8" }}
-              >
-                <p style={{ marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>
-                    실제 DB 인덱스
-                  </strong>
-                  :
-                </p>
-                <div
-                  style={{
-                    padding: "1rem",
-                    backgroundColor: "var(--bg-color)",
-                    borderRadius: "6px",
-                    marginTop: "1rem",
-                    fontFamily: "monospace",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <div>
-                    인덱스명: <code>ft_search</code>
-                  </div>
-                  <div>타입: FULLTEXT</div>
-                  <div>
-                    포함 필드: name, description, category1, category2,
-                    category3
-                  </div>
-                </div>
-                <p style={{ marginTop: "1rem", marginBottom: "0.5rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>쿼리</strong>:
-                </p>
-                <div
-                  style={{
-                    padding: "1rem",
-                    backgroundColor: "var(--bg-color)",
-                    borderRadius: "6px",
-                    fontFamily: "monospace",
-                    fontSize: "0.9rem",
-                  }}
-                >
-                  <div>
-                    MATCH(name, description, category1, category2, category3)
-                    AGAINST(...)
-                  </div>
-                </div>
-                <p style={{ marginTop: "1rem" }}>
-                  <strong style={{ color: "var(--text-color)" }}>결론</strong>:
-                  ✅ 쿼리와 인덱스가 완벽하게 일치하며, 모든 필드에서 FULLTEXT
-                  인덱스 사용 가능
-                </p>
-              </div>
-            </div>
-          </section>
-
-          {/* 7. 리팩토링 요약 */}
-          <section
-            id="summary"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              리팩토링 요약
-            </h2>
-
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                주요 개선 사항
-              </h3>
+          {/* 1. 개요 */}
+          <section id="intro" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>개요</h2>
+            <Card>
               <table
                 style={{
                   width: "100%",
                   borderCollapse: "collapse",
-                  color: "var(--text-secondary)",
                   fontSize: "0.9rem",
+                  color: "var(--text-secondary)",
                 }}
               >
                 <thead>
                   <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                    <th
-                      style={{
-                        padding: "0.75rem",
-                        textAlign: "left",
-                        color: "var(--text-color)",
-                      }}
-                    >
-                      리팩토링 항목
-                    </th>
-                    <th
-                      style={{
-                        padding: "0.75rem",
-                        textAlign: "left",
-                        color: "var(--text-color)",
-                      }}
-                    >
-                      개선 효과
-                    </th>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>항목</th>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>상태</th>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>한 줄 요약</th>
                   </tr>
                 </thead>
                 <tbody>
-                  <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                    <td style={{ padding: "0.75rem" }}>백엔드 검색 분기·정규화·SQL 필터</td>
-                    <td style={{ padding: "0.75rem" }}>
-                      B 방향 분기, 빈 문자열 null, 카테고리·키워드 DB 처리
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                    <td style={{ padding: "0.75rem" }}>거리 계산 중복 제거</td>
-                    <td style={{ padding: "0.75rem" }}>
-                      프론트엔드 계산 제거, 일관성 확보
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                    <td style={{ padding: "0.75rem" }}>상태 관리 개선</td>
-                    <td style={{ padding: "0.75rem" }}>
-                      24개 useState → 3개 useReducer, 가독성 향상
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                    <td style={{ padding: "0.75rem" }}>검색 로직 단순화</td>
-                    <td style={{ padding: "0.75rem" }}>
-                      300줄 함수 → 80줄 + 4개 전략 함수, 유지보수성 향상
-                    </td>
-                  </tr>
-                  <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
-                    <td style={{ padding: "0.75rem" }}>하이브리드 전략 개선</td>
-                    <td style={{ padding: "0.75rem" }}>
-                      검색 결과 일관성 확보
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style={{ padding: "0.75rem" }}>키워드 검색 검증</td>
-                    <td style={{ padding: "0.75rem" }}>
-                      FULLTEXT 인덱스 정상 작동 확인
-                    </td>
-                  </tr>
+                  {[
+                    ["검색 분기 & SQL 필터", "done", "위치 우선 분기, keyword/category DB 처리, 빈 문자열 null 정규화"],
+                    ["거리 계산", "done", "백엔드 Haversine → DTO, 프론트 중복 계산 제거"],
+                    ["상태 관리", "done", "24개 useState → 3개 useReducer"],
+                    ["검색 로직 단순화", "done", "300줄 함수 → 80줄 + 4개 전략 함수"],
+                    ["하이브리드 전략", "done", "지역 선택 시 항상 백엔드 재요청, 결과 일관성 확보"],
+                    ["반경 검색 정렬 옵션", "done", "기본값 rating → distance, 3가지 정렬 + 동순위 보정"],
+                    ["후속 쿼리 리팩토링", "plan", "review_count 캐시 컬럼, 대표 카테고리 컬럼 도입"],
+                    ["지도 검색 워크플로우", "wip", "mapViewportCenter/searchCenter 분리, '이 지역 검색' 버튼"],
+                  ].map(([name, status, desc], i, arr) => (
+                    <tr key={name} style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--nav-border)" : "none" }}>
+                      <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>{name}</td>
+                      <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
+                        <StatusBadge type={status} />
+                      </td>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>{desc}</td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
-            </div>
+            </Card>
+          </section>
 
-            <div
-              className="section-card"
-              style={{
-                padding: "1.5rem",
-                backgroundColor: "var(--card-bg)",
-                borderRadius: "8px",
-                border: "1px solid var(--nav-border)",
-                marginTop: "1.5rem",
-              }}
-            >
-              <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                관련 문서
-              </h3>
-              <ul
+          {/* 2. 검색 분기 & SQL 필터 */}
+          <section id="backend-search" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+              검색 분기 &amp; SQL 필터 <StatusBadge type="done" />
+            </h2>
+            <Card style={{ marginBottom: "1rem" }}>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                keyword가 있으면 위치·반경을 무시하는 구조에서,{" "}
+                <strong style={{ color: "var(--text-color)" }}>위치(lat·lng) → 지역 계층 → keyword 전용 FULLTEXT → 전체 평점순</strong>{" "}
+                우선순위로 분기를 재정의했습니다.
+                keyword와 category는 각 경로의 SQL WHERE에서 직접 필터링하며, Java 후처리를 완전히 제거했습니다.
+              </p>
+              <CodeBlock>{`// LocationServiceService.searchLocationServices() 진입 시 정규화
+keyword = normalize(keyword);   // "" → null, 공백 → null
+category = normalize(category);
+sido = normalize(sido); // 지역 파라미터 동일
+
+// 분기 우선순위
+if (hasLocation)  → findByRadius(lat, lng, radius, keyword, category, sort)
+else if (hasRegion) → findBySido / findBySigungu / ...  (keyword·category SQL WHERE)
+else if (hasKeyword) → findByNameContaining FULLTEXT (fallback)
+else → findByOrderByRatingDesc (keyword·category SQL WHERE)`}</CodeBlock>
+              <ul style={{ listStyle: "none", padding: 0, color: "var(--text-secondary)", lineHeight: "1.8", marginTop: "0.75rem", fontSize: "0.9rem" }}>
+                {li("빈 문자열 normalize(): \"\" → null → SQL :keyword IS NULL 분기 정상 작동")}
+                {li("카테고리 Java 필터 3개 메서드 제거 (applyCategoryFilter, matchesCategory, categoryFieldMatches)")}
+                {li("인기 Top10: 메서드명과 실제 LIMIT이 불일치하던 쿼리에 LIMIT 10 추가")}
+                {li("배치 임포트: private self-invocation @Transactional 미적용 → LocationServiceBatchWriter 별도 빈으로 분리")}
+              </ul>
+            </Card>
+          </section>
+
+          {/* 3. 거리 계산 */}
+          <section id="distance-calculation" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+              거리 계산 <StatusBadge type="done" />
+            </h2>
+            <Card>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                백엔드에서 Haversine으로 거리(m)를 계산해 DTO에 포함하고, 프론트엔드는 이 값을 우선 사용합니다.
+                DB의 <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>ST_Distance_Sphere</code>는 반경 필터 전용으로만 사용하고, 표시용 거리는 서비스 레이어 Haversine이 담당합니다.
+              </p>
+              <ul style={{ listStyle: "none", padding: 0, color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "0.9rem" }}>
+                {li("프론트엔드 중복 계산 제거 — 동일 계산이 두 곳에서 실행되던 낭비 해소")}
+                {li("백엔드와 프론트엔드 거리 수치 일치 보장")}
+                {li("백엔드 distance 필드가 없을 때만 프론트엔드 fallback 계산 (하위 호환)")}
+              </ul>
+            </Card>
+          </section>
+
+          {/* 4. 상태 관리 */}
+          <section id="state-management" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+              상태 관리 <StatusBadge type="done" />
+            </h2>
+            <Card>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                LocationServiceMap에 분산되어 있던 약 24개 useState·6개 useRef를 논리 단위 3개로 묶어 useReducer로 전환했습니다.
+              </p>
+              <CodeBlock>{`// searchReducer   — keyword, categoryType, searchMode, radius, sort
+// regionReducer   — selectedSido, selectedSigungu, selectedEupmyeondong
+// uiReducer       — loading, error, selectedService, showSearchButton, ...`}</CodeBlock>
+              <ul style={{ listStyle: "none", padding: 0, color: "var(--text-secondary)", lineHeight: "1.8", marginTop: "0.75rem", fontSize: "0.9rem" }}>
+                {li("상태 업데이트 로직이 reducer로 집중되어 의도치 않은 부분 갱신 제거")}
+                {li("pendingSearchLocation / showSearchButton 패턴으로 지도 이동과 검색 트리거를 명시적으로 분리")}
+              </ul>
+            </Card>
+          </section>
+
+          {/* 5. 검색 로직 단순화 */}
+          <section id="search-logic" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+              검색 로직 단순화 <StatusBadge type="done" />
+            </h2>
+            <Card>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                4가지 검색 전략이 하나의 300줄 함수에 중첩 분기로 뒤섞여 있었습니다.
+                전략별 함수로 분리해 메인 함수를 80줄로 줄이고, 각 전략을 독립적으로 수정할 수 있게 했습니다.
+              </p>
+              <CodeBlock>{`fetchServices()         ~80줄  (전략 선택만 담당)
+  handleInitialLoad()       — 초기 로드
+  handleLocationSearch()    — 반경 검색
+  handleRegionSearch()      — 지역 검색
+  handleHybridSearch()      — 하이브리드`}</CodeBlock>
+            </Card>
+          </section>
+
+          {/* 6. 하이브리드 전략 */}
+          <section id="hybrid-strategy" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+              하이브리드 전략 <StatusBadge type="done" />
+            </h2>
+            <Card>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                초기 로드가 반경 기반이면 <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>allServices</code>에 반경 내 데이터만 담기는데,
+                이후 지역 선택 시 프론트엔드 필터만 수행하면 반경 밖 서비스가 누락되는 불일치가 있었습니다.
+              </p>
+              <ul style={{ listStyle: "none", padding: 0, color: "var(--text-secondary)", lineHeight: "1.8", fontSize: "0.9rem" }}>
+                {li("지역 선택이 있으면 초기 로드 방식과 무관하게 항상 백엔드 재요청 (2026-02-04 일관성 픽스)")}
+                {li("지역 선택이 없을 때는 기존 하이브리드 필터 유지 — 불필요한 API 호출 방지")}
+              </ul>
+            </Card>
+          </section>
+
+          {/* 7. 반경 검색 정렬 옵션 */}
+          <section id="sort-options" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+              반경 검색 정렬 옵션 <StatusBadge type="done" />
+            </h2>
+            <Card style={{ marginBottom: "1rem" }}>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                반경 검색 기본 정렬이 <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>rating DESC</code>로 고정돼 "내 주변" UX와 맞지 않았습니다.
+                프론트에서 수신 후 재정렬하면 서버에서 잘린 후보 집합 안에서만 순서가 바뀌므로, 정렬을 쿼리 레이어로 내렸습니다.
+              </p>
+              <table
                 style={{
-                  listStyle: "none",
-                  padding: 0,
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "0.9rem",
                   color: "var(--text-secondary)",
-                  lineHeight: "1.8",
                 }}
               >
-                <li style={{ marginBottom: "0.5rem" }}>
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>sort</th>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>1차</th>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>동순위 보정</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["distance (기본)", "거리 오름차순", "rating DESC → idx ASC"],
+                    ["rating", "평점 내림차순", "distance ASC → idx ASC"],
+                    ["reviews", "리뷰 수 내림차순", "distance ASC → rating DESC → idx ASC"],
+                  ].map(([s, p, t], i, arr) => (
+                    <tr key={s} style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--nav-border)" : "none" }}>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>
+                        <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>{s}</code>
+                      </td>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>{p}</td>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>{t}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </section>
+
+          {/* 8. 후속 쿼리 리팩토링 */}
+          <section id="query-roadmap" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+              후속 쿼리 리팩토링 <StatusBadge type="plan" />
+            </h2>
+            <Card style={{ marginBottom: "1rem" }}>
+              <h3 style={{ marginBottom: "0.5rem", color: "var(--text-color)", fontSize: "1rem" }}>
+                review_count 캐시 컬럼
+              </h3>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                현재 <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>reviews</code> 정렬은 후보 행마다 <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>locationservicereview</code>를 다시 세는 상관 서브쿼리 구조입니다.
+                트래픽이 늘면 가장 먼저 병목이 될 지점입니다.
+              </p>
+              <CodeBlock>{`-- 현재 (상관 서브쿼리)
+ORDER BY (SELECT COUNT(*) FROM locationservicereview r
+          WHERE r.service_idx = ls.idx
+            AND (r.is_deleted IS NULL OR r.is_deleted = 0)) DESC
+
+-- 개선 후 (review_count 캐시 컬럼)
+ORDER BY review_count DESC, distance ASC, rating DESC, idx ASC`}</CodeBlock>
+              <ul style={{ listStyle: "none", padding: 0, color: "var(--text-secondary)", lineHeight: "1.8", marginTop: "0.75rem", fontSize: "0.9rem" }}>
+                {li("리뷰 생성·수정·삭제 시 평균 평점 갱신과 함께 review_count를 원자적으로 갱신")}
+                {li("집계 계약: soft delete(is_deleted = 0 또는 NULL)를 제외한 리뷰만 카운트")}
+                {li("마이그레이션: locationservice-add-review-count-column.sql")}
+              </ul>
+            </Card>
+            <Card>
+              <h3 style={{ marginBottom: "0.5rem", color: "var(--text-color)", fontSize: "1rem" }}>
+                대표 카테고리 컬럼
+              </h3>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                현재 카테고리 조건이 <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>category1 OR category2 OR category3</code> 3개 컬럼 OR 분기라
+                검색 쿼리 가독성이 낮습니다.
+                <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>category3 &gt; category2 &gt; category1</code> 우선순위로 대표 카테고리 컬럼을 추가해
+                메인 검색은 단일 컬럼 비교로 단순화합니다. 원본 category1~3은 공공데이터 원형 보존 용도로 유지합니다.
+              </p>
+            </Card>
+          </section>
+
+          {/* 9. 지도 검색 워크플로우 */}
+          <section id="map-workflow" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
+              지도 검색 워크플로우 <StatusBadge type="wip" />
+            </h2>
+            <Card>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>UnifiedPetMapPage</code>는 지도 idle 이벤트마다 API를 재호출합니다.
+                지도 뷰 상태와 검색 기준 상태가 섞여 있어, 사용자가 지도를 이동하기만 해도 불필요한 재검색이 발생합니다.
+                <code style={{ backgroundColor: "var(--bg-color)", padding: "0.15rem 0.35rem", borderRadius: "4px" }}>docs/domains/location.md</code>에 명시한 <strong style={{ color: "var(--text-color)" }}>"지도는 상태를 바꾸지 않는다"</strong> 원칙과 어긋납니다.
+              </p>
+              <CodeBlock>{`// 현재 (문제)
+onMapIdle → fetchActiveMapItems()  // 지도 이동마다 API 호출
+
+// 개선 방향
+onMapIdle → setMapViewportCenter(center)   // 뷰 상태만 갱신
+onSearchButtonClick → {
+  setSearchCenter(mapViewportCenter)        // 검색 기준 명시적 확정
+  fetchActiveMapItems()
+}`}</CodeBlock>
+              <ul style={{ listStyle: "none", padding: 0, color: "var(--text-secondary)", lineHeight: "1.8", marginTop: "0.75rem", fontSize: "0.9rem" }}>
+                {li("mapViewportCenter(뷰)와 searchCenter(검색 기준) 분리")}
+                {li("location 탭 전용 pendingSearchArea 상태 — 지도 이동만으로는 재검색 없음")}
+                {li("'이 지역 검색' 버튼으로 현재 지도 위치를 명시적으로 검색 기준으로 확정")}
+              </ul>
+            </Card>
+          </section>
+
+          {/* 10. 요약 */}
+          <section id="summary" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>요약</h2>
+            <Card style={{ marginBottom: "1.5rem" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "0.9rem",
+                  color: "var(--text-secondary)",
+                }}
+              >
+                <thead>
+                  <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>리팩토링 항목</th>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>개선 효과</th>
+                    <th style={{ padding: "0.6rem 0.75rem", textAlign: "left", color: "var(--text-color)" }}>상태</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ["검색 분기 & SQL 필터", "위치 우선 분기, Java 후처리 제거, 빈 문자열 정규화", "done"],
+                    ["거리 계산", "프론트 중복 계산 제거, 백엔드-프론트 일치 보장", "done"],
+                    ["상태 관리", "24개 useState → 3개 useReducer", "done"],
+                    ["검색 로직 단순화", "300줄 함수 → 80줄 + 전략 함수 분리", "done"],
+                    ["하이브리드 전략", "지역 선택 시 항상 백엔드 재요청, 결과 일관성", "done"],
+                    ["반경 검색 정렬 옵션", "distance 기본값, 3가지 정렬 + 동순위 보정", "done"],
+                    ["후속 쿼리 리팩토링", "review_count 캐시, 대표 카테고리 컬럼", "plan"],
+                    ["지도 검색 워크플로우", "mapViewportCenter/searchCenter 분리, 이 지역 검색 버튼", "wip"],
+                  ].map(([name, effect, status], i, arr) => (
+                    <tr key={name} style={{ borderBottom: i < arr.length - 1 ? "1px solid var(--nav-border)" : "none" }}>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>{name}</td>
+                      <td style={{ padding: "0.6rem 0.75rem" }}>{effect}</td>
+                      <td style={{ padding: "0.6rem 0.75rem", whiteSpace: "nowrap" }}>
+                        <StatusBadge type={status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            <Card>
+              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)" }}>관련 페이지</h3>
+              <ul style={{ listStyle: "none", padding: 0, color: "var(--text-secondary)", lineHeight: "2" }}>
+                <li>
                   •{" "}
-                  <Link
-                    to="/domains/location"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Location 도메인 (아키텍처·API 요약)
+                  <Link to="/domains/location" style={{ color: "var(--link-color)", textDecoration: "none" }}>
+                    Location 도메인 — 아키텍처·API 요약
                   </Link>
                 </li>
-                <li style={{ marginBottom: "0.5rem" }}>
+                <li>
                   •{" "}
-                  <Link
-                    to="/domains/location/optimization"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Location 성능 최적화 (측정·전후)
+                  <Link to="/domains/location/optimization" style={{ color: "var(--link-color)", textDecoration: "none" }}>
+                    Location 성능 최적화 — 초기 로드 수치·전후 측정
                   </Link>
-                </li>
-                <li style={{ marginBottom: "0.5rem" }}>
-                  •{" "}
-                  <a
-                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/location/location-portfolio-pages-source-map.md"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: "var(--link-color)", textDecoration: "none" }}
-                  >
-                    포트폴리오 페이지 ↔ 문서 매핑
-                  </a>
                 </li>
               </ul>
-            </div>
+            </Card>
           </section>
         </div>
         <TableOfContents sections={sections} />
