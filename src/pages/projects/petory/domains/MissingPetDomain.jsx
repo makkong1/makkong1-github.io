@@ -2,23 +2,60 @@ import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
+function Card({ children, style }) {
+  return (
+    <div
+      className="section-card"
+      style={{
+        padding: '1.5rem',
+        backgroundColor: 'var(--card-bg)',
+        borderRadius: '8px',
+        border: '1px solid var(--nav-border)',
+        ...style
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CodeBlock({ children }) {
+  return (
+    <pre
+      style={{
+        padding: '0.95rem 1rem',
+        backgroundColor: 'var(--bg-color)',
+        borderRadius: '6px',
+        overflowX: 'auto',
+        fontSize: '0.84rem',
+        color: 'var(--text-secondary)',
+        fontFamily: 'monospace',
+        lineHeight: '1.65',
+        margin: '0.75rem 0 0'
+      }}
+    >
+      {children}
+    </pre>
+  );
+}
+
 function MissingPetDomain() {
   const sections = [
-    { id: 'intro', title: '도메인 소개' },
+    { id: 'intro', title: '도메인 개요' },
     { id: 'features', title: '주요 기능' },
-    { id: 'troubleshooting', title: '트러블슈팅' },
-    { id: 'db-optimization', title: 'DB 최적화' },
-    { id: 'refactoring', title: '리팩토링' },
-    { id: 'entities', title: 'Entity 구조' },
-    { id: 'security', title: '보안 및 권한 체계' },
-    { id: 'relationships', title: '다른 도메인과의 연관관계' },
-    { id: 'api', title: 'API 엔드포인트' },
-    { id: 'docs', title: '관련 문서' }
+    { id: 'service-logic', title: '핵심 서비스 로직' },
+    { id: 'architecture', title: '아키텍처' },
+    { id: 'relationships', title: '도메인 연관관계' },
+    { id: 'performance', title: '성능 최적화' },
+    { id: 'summary', title: '핵심 포인트' },
+    { id: 'docs', title: '관련 페이지' }
   ];
+
   const entityDiagram = `erDiagram
-    Users ||--o{ MissingPetBoard : "reports"
+    Users ||--o{ MissingPetBoard : "writes"
     MissingPetBoard ||--o{ MissingPetComment : "has"
-    
+    Users ||--o{ MissingPetComment : "writes"
+
     MissingPetBoard {
         Long idx PK
         Long user_idx FK
@@ -28,615 +65,387 @@ function MissingPetDomain() {
         String species
         String breed
         MissingPetGender gender
-        String age
-        String color
         LocalDate lostDate
         String lostLocation
         BigDecimal latitude
         BigDecimal longitude
         MissingPetStatus status
-        LocalDateTime createdAt
-        LocalDateTime updatedAt
         Boolean isDeleted
+        LocalDateTime deletedAt
     }
-    
+
     MissingPetComment {
         Long idx PK
         Long board_idx FK
         Long user_idx FK
         String content
         String address
-        Double latitude
-        Double longitude
-        LocalDateTime createdAt
+        BigDecimal latitude
+        BigDecimal longitude
         Boolean isDeleted
+        LocalDateTime deletedAt
     }`;
+
+  const listFlow = `flowchart LR
+    A[GET /api/missing-pets] --> B[MissingPetBoardService.getBoardsWithPaging]
+    B --> C[게시글+작성자 조회]
+    B --> D[첨부파일 배치 조회]
+    B --> E[댓글 수 배치 조회]
+    C --> F[toBoardDTOWithoutComments]
+    D --> F
+    E --> F
+    F --> G[MissingPetBoardPageResponseDTO]`;
+
+  const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
       <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         <div className="domain-page-content" style={{ flex: 1 }}>
-          <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 신고 도메인</h1>
-          
-          {/* 1. 도메인 소개 */}
+          <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>실종 제보 도메인</h1>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '2.5rem', fontSize: '0.95rem' }}>
+            MissingPet 도메인은 실종 반려동물 제보와 목격 정보 공유를 담당합니다. 사용자가 실종 제보를 올리고,
+            다른 사용자는 댓글로 목격 정보를 남기며, 필요하면 제보자와 목격자가 1:1 채팅으로 바로 연결될 수 있도록 설계했습니다.
+          </p>
+
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                MissingPet 도메인은 실종 동물 신고 및 관리 시스템으로, 반려동물을 잃어버린 사용자가 신고하고 다른 사용자들이 목격 정보를 제공할 수 있습니다.
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 개요</h2>
+            <Card style={{ marginBottom: '1rem' }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                <code>docs/domains/missingpet.md</code> 기준으로 MissingPet 도메인의 핵심은{' '}
+                <strong style={{ color: 'var(--text-color)' }}>
+                  실종 제보 게시글, 목격 댓글, 제보자-목격자 채팅 시작, 이메일 인증, 관리자 운영 기능을
+                  Board 도메인 내부에서 별도 흐름으로 분리해 다루는 것
+                </strong>
+                입니다.
               </p>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                위치 기반 검색, 파일 첨부, 알림 발송 등의 기능을 제공하며, 게시글과 댓글 조회를 분리하여 조인 폭발을 방지하고 성능을 최적화했습니다.
-              </p>
-              <div style={{
-                padding: '1rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '6px',
-                marginTop: '1rem',
-                border: '1px solid var(--nav-border)'
-              }}>
-                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과</h3>
-                <ul style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                  fontSize: '0.9rem'
-                }}>
-                  <li>• 게시글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>105개 → 3개</strong> (97% 감소)</li>
-                  <li>• 백엔드 응답 시간: <strong style={{ color: 'var(--text-color)' }}>571ms → 106ms</strong> (81% 개선)</li>
-                  <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>11MB → 3MB</strong> (73% 감소)</li>
-                </ul>
-              </div>
-            </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('코드는 별도 domain/missingpet가 아니라 `domain/board/` 내부에 위치합니다.')}
+                {li('게시글 목록과 댓글 목록을 분리해 조인 폭발과 N+1 문제를 줄였습니다.')}
+                {li('실종 제보 작성/수정/삭제는 이메일 인증을 요구하고, 게시글/댓글 모두 Soft Delete를 사용합니다.')}
+              </ul>
+            </Card>
+
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <li>• 게시글 목록 조회 쿼리: <strong style={{ color: 'var(--text-color)' }}>105개 → 3개</strong></li>
+                <li>• 백엔드 응답 시간: <strong style={{ color: 'var(--text-color)' }}>571ms → 106ms</strong></li>
+                <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>11MB → 3MB</strong></li>
+                <li>
+                  • 자세한 전후 측정은{' '}
+                  <Link to="/domains/missing-pet/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    성능 최적화
+                  </Link>
+                  , 코드 정리는{' '}
+                  <Link to="/domains/missing-pet/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    리팩토링
+                  </Link>
+                  에 분리했습니다.
+                </li>
+              </ul>
+            </Card>
           </section>
 
-          {/* 2. 주요 기능 */}
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. 실종 동물 신고</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>사용자가 실종 동물 정보를 신고하고 사진을 첨부할 수 있습니다.</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 실종 동물 신고 생성/조회/수정/삭제 (이메일 인증 필요)</li>
-                  <li>• 실종 동물 정보 입력 (이름, 종, 품종, 성별, 나이, 색상, 실종 날짜, 실종 장소)</li>
-                  <li>• 위치 정보 저장 (위도, 경도, 주소) - 현재 검색 기능 미구현 (향후 반경 기반 검색 구현 예정)</li>
-                  <li>• 이미지 첨부 (첫 번째 파일만 저장, FileTargetType.MISSING_PET)</li>
-                  <li>• Soft Delete (게시글 삭제 시 관련 댓글도 함께 Soft Delete)</li>
-                  <li>• 서비스 분리: 게시글과 댓글 조회를 분리하여 조인 폭발 방지</li>
-                </ul>
-              </div>
-            </div>
 
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>2. 실종 동물 상태 관리</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>실종 동물의 상태를 관리하여 실종 중, 발견됨, 해결됨 상태를 구분합니다.</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• MISSING (실종 중) - 신고 시 기본 상태</li>
-                  <li>• FOUND (발견됨) - 찾음 처리</li>
-                  <li>• RESOLVED (해결됨) - 해결 처리</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. 목격 정보 댓글</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>댓글로 목격 정보를 제공하고 실종자와 소통할 수 있습니다.</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 목격 정보 댓글 작성 (내용, 목격 위치 주소, 위도, 경도)</li>
-                  <li>• 이미지 첨부 지원 (첫 번째 파일만 저장, FileTargetType.MISSING_PET_COMMENT)</li>
-                  <li>• 알림 발송 (댓글 작성자가 게시글 작성자가 아닌 경우에만 알림, 비동기 처리, @Async 사용)</li>
-                  <li>• 실종제보 채팅 연동 ("목격했어요" 버튼으로 제보자-목격자 간 1:1 채팅 시작)</li>
-                  <li>• 댓글은 별도 API로 조회 (GET /api/missing-pets/{'{id}'}/comments) - 조인 폭발 방지</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. 위치 정보 저장</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>실종 위치 및 목격 위치 정보를 저장합니다. (현재 위치 기반 검색 기능은 미구현)</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 실종 위치 정보 저장 (위도, 경도 - BigDecimal 타입, precision=15, scale=12, 주소)</li>
-                  <li>• 목격 위치 정보 저장 (위도, 경도 - Double 타입, 주소)</li>
-                  <li>• 위치 정보는 데이터 저장 용도로만 사용</li>
-                  <li>• 향후 구현 예정: 하버사인 공식 또는 MySQL의 공간 인덱스(GIS)를 활용한 반경 기반 검색 기능</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* 3. 트러블슈팅 */}
-          <section id="troubleshooting" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>트러블슈팅</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. 게시글 목록 조회 시 N+1 문제</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong> 게시글 목록 조회 시 Converter에서 `board.getComments()` 접근으로 LAZY 로딩 발생, 게시글 103개 조회 시 댓글 조회 쿼리가 103번 실행됨 (총 105개 쿼리)</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• Converter 메서드 분리: `toBoardDTOWithoutComments()` 메서드 추가로 댓글 접근 완전 제거</li>
-                  <li>• 서비스 분리: 게시글과 댓글 조회를 완전히 분리하여 조인 폭발 방지</li>
-                  <li>• 배치 조회: 파일 첨부 정보를 IN 절로 한 번에 조회</li>
-                  <li>• 댓글 수 배치 조회: `getCommentCountsBatch()` 메서드로 모든 게시글의 댓글 수를 한 번에 조회 (IN 절 + GROUP BY)</li>
-                  <li>• 댓글 목록은 별도 API로 조회: GET /api/missing-pets/{'{id}'}/comments</li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>효과:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 쿼리 수: 105개 → 3개 (97% 감소)</li>
-                  <li>• 백엔드 응답 시간: 571ms → 106ms (81% 개선)</li>
-                  <li>• 메모리 사용량: 11MB → 3MB (73% 감소)</li>
-                  <li>• 댓글 목록 조회 쿼리: 103번 → 0번 (100% 제거)</li>
-                  <li>• 댓글 수 조회 쿼리: 103번 → 1번 (배치 조회로 최적화)</li>
-                </ul>
-                <div style={{
-                  marginTop: '1rem',
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  border: '1px solid var(--link-color)'
-                }}>
-                  <Link
-                    to="/domains/missing-pet/optimization"
-                    style={{
-                      color: 'var(--link-color)',
-                      textDecoration: 'none',
-                      fontWeight: 'bold',
-                      display: 'inline-block',
-                      marginBottom: '0.5rem'
-                    }}
-                  >
-                    → N+1 문제 해결 상세 보기
-                  </Link>
-                  <p style={{
-                    fontSize: '0.85rem',
-                    color: 'var(--text-secondary)',
-                    marginTop: '0.5rem',
-                    marginBottom: 0
-                  }}>
-                    (시퀀스 다이어그램, 테스트 코드, 상세 최적화 과정 포함)
-                  </p>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          {/* 4. DB 최적화 */}
-          <section id="db-optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>DB 최적화</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인덱스 전략</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>missing_pet_board 테이블:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 사용자별 게시글 조회: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX idx_missing_pet_user ON missing_pet_board(user_idx, is_deleted, created_at)</code></li>
-                  <li>• 위치 기반 검색: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX idx_missing_pet_location ON missing_pet_board(latitude, longitude)</code></li>
-                  <li>• 상태별 조회: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX idx_missing_pet_status ON missing_pet_board(status, is_deleted, created_at)</code></li>
-                  <li>• 외래키 (user_idx): <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX FKrid0u1qvm8e07etghggxnu1b1 ON missing_pet_board(user_idx)</code></li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>missing_pet_comment 테이블:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 사용자별 댓글 조회: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX FKe3sca61815j9cxi608oxmrfjt ON missing_pet_comment(user_idx)</code></li>
-                  <li>• 게시글별 댓글 조회: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX FKpodx5stuchr73mrjgffir72ii ON missing_pet_comment(board_idx)</code></li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>선정 이유:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 자주 조회되는 컬럼 조합 (status, is_deleted, created_at)</li>
-                  <li>• WHERE 절에서 자주 사용되는 조건</li>
-                  <li>• JOIN에 사용되는 외래키 (user_idx, board_idx)</li>
-                  <li>• 위치 기반 검색을 위한 인덱스 (latitude, longitude)</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 최적화</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>게시글 + 작성자 조회 (JOIN FETCH):</strong></p>
-                <pre style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  overflow: 'auto',
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'monospace',
-                  lineHeight: '1.6',
-                  marginBottom: '1rem'
-                }}>
-{`@Query("SELECT b FROM MissingPetBoard b " +
-       "JOIN FETCH b.user u " +
-       "WHERE b.isDeleted = false AND u.isDeleted = false " +
-       "AND u.status = 'ACTIVE' " +
-       "ORDER BY b.createdAt DESC")
-List<MissingPetBoard> findAllByOrderByCreatedAtDesc();`}
-                </pre>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>파일 배치 조회:</strong></p>
-                <pre style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  overflow: 'auto',
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'monospace',
-                  lineHeight: '1.6',
-                  marginBottom: '1rem'
-                }}>
-{`// 게시글 ID 목록으로 한 번에 파일 조회 (IN 절 사용)
-List<Long> boardIds = boards.stream()
-    .map(MissingPetBoard::getIdx)
-    .collect(Collectors.toList());
-Map<Long, List<FileDTO>> filesByBoardId = attachmentFileService
-    .getAttachmentsBatch(FileTargetType.MISSING_PET, boardIds);`}
-                </pre>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Converter 메서드 분리:</strong></p>
-                <pre style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  overflow: 'auto',
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'monospace',
-                  lineHeight: '1.6',
-                  marginBottom: '1rem'
-                }}>
-{`// 댓글을 접근하지 않는 메서드로 N+1 문제 완전 해결
-public MissingPetBoardDTO toBoardDTOWithoutComments(MissingPetBoard board) {
-    return MissingPetBoardDTO.builder()
-        .idx(board.getIdx())
-        .userId(board.getUser().getIdx())
-        // ... 기타 필드들
-        .comments(Collections.emptyList()) // 댓글은 빈 리스트
-        .commentCount(0)
-        .build();
-}`}
-                </pre>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>개선 포인트:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• JOIN FETCH로 게시글+작성자 정보를 한 번에 조회 (댓글 제외)</li>
-                  <li>• 배치 조회로 파일을 한 번에 조회 (IN 절 사용)</li>
-                  <li>• Converter 메서드 분리로 댓글 접근 완전 제거 (LAZY 로딩 트리거 방지)</li>
-                  <li>• 서비스 분리로 조인 폭발 방지 및 확장성 향상</li>
-                  <li>• 활성 사용자 필터링 (삭제되지 않고 활성 상태인 사용자만 조회)</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* 5. 리팩토링 */}
-          <section id="refactoring" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>리팩토링</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>백엔드 성능 최적화 리팩토링</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>
-                  Admin 메모리 로드 제거, 페이징 DB 레벨 필터링, deleteAllCommentsByBoard 배치 업데이트, 
-                  startMissingPetChat 경량 조회, restoreMissingPet 구현, toBoardDTOList 제거 등 백엔드 리팩토링 내역을 정리했습니다.
-                </p>
-                <div style={{
-                  marginTop: '1rem',
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  border: '1px solid var(--link-color)'
-                }}>
-                  <Link
-                    to="/domains/missing-pet/refactoring"
-                    style={{
-                      color: 'var(--link-color)',
-                      textDecoration: 'none',
-                      fontWeight: 'bold',
-                      display: 'inline-block'
-                    }}
-                  >
-                    → 리팩토링 상세 페이지 보기
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </section>
-
-          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
-        
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1.5rem'
-        }}>
-          <MermaidDiagram chart={entityDiagram} />
-        </div>
-
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>MissingPetBoard (실종 동물 게시판)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), user (신고자), title, content</div>
-            <div>• petName, species, breed, gender (MissingPetGender enum: M, F), age, color</div>
-            <div>• lostDate, lostLocation, latitude (BigDecimal, precision=15, scale=12), longitude</div>
-            <div>• status (MissingPetStatus enum: MISSING/FOUND/RESOLVED)</div>
-            <div>• createdAt, updatedAt, isDeleted, deletedAt</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• ManyToOne → Users</div>
-            <div>• OneToMany → MissingPetComment (cascade=CascadeType.ALL, LAZY 로딩)</div>
-            <div>• 폴리모픽 관계 → AttachmentFile (FileTargetType.MISSING_PET)</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>특징:</strong></div>
-            <div>• BaseTimeEntity 미사용 (@PrePersist, @PreUpdate로 직접 시간 관리)</div>
-            <div>• Soft Delete 지원 (isDeleted, deletedAt)</div>
-          </div>
-        </div>
-
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>MissingPetComment</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>주요 필드:</strong></div>
-            <div>• idx (PK), board (게시글), user (작성자)</div>
-            <div>• content (목격 정보), address, latitude (Double), longitude</div>
-            <div>• createdAt, isDeleted, deletedAt</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>연관관계:</strong></div>
-            <div>• ManyToOne → MissingPetBoard, Users</div>
-            <div>• 폴리모픽 관계 → AttachmentFile (FileTargetType.MISSING_PET_COMMENT)</div>
-            <div style={{ marginTop: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>특징:</strong></div>
-            <div>• BaseTimeEntity 미사용 (@PrePersist로 직접 createdAt 관리)</div>
-            <div>• Soft Delete 지원 (isDeleted, deletedAt)</div>
-            <div>• 목격 위치 정보 포함 (주소, 위도, 경도)</div>
-          </div>
-        </div>
-      </section>
-
-          {/* 5. 보안 및 권한 체계 */}
-          <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <ul style={{
-                listStyle: 'none',
-                padding: 0,
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8'
-              }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>이메일 인증</strong>: 실종 제보 작성/수정/삭제 시 이메일 인증 필요 (EmailVerificationRequiredException)</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>작성자만 수정/삭제 가능</strong>: 신고 작성자만 본인 신고 수정/삭제 가능</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>소프트 삭제</strong>: isDeleted, deletedAt 플래그로 논리 삭제</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>연관 댓글 삭제</strong>: 게시글 삭제 시 MissingPetCommentService.deleteAllCommentsByBoard()로 관련 댓글도 함께 Soft Delete</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>활성 사용자 필터링</strong>: 삭제되지 않고 활성 상태인 사용자만 조회 (u.isDeleted = false AND u.status = 'ACTIVE')</li>
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>1. 실종 제보 게시글</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('제목, 내용, 반려동물 이름, 종류, 품종, 성별, 나이, 색상, 실종일, 실종 위치, 좌표를 저장합니다.')}
+                {li('작성/수정/삭제 시 이메일 인증(`EmailVerificationPurpose.MISSING_PET`)이 필요합니다.')}
+                {li('이미지는 `FileTargetType.MISSING_PET`로 첨부하고 첫 번째 파일만 저장합니다.')}
               </ul>
-            </div>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>2. 상태 관리</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('기본 상태는 `MISSING`입니다.')}
+                {li('이후 `FOUND`, `RESOLVED`로 상태를 변경할 수 있습니다.')}
+                {li('공개 API와 관리자 API 모두 상태 변경 엔드포인트를 갖지만, 잘못된 값 처리 방식은 서로 다릅니다.')}
+              </ul>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>3. 목격 댓글</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('목격 위치 주소와 좌표를 함께 남길 수 있습니다.')}
+                {li('이미지는 `FileTargetType.MISSING_PET_COMMENT`로 첨부합니다.')}
+                {li('댓글 작성자가 게시글 작성자와 다를 때만 비동기 알림을 발송합니다.')}
+                {li('댓글 목록은 별도 API로 조회해 게시글 목록과 댓글을 분리합니다.')}
+              </ul>
+            </Card>
+
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>4. 채팅 연동</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('"목격했어요" 버튼은 `POST /api/missing-pets/{boardIdx}/start-chat`을 호출합니다.')}
+                {li('목격자 ID는 쿼리 파라미터가 아니라 JWT principal에서 가져옵니다.')}
+                {li('서비스는 게시글 전체를 읽지 않고 `getUserIdByBoardIdx()`로 제보자 ID만 조회한 뒤 채팅방을 생성합니다.')}
+              </ul>
+            </Card>
           </section>
 
-          {/* 6. 다른 도메인과의 연관관계 */}
+          <section id="service-logic" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 서비스 로직</h2>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                목록 조회: 게시글/댓글 분리 + 배치 조회
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                목록 API는 댓글을 즉시 가져오지 않습니다. 게시글+작성자, 파일, 댓글 수만 각각 최적화된 경로로 읽고
+                DTO에서는 댓글 접근을 아예 차단해 LAZY 로딩을 피합니다.
+              </p>
+              <MermaidDiagram chart={listFlow} />
+              <CodeBlock>{`boards = repository.findAllByOrderByCreatedAtDesc(pageable);
+attachmentsMap = attachmentFileService.getAttachmentsBatch(MISSING_PET, boardIds);
+commentCounts = missingPetCommentService.getCommentCountsBatch(boardIds);
+dtos = converter.toBoardDTOWithoutComments(boards);`}</CodeBlock>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                상세 조회와 댓글 페이징
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                상세는 `findByIdWithUser(id)`로 게시글을 가져오고, 댓글은 `commentPage`, `commentSize` 파라미터로 별도 조회합니다.
+                `commentSize=0`이면 상세 응답에서 댓글 목록을 아예 제외할 수 있습니다.
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('삭제된 게시글은 조회 시 예외 처리합니다.')}
+                {li('댓글 수는 `countByBoardAndIsDeletedFalse` COUNT 쿼리로 별도 집계합니다.')}
+              </ul>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                작성/수정/삭제와 이메일 인증
+              </h3>
+              <CodeBlock>{`board = repository.findByIdWithUser(id).orElseThrow(...);
+if (!user.getEmailVerified()) {
+  throw new EmailVerificationRequiredException(...MISSING_PET);
+}
+
+board.setIsDeleted(true);
+board.setDeletedAt(now);
+commentService.deleteAllCommentsByBoard(board);`}</CodeBlock>
+              <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('작성/수정/삭제 모두 이메일 인증이 선행 조건입니다.')}
+                {li('게시글 삭제 시 관련 댓글도 함께 Soft Delete 됩니다.')}
+                {li('댓글 일괄 삭제는 루프 save가 아니라 배치 UPDATE로 최적화했습니다.')}
+              </ul>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                댓글 작성/삭제와 알림
+              </h3>
+              <CodeBlock>{`if (!board.getUser().getIdx().equals(commentWriter.getIdx())) {
+  sendMissingPetCommentNotificationAsync(...);
+}`}</CodeBlock>
+              <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('댓글 작성은 게시글/사용자 존재 확인 후 저장합니다.')}
+                {li('자기 글에 자기 댓글이면 알림을 보내지 않습니다.')}
+                {li('댓글 삭제는 소속 게시글 검증 후 Soft Delete 합니다.')}
+              </ul>
+            </Card>
+
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                관리자 조회와 경량 채팅 시작
+              </h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('관리자 목록은 `Specification + DB 페이징`으로 status/deleted/q 필터를 DB에서 처리합니다.')}
+                {li('채팅 시작은 게시글 전체를 읽지 않고 작성자 ID만 프로젝션으로 조회합니다.')}
+                {li('공개 API 상태 변경은 `BoardValidationException`, 관리자 API는 `IllegalArgumentException`을 사용해 현재 예외 타입이 다릅니다.')}
+              </ul>
+            </Card>
+          </section>
+
+          <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>도메인 구조</h3>
+              <CodeBlock>{`domain/board/
+  controller/
+    MissingPetBoardController.java
+  service/
+    MissingPetBoardService.java
+    MissingPetCommentService.java
+  entity/
+    MissingPetBoard.java
+    MissingPetComment.java
+    MissingPetStatus.java
+    MissingPetGender.java
+  repository/
+    MissingPetBoardRepository.java
+    MissingPetCommentRepository.java
+  dto/
+    MissingPetBoardDTO.java
+    MissingPetBoardPageResponseDTO.java
+    MissingPetCommentDTO.java
+    MissingPetCommentPageResponseDTO.java
+
+domain/admin/
+  controller/
+    AdminMissingPetController.java`}</CodeBlock>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginTop: '0.75rem', marginBottom: 0 }}>
+                MissingPet은 별도 최상위 도메인이 아니라 Board 도메인 하위 기능이지만, API와 서비스는 독립적으로 분리돼 있습니다.
+              </p>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 엔티티</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>엔티티</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>역할</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>특징</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['MissingPetBoard', '실종 제보 게시글', 'BaseTimeEntity 상속, 상태(MISSING/FOUND/RESOLVED), Soft Delete, 실종 위치/좌표 저장'],
+                    ['MissingPetComment', '목격 댓글', 'BaseTimeEntity 미사용, `@PrePersist` createdAt, 주소/좌표, Soft Delete'],
+                  ].map(([name, role, feature], index, arr) => (
+                    <tr key={name} style={{ borderBottom: index < arr.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
+                      <td style={{ padding: '0.65rem 0.75rem', color: 'var(--text-color)' }}>{name}</td>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>{role}</td>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>{feature}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>엔티티 관계도</h3>
+              <MermaidDiagram chart={entityDiagram} />
+            </Card>
+
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 API</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>엔드포인트</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>Method</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>설명</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['/api/missing-pets', 'GET', '목록 조회 (페이징, status, page/size)'],
+                    ['/api/missing-pets/{id}', 'GET', '상세 조회 (`commentPage`, `commentSize`)'],
+                    ['/api/missing-pets', 'POST', '작성, 이메일 인증 필요'],
+                    ['/api/missing-pets/{id}', 'PUT', '수정, 이메일 인증 필요'],
+                    ['/api/missing-pets/{id}/status', 'PATCH', '상태 변경, body `status` 필요'],
+                    ['/api/missing-pets/{id}', 'DELETE', '게시글 Soft Delete + 댓글 일괄 Soft Delete'],
+                    ['/api/missing-pets/{id}/comments', 'GET/POST', '댓글 목록 / 댓글 작성'],
+                    ['/api/missing-pets/{boardId}/comments/{commentId}', 'DELETE', '댓글 Soft Delete'],
+                    ['/api/missing-pets/{boardIdx}/start-chat', 'POST', 'JWT 기반 목격자-제보자 채팅 시작'],
+                    ['/api/admin/missing-pets/paging', 'GET', '관리자 목록 (status/deleted/q/page/size)'],
+                    ['/api/admin/missing-pets/{id}/restore', 'POST', '관리자 복구'],
+                  ].map(([path, method, desc], index, arr) => (
+                    <tr key={path + method} style={{ borderBottom: index < arr.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>
+                        <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>{path}</code>
+                      </td>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>{method}</td>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          </section>
+
           <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
-        
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-            <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>User 도메인:</strong></div>
-            <div>• Users가 실종 신고 작성, 목격 정보 제공</div>
-            <div>• 이메일 인증 확인 (실종 제보 작성/수정/삭제 시 EmailVerificationRequiredException)</div>
-            <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>File 도메인:</strong></div>
-            <div>• 실종 동물 사진 첨부 (FileTargetType.MISSING_PET, MISSING_PET_COMMENT)</div>
-            <div>• syncSingleAttachment()로 파일 동기화 (첫 번째 파일만 저장)</div>
-            <div>• getAttachmentsBatch()로 배치 조회하여 N+1 문제 해결</div>
-            <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Notification 도메인:</strong></div>
-            <div>• 댓글 작성 시 알림 발송 (댓글 작성자가 게시글 작성자가 아닌 경우)</div>
-            <div>• 비동기 처리 (@Async 사용, 알림 발송 실패해도 댓글 작성은 성공)</div>
-            <div>• NotificationType.MISSING_PET_COMMENT 사용</div>
-            <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Report 도메인:</strong></div>
-            <div>• 부적절한 신고 접수</div>
-            <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Chat 도메인:</strong></div>
-            <div>• "목격했어요" 버튼으로 제보자-목격자 간 1:1 채팅 시작</div>
-            <div>• ConversationService.createMissingPetChat()로 실종제보 채팅방 생성</div>
-          </div>
-        </div>
-      </section>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 연관관계</h2>
+            <Card>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('User: 게시글/댓글 작성자, 이메일 인증(MISSING_PET)')}
+                {li('File: 게시글 이미지(`MISSING_PET`), 댓글 이미지(`MISSING_PET_COMMENT`)')}
+                {li('Chat: `ConversationService.createMissingPetChat()`로 제보자-목격자 1:1 채팅 시작')}
+                {li('Notification: 댓글 작성 시 제보자에게 `MISSING_PET_COMMENT` 알림')}
+                {li('Report: 실종 제보 신고 대상과 연결')}
+              </ul>
+            </Card>
+          </section>
 
-          {/* 7. API 엔드포인트 */}
-          <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
-        
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>실종 제보 (/api/missing-pets)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>• GET / - 실종 제보 목록 조회 (status 파라미터로 필터링, 댓글 제외)</div>
-            <div>• GET /{'{id}'} - 특정 실종 제보 조회 (댓글 수만 포함, 댓글 목록은 별도 API로 조회)</div>
-            <div>• POST / - 실종 제보 생성 (인증 필요, 이메일 인증 필요, 파일 첨부 지원)</div>
-            <div>• PUT /{'{id}'} - 실종 제보 수정 (인증 필요, 이메일 인증 필요, 선택적 업데이트, 파일 첨부 지원)</div>
-            <div>• PATCH /{'{id}'}/status - 상태 변경 (RequestBody: {"{"}"status": "MISSING"{"}"}, 모든 인증된 사용자 가능)</div>
-            <div>• DELETE /{'{id}'} - 실종 제보 삭제 (인증 필요, 이메일 인증 필요, 관련 댓글도 함께 Soft Delete, 응답: {"{"}"success": true{"}"})</div>
-          </div>
-        </div>
+          <section id="performance" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화</h2>
 
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)',
-          marginBottom: '1rem'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>댓글 (/api/missing-pets/{'{id}'}/comments)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>• GET / - 댓글 목록 조회 (삭제되지 않은 댓글만, 작성자 정보 포함, 첨부 파일 배치 조회)</div>
-            <div>• POST / - 댓글 작성 (인증 필요, 파일 첨부 지원 - 첫 번째 파일만 저장, 알림 발송 비동기 처리)</div>
-            <div>• DELETE /{'{commentId}'} - 댓글 삭제 (인증 필요, Soft Delete, 응답: {"{"}"success": true{"}"})</div>
-          </div>
-        </div>
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 최적화 포인트</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('첨부파일은 `getAttachmentsBatch()`로 한 번에 조회합니다.')}
+                {li('댓글 수는 `getCommentCountsBatch()`와 `countCommentsByBoardIds`로 배치 집계합니다.')}
+                {li('게시글 삭제 시 댓글은 `softDeleteAllByBoardIdx` 배치 UPDATE로 처리합니다.')}
+                {li('채팅 시작은 게시글 전체가 아니라 작성자 ID만 프로젝션으로 읽습니다.')}
+                {li('관리자 목록은 Specification + DB 페이징으로 메모리 필터링을 제거했습니다.')}
+              </ul>
+            </Card>
 
-        <div className="section-card" style={{
-          padding: '1.5rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>채팅 (/api/missing-pets/{'{boardIdx}'}/start-chat)</h3>
-          <div style={{ 
-            color: 'var(--text-secondary)',
-            lineHeight: '1.8',
-            fontFamily: 'monospace',
-            fontSize: '0.9rem'
-          }}>
-            <div>• POST /?witnessId={'{witnessId}'} - 실종제보 채팅 시작 (인증 필요)</div>
-          </div>
-        </div>
-      </section>
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>인덱스 전략</h3>
+              <CodeBlock>{`CREATE INDEX idx_missing_pet_user ON missing_pet_board(user_idx, is_deleted, created_at);
+CREATE INDEX idx_missing_pet_location ON missing_pet_board(latitude, longitude);
+CREATE INDEX idx_missing_pet_status ON missing_pet_board(status, is_deleted, created_at);
 
-          {/* 8. 관련 문서 */}
+CREATE INDEX FKe3sca61815j9cxi608oxmrfjt ON missing_pet_comment(user_idx);
+CREATE INDEX FKpodx5stuchr73mrjgffir72ii ON missing_pet_comment(board_idx);`}</CodeBlock>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginTop: '0.75rem', marginBottom: 0 }}>
+                실종 제보는 상태·삭제 여부·생성일, 작성자, 좌표, 게시글별 댓글 조회가 주요 접근 패턴이라 그 조합에 맞춰 인덱스를 두고 있습니다.
+              </p>
+            </Card>
+          </section>
+
+          <section id="summary" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 포인트</h2>
+            <Card>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <li>• MissingPet은 Board 도메인 내부에 있지만, 게시글/댓글/채팅/관리자 API 흐름은 독립적으로 분리돼 있습니다.</li>
+                <li>• 목록 조회는 게시글과 댓글을 분리하고 파일/댓글 수를 배치 조회하는 구조가 핵심입니다.</li>
+                <li>• 작성/수정/삭제는 이메일 인증, 삭제는 Soft Delete, 댓글 알림은 비동기 조건부 발송이라는 정책을 가집니다.</li>
+                <li>• 채팅 시작은 JWT 기반으로 목격자를 식별하고, 작성자 ID만 경량 조회해 오버헤드를 줄입니다.</li>
+                <li>• 관리자 경로는 DB 페이징과 복구 기능을 포함하지만, 공개 API와 예외 처리 방식이 일부 다릅니다.</li>
+              </ul>
+            </Card>
+          </section>
+
           <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
-        <div className="section-card" style={{
-          padding: '1rem',
-          backgroundColor: 'var(--card-bg)',
-          borderRadius: '8px',
-          border: '1px solid var(--nav-border)'
-        }}>
-          <a 
-            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/missing-pet.md" 
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ 
-              color: 'var(--link-color)',
-              textDecoration: 'none',
-              display: 'block',
-              marginBottom: '0.5rem'
-            }}
-          >
-            → Missing Pet 도메인 상세 문서
-          </a>
-          <a 
-            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/missing-pet/n-plus-one-query-issue.md" 
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ 
-              color: 'var(--link-color)',
-              textDecoration: 'none',
-              display: 'block',
-              marginBottom: '0.5rem'
-            }}
-          >
-            → N+1 문제 해결 상세 문서
-          </a>
-          <a 
-            href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/missing-pet/missing-pet-backend-performance-optimization.md" 
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ 
-              color: 'var(--link-color)',
-              textDecoration: 'none',
-              display: 'block'
-            }}
-          >
-            → 백엔드 성능 최적화 리팩토링 문서
-          </a>
-        </div>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 페이지</h2>
+            <Card>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '2' }}>
+                <li>
+                  •{' '}
+                  <Link to="/domains/missing-pet/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    Missing Pet 성능 최적화
+                  </Link>
+                </li>
+                <li>
+                  •{' '}
+                  <Link to="/domains/missing-pet/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    Missing Pet 리팩토링
+                  </Link>
+                </li>
+                <li>
+                  •{' '}
+                  <Link to="/domains/board" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    Board 도메인
+                  </Link>
+                </li>
+              </ul>
+            </Card>
           </section>
         </div>
+
         <TableOfContents sections={sections} />
       </div>
     </div>
