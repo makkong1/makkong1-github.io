@@ -625,6 +625,52 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
               {profile.user?.role === 'SERVICE_PROVIDER' && (!profile.reviews || profile.reviews.length === 0) && (
                 <EmptyReviewsMessage>아직 리뷰가 없습니다.</EmptyReviewsMessage>
               )}
+
+              {profile.locationServiceReviewCount > 0 && (
+                <ReviewSummarySection>
+                  <ReviewSummaryTitle>주변 서비스 리뷰 활동</ReviewSummaryTitle>
+                  <ReviewStats>
+                    <StatItem>
+                      <StatLabel>평균 남긴 평점</StatLabel>
+                      <StatValue>
+                        {profile.locationServiceAverageRating ? profile.locationServiceAverageRating.toFixed(1) : '-'}
+                        {profile.locationServiceAverageRating && <StarIcon>⭐</StarIcon>}
+                      </StatValue>
+                    </StatItem>
+                    <StatItem>
+                      <StatLabel>작성 리뷰 개수</StatLabel>
+                      <StatValue>{profile.locationServiceReviewCount || 0}개</StatValue>
+                    </StatItem>
+                  </ReviewStats>
+                </ReviewSummarySection>
+              )}
+
+              {profile.locationServiceReviews && profile.locationServiceReviews.length > 0 && (
+                <ReviewsSection>
+                  <ReviewsTitle>작성한 주변 서비스 리뷰</ReviewsTitle>
+                  <ReviewList>
+                    {profile.locationServiceReviews.map((review) => (
+                      <ReviewItem key={`location-review-${review.idx}`}>
+                        <ReviewHeader>
+                          <ReviewerName>{review.serviceName || `서비스 #${review.serviceIdx}`}</ReviewerName>
+                          <ReviewRating>
+                            {'⭐'.repeat(review.rating)}
+                            <RatingNumber>{review.rating}</RatingNumber>
+                          </ReviewRating>
+                        </ReviewHeader>
+                        {review.comment && (
+                          <ReviewComment>{review.comment}</ReviewComment>
+                        )}
+                        <ReviewDate>
+                          {review.createdAt
+                            ? new Date(review.createdAt).toLocaleDateString('ko-KR')
+                            : ''}
+                        </ReviewDate>
+                      </ReviewItem>
+                    ))}
+                  </ReviewList>
+                </ReviewsSection>
+              )}
             </>
           ) : null}
         </ModalContent>

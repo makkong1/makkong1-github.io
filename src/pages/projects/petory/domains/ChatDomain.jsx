@@ -49,6 +49,7 @@ function ChatDomain() {
     { id: "service", title: "핵심 서비스 로직" },
     { id: "architecture", title: "아키텍처" },
     { id: "api", title: "API와 보안" },
+    { id: "troubleshooting", title: "트러블슈팅" },
     { id: "performance", title: "트랜잭션과 성능" },
     { id: "summary", title: "핵심 포인트" },
     { id: "docs", title: "관련 문서" },
@@ -464,6 +465,101 @@ void incrementUnreadCount(Long conversationIdx, Long senderUserId);`}</CodeBlock
             </Card>
           </section>
 
+          <section id="troubleshooting" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>트러블슈팅</h2>
+
+            <Card style={{ marginBottom: "1rem" }}>
+              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
+                채팅방 참여자 조회 N+1
+              </h3>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                <strong style={{ color: "var(--text-color)" }}>문제:</strong>{" "}
+                <code>ConversationParticipant</code>를 채팅방마다 단건으로 불러오거나, Converter에서{" "}
+                <code>@OneToMany(LAZY)</code> 컬렉션에 접근하면 쿼리가 N배로 늘어납니다.
+              </p>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: "0 0 0.75rem 0",
+                  color: "var(--text-secondary)",
+                  lineHeight: "1.8",
+                }}
+              >
+                {li(
+                  "케이스 A — 단건 조회: ConversationService 등에서 findByConversationIdxAndStatus(conversationIdx)가 반복되면 N+1에 해당합니다."
+                )}
+                {li(
+                  "케이스 B — 목록 + Converter: getMyConversations() 이후 DTO 변환 시 getParticipants().size() 접근으로 Lazy 로드가 방마다 발생했으나, 배치 로드 값으로 participantCount를 덮어쓰는 방식으로 수정했습니다."
+                )}
+                {li(
+                  "부가 이슈: findLatestMessagesByConversationIdxs 서브쿼리에서 컬럼명 오타(conversation_ids_deleted vs is_deleted)가 있으면 삭제 메시지 필터가 깨질 수 있습니다."
+                )}
+              </ul>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                <strong style={{ color: "var(--text-color)" }}>대응 방향:</strong> 이미 목록 API에는{" "}
+                <code>findParticipantsByConversationIdxsAndStatus</code> 같은 배치 조회가 있으므로 단건 경로에도 동일 메서드(
+                <code>List.of(conversationIdx)</code>)나 JOIN FETCH를 맞춥니다. Converter에서는 Lazy 컬렉션 직접 접근 대신 Service에서 집계를
+                주입합니다.
+              </p>
+              <p style={{ marginBottom: 0 }}>
+                <a
+                  href={`${GH}/docs/troubleshooting/chat/n-plus-one-conversationparticipant.md`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ color: "var(--link-color)", textDecoration: "none", fontWeight: "bold" }}
+                >
+                  상세 분석 문서 (GitHub)
+                </a>
+              </p>
+            </Card>
+
+            <Card style={{ marginBottom: "1rem" }}>
+              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
+                메시지 읽음 처리 성능
+              </h3>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.75rem" }}>
+                <strong style={{ color: "var(--text-color)" }}>문제:</strong> 방의 전체 메시지를 읽어 Java에서 필터링하던 구간, 읽음 API의
+                빈번한 호출 등으로 DB·네트워크 부하가 컸습니다.
+              </p>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: 0 }}>
+                <strong style={{ color: "var(--text-color)" }}>해결:</strong> 읽음은{" "}
+                <code>unreadCount</code>·<code>lastReadMessage</code> 중심으로 단순화했습니다. 코드·수치는 성능 페이지에 정리했습니다.
+              </p>
+              <p style={{ marginTop: "0.75rem", marginBottom: 0 }}>
+                <Link
+                  to="/domains/chat/optimization"
+                  style={{ color: "var(--link-color)", textDecoration: "none", fontWeight: "bold" }}
+                >
+                  메시지 읽음 처리 최적화 페이지 보기
+                </Link>
+              </p>
+            </Card>
+
+            {[
+              [
+                "Converter와 LAZY",
+                "DTO에서 entity.getCollection().size()를 호출하면 접근 시점에 SELECT가 N번 나갈 수 있습니다.",
+                "집계·카운트는 배치로 이미 로드한 Map/List에서 계산해 set 하거나, JOIN FETCH로 한 번에 초기화합니다.",
+              ],
+              [
+                "루프 안 단건 Repository",
+                "for 안에서 findByXxx(단일 id)를 호출하면 전형적인 N+1입니다.",
+                "findXxxByIdxIn(List) 또는 배치 사이즈·@EntityGraph로 한 번에 가져오도록 바꿉니다.",
+              ],
+            ].map(([title, problem, solution]) => (
+              <Card key={title} style={{ marginBottom: "1rem" }}>
+                <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>{title}</h3>
+                <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.4rem" }}>
+                  <strong style={{ color: "var(--text-color)" }}>문제:</strong> {problem}
+                </p>
+                <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: 0 }}>
+                  <strong style={{ color: "var(--text-color)" }}>해결:</strong> {solution}
+                </p>
+              </Card>
+            ))}
+          </section>
+
           <section id="performance" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
             <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>트랜잭션과 성능</h2>
             <Card style={{ marginBottom: "1rem" }}>
@@ -594,6 +690,28 @@ void incrementUnreadCount(Long conversationIdx, Long senderUserId);`}</CodeBlock
                     style={{ color: "var(--link-color)", textDecoration: "none" }}
                   >
                     chat.md
+                  </a>
+                </li>
+                <li>
+                  •{" "}
+                  <a
+                    href={`${GH}/docs/troubleshooting/chat/n-plus-one-conversationparticipant.md`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--link-color)", textDecoration: "none" }}
+                  >
+                    참여자 조회 N+1 트러블슈팅
+                  </a>
+                </li>
+                <li>
+                  •{" "}
+                  <a
+                    href={`${GH}/docs/troubleshooting/chat/read-status-performance.md`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: "var(--link-color)", textDecoration: "none" }}
+                  >
+                    읽음 상태 성능 최적화
                   </a>
                 </li>
                 <li>
