@@ -9,9 +9,8 @@ const ActivityPage = () => {
   
   // 서버 사이드 페이징 상태
   const [page, setPage] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
-  const [hasNext, setHasNext] = useState(false);
   
   // Map + Array 조합: Map으로 빠른 조회/업데이트, Array로 순서 유지
   const [activitiesData, setActivitiesData] = useState({ map: {}, order: [] });
@@ -47,30 +46,12 @@ const ActivityPage = () => {
     return { map, order };
   }, []);
 
-  // 게시글 추가 (중복 체크 포함)
-  const addActivitiesToMap = useCallback((existingData, newActivities) => {
-    const map = { ...existingData.map };
-    const order = [...existingData.order];
-    newActivities.forEach(activity => {
-      if (activity?.idx) {
-        const key = `${activity.type}-${activity.idx}`;
-        if (!map[key]) {
-          map[key] = activity;
-          order.push(key);
-        } else {
-          // 이미 있으면 업데이트
-          map[key] = activity;
-        }
-      }
-    });
-    return { map, order };
-  }, []);
-
   // 필터 변경 시 첫 페이지부터 다시 로드
   useEffect(() => {
     if (user && user.idx) {
       fetchActivities(0);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, activeFilter]);
 
   const fetchActivities = useCallback(async (pageNum = 0) => {
@@ -97,7 +78,6 @@ const ActivityPage = () => {
       setActivitiesData(newData);
 
       setTotalCount(pageData.totalCount || 0);
-      setHasNext(pageData.hasNext || false);
       setPage(pageNum);
       
       // 필터별 개수 업데이트
@@ -216,16 +196,9 @@ const ActivityPage = () => {
 
       case 'CARE_REQUEST':
       case 'CARE_COMMENT':
-        // 펫케어 요청으로 이동
         if (window.setActiveTab) {
-          window.setActiveTab('care-requests');
+          window.setActiveTab('unified-map');
         }
-        // 펫케어 요청 상세 열기
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('openCareRequestDetail', {
-            detail: { requestId: targetId }
-          }));
-        }, 100);
         break;
 
       case 'MISSING_PET':
@@ -243,11 +216,9 @@ const ActivityPage = () => {
         break;
 
       case 'LOCATION_REVIEW':
-        // 주변서비스로 이동
         if (window.setActiveTab) {
-          window.setActiveTab('location-services');
+          window.setActiveTab('unified-map');
         }
-        // 리뷰 상세 열기
         setTimeout(() => {
           window.dispatchEvent(new CustomEvent('openLocationReviewDetail', {
             detail: { reviewId: idx, locationId: relatedId }
@@ -259,6 +230,41 @@ const ActivityPage = () => {
         console.warn('알 수 없는 활동 타입:', type);
     }
   }, []);
+
+  // 날짜 문자열로 그룹화 (YYYY-MM-DD)
+  const getDateKey = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // 활동을 날짜별로 그룹화
+  const groupedActivities = useMemo(() => {
+    const grouped = {};
+    filteredActivities.forEach(activity => {
+      const dateKey = getDateKey(activity.createdAt);
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(activity);
+    });
+
+    // 날짜순으로 정렬 (최신순)
+    const sortedKeys = Object.keys(grouped).sort().reverse();
+
+    return sortedKeys.map(dateKey => ({
+      dateKey,
+      dateLabel: new Date(dateKey).toLocaleDateString('ko-KR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        weekday: 'short'
+      }),
+      activities: grouped[dateKey]
+    }));
+  }, [filteredActivities]);
 
   if (!user) {
     return (
@@ -323,50 +329,60 @@ const ActivityPage = () => {
           </EmptyMessage>
         ) : (
           <>
-            {filteredActivities.map(activity => {
-              const key = `${activity.type}-${activity.idx}`;
-              return (
-                <ActivityCard 
-                  key={key}
-                  onClick={() => handleActivityClick(activity)}
-                  clickable
-                >
-                  <ActivityHeader>
-                    <TypeBadge color={getTypeColor(activity.type)}>
-                      <span className="icon">{getTypeIcon(activity.type)}</span>
-                      <span className="label">{getTypeLabel(activity.type)}</span>
-                    </TypeBadge>
-                    <DateInfo>{formatDate(activity.createdAt)}</DateInfo>
-                  </ActivityHeader>
-                  
-                  {activity.title && (
-                    <ActivityTitle>{activity.title}</ActivityTitle>
-                  )}
-                  
-                  {activity.content && (
-                    <ActivityContent>
-                      {activity.content.length > 150 
-                        ? `${activity.content.substring(0, 150)}...` 
-                        : activity.content}
-                    </ActivityContent>
-                  )}
+            {groupedActivities.map(group => (
+              <div key={group.dateKey}>
+                <DateSectionHeader>{group.dateLabel}</DateSectionHeader>
+                {group.activities.map(activity => {
+                  const key = `${activity.type}-${activity.idx}`;
+                  return (
+                    <ActivityCard
+                      key={key}
+                      onClick={() => handleActivityClick(activity)}
+                      clickable
+                    >
+                      <ActivityIcon>
+                        {getTypeIcon(activity.type)}
+                      </ActivityIcon>
 
-                  {activity.relatedTitle && (
-                    <RelatedInfo>
-                      <span className="label">관련:</span>
-                      <span className="title">{activity.relatedTitle}</span>
-                    </RelatedInfo>
-                  )}
+                      <ActivityContent>
+                        <ActivityHeader>
+                          <TypeBadge color={getTypeColor(activity.type)}>
+                            <span className="label">{getTypeLabel(activity.type)}</span>
+                          </TypeBadge>
+                          <DateInfo>{formatDate(activity.createdAt)}</DateInfo>
+                        </ActivityHeader>
 
-                  {activity.status && (
-                    <StatusBadge status={activity.status}>
-                      {activity.status}
-                    </StatusBadge>
-                  )}
-                </ActivityCard>
-              );
-            })}
-            
+                        {activity.title && (
+                          <ActivityTitle>{activity.title}</ActivityTitle>
+                        )}
+
+                        {activity.content && (
+                          <ActivityContentText>
+                            {activity.content.length > 150
+                              ? `${activity.content.substring(0, 150)}...`
+                              : activity.content}
+                          </ActivityContentText>
+                        )}
+
+                        {activity.relatedTitle && (
+                          <RelatedInfo>
+                            <span className="label">관련:</span>
+                            <span className="title">{activity.relatedTitle}</span>
+                          </RelatedInfo>
+                        )}
+
+                        {activity.status && (
+                          <StatusBadge status={activity.status}>
+                            {activity.status}
+                          </StatusBadge>
+                        )}
+                      </ActivityContent>
+                    </ActivityCard>
+                  );
+                })}
+              </div>
+            ))}
+
             {totalCount > 0 && (
               <PaginationWrapper>
                 <PageNavigation
@@ -388,12 +404,14 @@ const ActivityPage = () => {
 export default ActivityPage;
 
 const Container = styled.div`
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: ${props => props.theme.spacing.xl} ${props => props.theme.spacing.lg};
+  padding: 16px;
+  min-height: 100vh;
+  background: ${props => props.theme.colors.background};
 
-  @media (max-width: 768px) {
-    padding: ${props => props.theme.spacing.md};
+  @media (min-width: 769px) {
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 24px 16px;
   }
 `;
 
@@ -444,30 +462,50 @@ const FilterButton = styled.button`
 const ActivityList = styled.div`
   display: flex;
   flex-direction: column;
-  gap: ${props => props.theme.spacing.md};
+  gap: 10px;
+`;
+
+const ActivityIcon = styled.div`
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: ${props => props.theme.colors.primarySoft};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+`;
+
+const DateSectionHeader = styled.div`
+  font-size: 12px;
+  font-weight: 600;
+  color: ${props => props.theme.colors.textSecondary};
+  padding: 8px 4px 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 `;
 
 const ActivityCard = styled.div`
-  background: ${props => props.theme.colors.surface};
-  border: 1px solid ${props => props.theme.colors.border};
-  border-radius: ${props => props.theme.borderRadius.lg};
-  padding: ${props => props.theme.spacing.lg};
-  transition: all 0.3s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 16px;
+  background: ${props => props.theme.colors.surfaceElevated};
+  border-radius: 16px;
+  border: 1px solid ${props => props.theme.colors.borderLight};
+  box-shadow: 0 2px 8px ${props => props.theme.colors.shadow};
+  transition: transform 0.15s ease;
   ${props => props.clickable && `
     cursor: pointer;
   `}
-  
+
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px ${props => props.theme.colors.shadow};
-    border-color: ${props => props.theme.colors.primary};
-    ${props => props.clickable && `
-      background: ${props.theme.colors.surfaceHover || props.theme.colors.surface};
-    `}
+    transform: translateY(-1px);
   }
 
   @media (max-width: 768px) {
-    padding: ${props => props.theme.spacing.md};
+    padding: 16px;
   }
 `;
 
@@ -476,6 +514,7 @@ const ActivityHeader = styled.div`
   justify-content: space-between;
   align-items: center;
   margin-bottom: ${props => props.theme.spacing.md};
+  gap: ${props => props.theme.spacing.md};
 
   @media (max-width: 768px) {
     flex-direction: column;
@@ -494,9 +533,10 @@ const TypeBadge = styled.div`
   border-radius: ${props => props.theme.borderRadius.md};
   font-size: ${props => props.theme.typography.body2.fontSize};
   font-weight: 600;
+  flex-shrink: 0;
 
-  .icon {
-    font-size: 1.1em;
+  .label {
+    font-weight: 600;
   }
 `;
 
@@ -513,7 +553,11 @@ const ActivityTitle = styled.h3`
   line-height: 1.4;
 `;
 
-const ActivityContent = styled.p`
+const ActivityContent = styled.div`
+  flex: 1;
+`;
+
+const ActivityContentText = styled.p`
   color: ${props => props.theme.colors.textSecondary};
   font-size: ${props => props.theme.typography.body2.fontSize};
   line-height: 1.6;

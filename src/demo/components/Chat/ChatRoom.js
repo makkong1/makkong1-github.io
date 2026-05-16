@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import styled from 'styled-components';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
@@ -33,6 +33,8 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [hasReview, setHasReview] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
+  const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
+  const toastTimerRef = useRef(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const stompClientRef = useRef(null);
@@ -40,26 +42,83 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
   const fileInputRef = useRef(null);
   const menuRef = useRef(null);
 
+  /** 수신 메시지 읽음: REST 호출을 묶어 서버·네트워크 부하 감소 */
+  const READ_DEBOUNCE_MS = 500;
+  const readDebounceTimerRef = useRef(null);
+  const pendingReadMessageIdxRef = useRef(null);
+
+  const clearReadDebounce = useCallback(() => {
+    if (readDebounceTimerRef.current) {
+      clearTimeout(readDebounceTimerRef.current);
+      readDebounceTimerRef.current = null;
+    }
+  }, []);
+
+  const flushMarkAsRead = useCallback(
+    async (lastMessageIdx) => {
+      clearReadDebounce();
+      pendingReadMessageIdxRef.current = null;
+      if (!conversationIdx) return;
+      try {
+        await markAsRead(conversationIdx, lastMessageIdx);
+      } catch (err) {
+        console.error('읽음 처리 실패:', err);
+      }
+    },
+    [conversationIdx, clearReadDebounce]
+  );
+
+  const scheduleIncomingMessageRead = useCallback(
+    (messageIdx) => {
+      if (!conversationIdx || messageIdx == null) return;
+      const prev = pendingReadMessageIdxRef.current;
+      pendingReadMessageIdxRef.current =
+        prev == null ? messageIdx : Math.max(prev, messageIdx);
+
+      clearReadDebounce();
+      readDebounceTimerRef.current = setTimeout(() => {
+        readDebounceTimerRef.current = null;
+        const pending = pendingReadMessageIdxRef.current;
+        pendingReadMessageIdxRef.current = null;
+        if (pending != null) {
+          markAsRead(conversationIdx, pending).catch((err) => {
+            console.error('읽음 처리 실패:', err);
+          });
+        }
+      }, READ_DEBOUNCE_MS);
+    },
+    [conversationIdx, clearReadDebounce]
+  );
+
+  const showToast = (message, type = 'error') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ message, type });
+    toastTimerRef.current = setTimeout(() => setToast(null), 3500);
+  };
+
   // 메시지 목록 조회
   const fetchMessages = async () => {
     if (!conversationIdx || !user?.idx) return;
 
+    clearReadDebounce();
+    pendingReadMessageIdxRef.current = null;
+
     setLoading(true);
     try {
-      const data = await getMessages(conversationIdx, user.idx, 0, 100);
+      const data = await getMessages(conversationIdx, 0, 100);
       const messagesList = data.content || data || [];
       // 백엔드에서 DESC로 정렬되어 최신부터 오므로, reverse()로 오래된 것부터 최신 순서로 변경 (최신이 맨 아래)
       const sortedMessages = [...messagesList].reverse();
       setMessages(sortedMessages);
 
-      // 읽음 처리
+      // 읽음 처리 (초기 로드 — 디바운스 없이 즉시)
       if (sortedMessages.length > 0) {
         const lastMessage = sortedMessages[sortedMessages.length - 1];
-        await markAsRead(conversationIdx, user.idx, lastMessage.idx);
+        await flushMarkAsRead(lastMessage.idx);
       }
     } catch (error) {
       console.error('메시지 조회 실패:', error);
-      alert('메시지를 불러오는데 실패했습니다.');
+      showToast('메시지를 불러오는데 실패했습니다.');
     } finally {
       setLoading(false);
     }
@@ -70,7 +129,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
     if (!conversationIdx || !user?.idx) return;
 
     try {
-      const data = await getConversation(conversationIdx, user.idx);
+      const data = await getConversation(conversationIdx);
       setConversation(data);
       // 내가 거래 확정했는지 확인
       const myParticipant = data?.participants?.find(p => p.userIdx === user.idx);
@@ -119,6 +178,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
       fetchConversation();
       fetchMessages();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [conversationIdx, user?.idx]);
 
   // WebSocket 연결 및 구독
@@ -167,11 +227,9 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
                 });
               });
 
-              // 읽음 처리 (내가 보낸 메시지가 아닌 경우)
+              // 읽음 처리 (상대 메시지) — 디바운스로 연속 수신 시 1회에 가깝게 병합
               if (messageData.senderIdx !== user.idx) {
-                markAsRead(conversationIdx, user.idx, messageData.idx).catch(err => {
-                  console.error('읽음 처리 실패:', err);
-                });
+                scheduleIncomingMessageRead(messageData.idx);
               }
             } catch (error) {
               console.error('메시지 파싱 실패:', error);
@@ -197,12 +255,14 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
 
     // cleanup
     return () => {
+      clearReadDebounce();
+      pendingReadMessageIdxRef.current = null;
       if (stompClientRef.current) {
         stompClientRef.current.deactivate();
         stompClientRef.current = null;
       }
     };
-  }, [conversationIdx, user?.idx]);
+  }, [conversationIdx, user?.idx, clearReadDebounce, scheduleIncomingMessageRead]);
 
   // 이미지 업로드 및 전송
   const handleImageUpload = async (e) => {
@@ -211,7 +271,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
 
     // 이미지 파일만 허용
     if (!file.type.startsWith('image/')) {
-      alert('이미지 파일만 업로드할 수 있습니다.');
+      showToast('이미지 파일만 업로드할 수 있습니다.');
       return;
     }
 
@@ -242,16 +302,16 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
           },
         });
 
-        await markAsRead(conversationIdx, user.idx, null);
+        await flushMarkAsRead(null);
       } else {
         // HTTP API로 폴백
-        const newMessage = await sendMessage(conversationIdx, user.idx, imageUrl, 'IMAGE');
+        const newMessage = await sendMessage(conversationIdx, imageUrl, 'IMAGE');
         setMessages(prev => [...prev, newMessage]);
-        await markAsRead(conversationIdx, user.idx, newMessage.idx);
+        await flushMarkAsRead(newMessage.idx);
       }
     } catch (error) {
       console.error('이미지 업로드 실패:', error);
-      alert(error.response?.data?.error || '이미지 업로드에 실패했습니다.');
+      showToast(error.response?.data?.error || '이미지 업로드에 실패했습니다.');
     } finally {
       setUploadingImage(false);
       // 파일 입력 초기화
@@ -286,16 +346,16 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
         });
 
         // 읽음 처리 (내가 보낸 메시지)
-        await markAsRead(conversationIdx, user.idx, null);
+        await flushMarkAsRead(null);
       } else {
         // WebSocket이 연결되지 않은 경우 HTTP API로 폴백
-        const newMessage = await sendMessage(conversationIdx, user.idx, content);
+        const newMessage = await sendMessage(conversationIdx, content);
         setMessages(prev => [...prev, newMessage]);
-        await markAsRead(conversationIdx, user.idx, newMessage.idx);
+        await flushMarkAsRead(newMessage.idx);
       }
     } catch (error) {
       console.error('메시지 전송 실패:', error);
-      alert(error.response?.data?.error || '메시지 전송에 실패했습니다.');
+      showToast(error.response?.data?.error || '메시지 전송에 실패했습니다.');
       setMessageInput(content); // 실패 시 입력 내용 복원
     } finally {
       setSending(false);
@@ -351,8 +411,8 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
     }
 
     try {
-      await leaveConversation(conversationIdx, user.idx);
-      alert('채팅방에서 나갔습니다.');
+      await leaveConversation(conversationIdx);
+      showToast('채팅방에서 나갔습니다.', 'success');
       if (onAction) {
         onAction();
       } else if (onClose) {
@@ -360,7 +420,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
       }
     } catch (error) {
       console.error('채팅방 나가기 실패:', error);
-      alert('채팅방 나가기에 실패했습니다.');
+      showToast('채팅방 나가기에 실패했습니다.');
     }
   };
 
@@ -373,8 +433,8 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
     }
 
     try {
-      await deleteConversation(conversationIdx, user.idx);
-      alert('채팅방이 삭제되었습니다.');
+      await deleteConversation(conversationIdx);
+      showToast('채팅방이 삭제되었습니다.', 'success');
       if (onAction) {
         onAction();
       } else if (onClose) {
@@ -382,7 +442,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
       }
     } catch (error) {
       console.error('채팅방 삭제 실패:', error);
-      alert('채팅방 삭제에 실패했습니다.');
+      showToast('채팅방 삭제에 실패했습니다.');
     }
   };
 
@@ -396,14 +456,14 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
 
     setConfirmingDeal(true);
     try {
-      await confirmCareDeal(conversationIdx, user.idx);
+      await confirmCareDeal(conversationIdx);
       setDealConfirmed(true);
       // 채팅방 정보 다시 조회
       await fetchConversation();
-      alert('거래 확정이 완료되었습니다. 상대방도 확정하면 서비스가 시작됩니다.');
+      showToast('거래 확정이 완료되었습니다. 상대방도 확정하면 서비스가 시작됩니다.', 'success');
     } catch (error) {
       console.error('거래 확정 실패:', error);
-      alert(error.response?.data?.error || '거래 확정에 실패했습니다.');
+      showToast(error.response?.data?.error || '거래 확정에 실패했습니다.');
     } finally {
       setConfirmingDeal(false);
     }
@@ -423,10 +483,10 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
       setCareRequestStatus('COMPLETED');
       // 펫케어 요청 정보 다시 조회
       await fetchConversation();
-      alert('펫케어 서비스가 완료되었습니다.');
+      showToast('펫케어 서비스가 완료되었습니다.', 'success');
     } catch (error) {
       console.error('서비스 완료 실패:', error);
-      alert(error.response?.data?.error || '서비스 완료 처리에 실패했습니다.');
+      showToast(error.response?.data?.error || '서비스 완료 처리에 실패했습니다.');
     } finally {
       setCompletingCare(false);
     }
@@ -440,7 +500,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
   // 리뷰 작성
   const handleSubmitReview = async () => {
     if (!careRequestData || !user?.idx) {
-      alert('리뷰 작성에 필요한 정보가 없습니다.');
+      showToast('리뷰 작성에 필요한 정보가 없습니다.');
       return;
     }
 
@@ -450,12 +510,12 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
     );
 
     if (!acceptedApplication) {
-      alert('승인된 펫케어 서비스를 찾을 수 없습니다.');
+      showToast('승인된 펫케어 서비스를 찾을 수 없습니다.');
       return;
     }
 
     if (!reviewComment.trim()) {
-      alert('리뷰 내용을 입력해주세요.');
+      showToast('리뷰 내용을 입력해주세요.');
       return;
     }
 
@@ -469,7 +529,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
         comment: reviewComment.trim()
       });
 
-      alert('리뷰가 작성되었습니다.');
+      showToast('리뷰가 작성되었습니다.', 'success');
       setShowReviewModal(false);
       setReviewRating(5);
       setReviewComment('');
@@ -478,7 +538,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
       await fetchConversation();
     } catch (error) {
       console.error('리뷰 작성 실패:', error);
-      alert(error.response?.data?.error || '리뷰 작성에 실패했습니다.');
+      showToast(error.response?.data?.error || '리뷰 작성에 실패했습니다.');
     } finally {
       setSubmittingReview(false);
     }
@@ -487,7 +547,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
   // 내 위치 전송 (주소 텍스트 입력)
   const handleSendLocation = async () => {
     if (!navigator.geolocation) {
-      alert('브라우저가 위치 정보를 지원하지 않습니다.');
+      showToast('브라우저가 위치 정보를 지원하지 않습니다.');
       return;
     }
 
@@ -506,18 +566,18 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
             // 입력창으로 포커스
             messageInputRef.current?.focus();
           } else {
-            alert('주소 정보를 가져오는데 실패했습니다.');
+            showToast('주소 정보를 가져오는데 실패했습니다.');
           }
         } catch (err) {
           console.error('위치 변환 실패:', err);
-          alert('위치 정보를 변환하는데 실패했습니다.');
+          showToast('위치 정보를 변환하는데 실패했습니다.');
         } finally {
           setGettingLocation(false);
         }
       },
       (error) => {
         console.error('위치 권한 에러:', error);
-        alert('위치 정보를 가져올 수 없습니다. 권한을 확인해주세요.');
+        showToast('위치 정보를 가져올 수 없습니다. 권한을 확인해주세요.');
         setGettingLocation(false);
       }
     );
@@ -554,6 +614,11 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
 
   return (
     <Container>
+      {toast && (
+        <ToastNotification type={toast.type}>
+          {toast.message}
+        </ToastNotification>
+      )}
       <Header>
         {onBack && (
           <BackButton onClick={onBack}>←</BackButton>
@@ -570,7 +635,8 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
           </HeaderTitle>
           <HeaderSubtitle>
             {otherParticipant && `${otherParticipant.username} • `}
-            {connected ? '🟢 연결됨' : '🔴 연결 중...'}
+            <ConnectionDot $connected={connected} />
+            {connected ? '연결됨' : '연결 중...'}
           </HeaderSubtitle>
         </HeaderInfo>
         <HeaderActions>
@@ -587,94 +653,96 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
         </HeaderActions>
       </Header>
 
-      <MessagesContainer ref={messagesContainerRef}>
-        {loading ? (
-          <LoadingMessage>메시지를 불러오는 중...</LoadingMessage>
-        ) : messages.length === 0 ? (
-          <EmptyMessage>메시지가 없습니다. 첫 메시지를 보내보세요!</EmptyMessage>
-        ) : (
-          messages.map((message, index) => {
-            const isMyMessage = message.senderIdx === user?.idx;
-            const showTime = index === 0 ||
-              new Date(message.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 60000;
-
-            return (
-              <MessageWrapper key={message.idx || index} isMyMessage={isMyMessage}>
-                {!isMyMessage && (
-                  <SenderName>{message.senderUsername || otherParticipant?.username || '알 수 없음'}</SenderName>
-                )}
-                <MessageBubble isMyMessage={isMyMessage}>
-                  {message.messageType === 'IMAGE' ? (
-                    <MessageImage
-                      src={message.content}
-                      alt="이미지"
-                      onClick={() => setSelectedImage(message.content)}
-                    />
-                  ) : (
-                    <MessageContent>{message.content}</MessageContent>
-                  )}
-                  {showTime && (
-                    <MessageTime>{formatTime(message.createdAt)}</MessageTime>
-                  )}
-                </MessageBubble>
-              </MessageWrapper>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
-      </MessagesContainer>
-
-      {/* 거래 확정 버튼 (펫케어 채팅방인 경우) */}
-      {isCareRequestChat && !allParticipantsConfirmed && (
-        <DealConfirmSection>
-          {dealConfirmed ? (
-            <DealConfirmStatus>
-              ✓ 거래 확정 완료 (상대방 확정 대기 중)
-            </DealConfirmStatus>
+      <MiddleColumn>
+        <MessagesContainer ref={messagesContainerRef}>
+          {loading ? (
+            <LoadingMessage>메시지를 불러오는 중...</LoadingMessage>
+          ) : messages.length === 0 ? (
+            <EmptyMessage>메시지가 없습니다. 첫 메시지를 보내보세요!</EmptyMessage>
           ) : (
-            <DealConfirmButton onClick={handleConfirmDeal} disabled={confirmingDeal}>
-              {confirmingDeal ? '확정 중...' : '🤝 거래 확정'}
-            </DealConfirmButton>
+            messages.map((message, index) => {
+              const isMyMessage = message.senderIdx === user?.idx;
+              const showTime = index === 0 ||
+                new Date(message.createdAt).getTime() - new Date(messages[index - 1].createdAt).getTime() > 60000;
+
+              return (
+                <MessageWrapper key={message.idx || index} isMyMessage={isMyMessage}>
+                  {!isMyMessage && (
+                    <SenderName>{message.senderUsername || otherParticipant?.username || '알 수 없음'}</SenderName>
+                  )}
+                  <MessageBubble isMyMessage={isMyMessage}>
+                    {message.messageType === 'IMAGE' ? (
+                      <MessageImage
+                        src={message.content}
+                        alt="이미지"
+                        onClick={() => setSelectedImage(message.content)}
+                      />
+                    ) : (
+                      <MessageContent>{message.content}</MessageContent>
+                    )}
+                    {showTime && (
+                      <MessageTime isMyMessage={isMyMessage}>{formatTime(message.createdAt)}</MessageTime>
+                    )}
+                  </MessageBubble>
+                </MessageWrapper>
+              );
+            })
           )}
-        </DealConfirmSection>
-      )}
+          <div ref={messagesEndRef} />
+        </MessagesContainer>
 
-      {allParticipantsConfirmed && isCareRequestChat && (
-        <DealConfirmedBanner>
-          ✓ 양쪽 모두 거래 확정 완료! 펫케어 서비스가 시작되었습니다.
-        </DealConfirmedBanner>
-      )}
+        {/* 거래 확정 버튼 (펫케어 채팅방인 경우) */}
+        {isCareRequestChat && !allParticipantsConfirmed && (
+          <DealConfirmSection>
+            {dealConfirmed ? (
+              <DealConfirmStatus>
+                ✓ 거래 확정 완료 (상대방 확정 대기 중)
+              </DealConfirmStatus>
+            ) : (
+              <DealConfirmButton onClick={handleConfirmDeal} disabled={confirmingDeal}>
+                {confirmingDeal ? '확정 중...' : '🤝 거래 확정'}
+              </DealConfirmButton>
+            )}
+          </DealConfirmSection>
+        )}
 
-      {/* 서비스 완료 버튼 (IN_PROGRESS 상태이고 제공자일 때만 표시) */}
-      {isCareRequestChat && careRequestStatus === 'IN_PROGRESS' && isProvider && (
-        <CompleteCareSection>
-          <CompleteCareButton onClick={handleCompleteCare} disabled={completingCare}>
-            {completingCare ? '완료 처리 중...' : '✅ 서비스 완료'}
-          </CompleteCareButton>
-        </CompleteCareSection>
-      )}
+        {allParticipantsConfirmed && isCareRequestChat && (
+          <DealConfirmedBanner>
+            ✓ 양쪽 모두 거래 확정 완료! 펫케어 서비스가 시작되었습니다.
+          </DealConfirmedBanner>
+        )}
 
-      {isCareRequestChat && careRequestStatus === 'COMPLETED' && (
-        <CompletedBanner>
-          ✓ 펫케어 서비스가 완료되었습니다.
-        </CompletedBanner>
-      )}
+        {/* 서비스 완료 버튼 (IN_PROGRESS 상태이고 제공자일 때만 표시) */}
+        {isCareRequestChat && careRequestStatus === 'IN_PROGRESS' && isProvider && (
+          <CompleteCareSection>
+            <CompleteCareButton onClick={handleCompleteCare} disabled={completingCare}>
+              {completingCare ? '완료 처리 중...' : '✅ 서비스 완료'}
+            </CompleteCareButton>
+          </CompleteCareSection>
+        )}
 
-      {/* 리뷰 작성 버튼 (COMPLETED 상태이고 요청자이며 아직 리뷰를 작성하지 않았을 때만 표시) */}
-      {isCareRequestChat && careRequestStatus === 'COMPLETED' && isRequester && !hasReview && (
-        <ReviewSection>
-          <ReviewButton onClick={handleOpenReviewModal}>
-            ⭐ 리뷰 작성하기
-          </ReviewButton>
-        </ReviewSection>
-      )}
+        {isCareRequestChat && careRequestStatus === 'COMPLETED' && (
+          <CompletedBanner>
+            ✓ 펫케어 서비스가 완료되었습니다.
+          </CompletedBanner>
+        )}
 
-      {/* 리뷰 작성 완료 메시지 */}
-      {isCareRequestChat && careRequestStatus === 'COMPLETED' && isRequester && hasReview && (
-        <ReviewCompletedBanner>
-          ✓ 리뷰를 작성하셨습니다.
-        </ReviewCompletedBanner>
-      )}
+        {/* 리뷰 작성 버튼 (COMPLETED 상태이고 요청자이며 아직 리뷰를 작성하지 않았을 때만 표시) */}
+        {isCareRequestChat && careRequestStatus === 'COMPLETED' && isRequester && !hasReview && (
+          <ReviewSection>
+            <ReviewButton onClick={handleOpenReviewModal}>
+              ⭐ 리뷰 작성하기
+            </ReviewButton>
+          </ReviewSection>
+        )}
+
+        {/* 리뷰 작성 완료 메시지 */}
+        {isCareRequestChat && careRequestStatus === 'COMPLETED' && isRequester && hasReview && (
+          <ReviewCompletedBanner>
+            ✓ 리뷰를 작성하셨습니다.
+          </ReviewCompletedBanner>
+        )}
+      </MiddleColumn>
 
       <InputContainer>
         <MessageForm onSubmit={handleSendMessage}>
@@ -782,17 +850,30 @@ export default ChatRoom;
 const Container = styled.div`
   display: flex;
   flex-direction: column;
-  height: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+  min-width: 0;
+  position: relative;
   background: ${({ theme }) => theme.colors.background};
+`;
+
+const MiddleColumn = styled.div`
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 `;
 
 const Header = styled.div`
   display: flex;
   align-items: center;
-  padding: 12px 16px;
+  height: 56px;
+  padding: 0 16px;
   border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
   gap: 12px;
+  flex-shrink: 0;
 `;
 
 const BackButton = styled.button`
@@ -806,9 +887,9 @@ const BackButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
+
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceHover};
   }
@@ -819,17 +900,34 @@ const HeaderInfo = styled.div`
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
 `;
 
 const HeaderTitle = styled.div`
-  font-size: 16px;
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const HeaderSubtitle = styled.div`
-  font-size: 12px;
+  font-size: ${({ theme }) => theme.typography.caption.fontSize};
   color: ${({ theme }) => theme.colors.textSecondary};
+  display: flex;
+  align-items: center;
+  gap: 6px;
+`;
+
+const ConnectionDot = styled.span`
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  background: ${({ $connected, theme }) =>
+    $connected ? theme.colors.success : theme.colors.error};
+  flex-shrink: 0;
 `;
 
 const HeaderActions = styled.div`
@@ -850,9 +948,9 @@ const MenuButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
+
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceHover};
   }
@@ -865,8 +963,8 @@ const MenuDropdown = styled.div`
   margin-top: 8px;
   background: ${({ theme }) => theme.colors.surface};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  box-shadow: ${({ theme }) => theme.shadows.md};
   z-index: 1000;
   min-width: 120px;
   overflow: hidden;
@@ -878,15 +976,15 @@ const MenuItem = styled.button`
   border: none;
   background: transparent;
   color: ${({ theme, danger }) => danger ? theme.colors.error : theme.colors.text};
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   text-align: left;
   cursor: pointer;
-  transition: all 0.2s ease;
-  
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
+
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceHover};
   }
-  
+
   &:not(:last-child) {
     border-bottom: 1px solid ${({ theme }) => theme.colors.border};
   }
@@ -903,9 +1001,9 @@ const CloseButton = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
-  
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
+
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceHover};
     color: ${({ theme }) => theme.colors.text};
@@ -914,6 +1012,7 @@ const CloseButton = styled.button`
 
 const MessagesContainer = styled.div`
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px;
   display: flex;
@@ -947,63 +1046,38 @@ const MessageWrapper = styled.div`
 `;
 
 const SenderName = styled.div`
-  font-size: 12px;
-  color: ${({ theme }) => theme.colors.textSecondary};
+  font-size: ${({ theme }) => theme.typography.caption.fontSize};
+  color: ${({ theme }) => theme.colors.textMuted};
   padding: 0 8px;
 `;
 
 const MessageBubble = styled.div`
   max-width: 70%;
   padding: 12px 16px;
-  border-radius: ${({ isMyMessage }) =>
-    isMyMessage ? '18px 18px 4px 18px' : '18px 18px 18px 4px'};
+  border-radius: ${({ isMyMessage, theme }) =>
+    isMyMessage
+      ? `${theme.borderRadius.lg} 0 ${theme.borderRadius.lg} ${theme.borderRadius.lg}`
+      : `0 ${theme.borderRadius.lg} ${theme.borderRadius.lg} ${theme.borderRadius.lg}`};
   background: ${({ theme, isMyMessage }) =>
     isMyMessage
       ? theme.colors.primary
-      : theme.colors.surface || '#E8E8E8'};
+      : theme.colors.surfaceSoft};
   color: ${({ theme, isMyMessage }) =>
     isMyMessage
-      ? '#ffffff'
-      : theme.colors.text || '#212121'};
+      ? theme.colors.textInverse
+      : theme.colors.text};
   word-wrap: break-word;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  box-shadow: ${({ isMyMessage }) =>
-    isMyMessage
-      ? '0 2px 8px rgba(0, 0, 0, 0.15)'
-      : '0 2px 8px rgba(0, 0, 0, 0.1)'};
+  box-shadow: ${({ theme }) => theme.shadows.sm};
   border: ${({ theme, isMyMessage }) =>
     isMyMessage ? 'none' : `1px solid ${theme.colors.border}`};
   position: relative;
-  
-  /* 말풍선 꼬리 효과 */
-  &::after {
-    content: '';
-    position: absolute;
-    width: 0;
-    height: 0;
-    ${({ isMyMessage, theme }) => isMyMessage
-    ? `
-        right: -8px;
-        bottom: 12px;
-        border-top: 8px solid transparent;
-        border-bottom: 8px solid transparent;
-        border-left: 8px solid ${theme.colors.primary};
-      `
-    : `
-        left: -8px;
-        bottom: 12px;
-        border-top: 8px solid transparent;
-        border-bottom: 8px solid transparent;
-        border-right: 8px solid ${theme.colors.surface || '#E8E8E8'};
-      `
-  }
-  }
 `;
 
 const MessageContent = styled.div`
-  font-size: 15px;
+  font-size: ${({ theme }) => theme.typography.body1.fontSize};
   line-height: 1.5;
   word-wrap: break-word;
   font-weight: 400;
@@ -1013,25 +1087,31 @@ const MessageContent = styled.div`
 const MessageImage = styled.img`
   max-width: 100%;
   max-height: 300px;
-  border-radius: 8px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   object-fit: contain;
   cursor: pointer;
-  
+
   &:hover {
     opacity: 0.9;
   }
 `;
 
 const MessageTime = styled.div`
-  font-size: 11px;
-  opacity: 0.7;
+  font-size: ${({ theme }) => theme.typography.caption.fontSize};
+  color: ${({ theme, isMyMessage }) =>
+    isMyMessage ? 'rgba(255,255,255,0.7)' : theme.colors.textMuted};
   align-self: flex-end;
 `;
 
 const InputContainer = styled.div`
-  padding: 12px 16px;
+  padding: ${({ theme }) => theme.spacing.md} ${({ theme }) => theme.spacing.lg};
+  padding-bottom: max(
+    ${({ theme }) => theme.spacing.md},
+    env(safe-area-inset-bottom, 0px)
+  );
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   background: ${({ theme }) => theme.colors.surface};
+  flex-shrink: 0;
 `;
 
 const MessageForm = styled.form`
@@ -1058,20 +1138,20 @@ const ImageButton = styled.button`
   color: ${({ theme }) => theme.colors.text};
   font-size: 20px;
   cursor: pointer;
-  border-radius: 50%;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
   flex-shrink: 0;
-  
+
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.surfaceHover};
     transform: scale(1.05);
   }
-  
+
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 `;
@@ -1079,17 +1159,22 @@ const ImageButton = styled.button`
 const MessageInput = styled.input`
   flex: 1;
   padding: 10px 14px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 20px;
-  font-size: 14px;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   background: ${({ theme }) => theme.colors.background};
   color: ${({ theme }) => theme.colors.text};
-  
+  transition: border-color ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
+
+  &::placeholder {
+    color: ${({ theme }) => theme.colors.textMuted};
+  }
+
   &:focus {
     outline: none;
     border-color: ${({ theme }) => theme.colors.primary};
   }
-  
+
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -1099,20 +1184,20 @@ const MessageInput = styled.input`
 const SendButton = styled.button`
   padding: 10px 20px;
   border: none;
-  border-radius: 20px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
   background: ${({ theme }) => theme.colors.primary};
-  color: #ffffff;
-  font-size: 14px;
+  color: ${({ theme }) => theme.colors.textInverse};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
-  
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
+
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.primaryDark};
   }
-  
+
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 `;
@@ -1121,14 +1206,14 @@ const LoadingMessage = styled.div`
   padding: 40px 20px;
   text-align: center;
   color: ${({ theme }) => theme.colors.textSecondary};
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
 `;
 
 const EmptyMessage = styled.div`
   padding: 60px 20px;
   text-align: center;
   color: ${({ theme }) => theme.colors.textLight};
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
 `;
 
 const ImageModal = styled.div`
@@ -1166,12 +1251,12 @@ const ImageModalClose = styled.button`
   color: white;
   font-size: 20px;
   cursor: pointer;
-  border-radius: 50%;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-  
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
+
   &:hover {
     background: rgba(255, 255, 255, 0.3);
   }
@@ -1181,7 +1266,7 @@ const ImageModalImage = styled.img`
   max-width: 100%;
   max-height: 90vh;
   object-fit: contain;
-  border-radius: 8px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
 `;
 
 const DealConfirmSection = styled.div`
@@ -1196,13 +1281,13 @@ const DealConfirmSection = styled.div`
 const DealConfirmButton = styled.button`
   padding: 10px 20px;
   background: ${({ theme }) => theme.colors.primary};
-  color: white;
+  color: ${({ theme }) => theme.colors.textInverse};
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
 
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.primaryDark};
@@ -1210,7 +1295,7 @@ const DealConfirmButton = styled.button`
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 `;
@@ -1220,18 +1305,18 @@ const DealConfirmStatus = styled.div`
   background: ${({ theme }) => theme.colors.surfaceElevated};
   color: ${({ theme }) => theme.colors.primary};
   border: 1px solid ${({ theme }) => theme.colors.primary};
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
 `;
 
 const DealConfirmedBanner = styled.div`
   padding: 12px 16px;
-  background: ${({ theme }) => theme.colors.success || '#10b981'}20;
-  color: ${({ theme }) => theme.colors.success || '#10b981'};
+  background: ${({ theme }) => theme.colors.successSoft};
+  color: ${({ theme }) => theme.colors.success};
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   text-align: center;
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
 `;
 
@@ -1246,43 +1331,43 @@ const CompleteCareSection = styled.div`
 
 const CompleteCareButton = styled.button`
   padding: 10px 20px;
-  background: ${({ theme }) => theme.colors.success || '#10b981'};
-  color: white;
+  background: ${({ theme }) => theme.colors.success};
+  color: ${({ theme }) => theme.colors.textInverse};
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
 
   &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.successDark || '#059669'};
+    background: ${({ theme }) => theme.colors.successDark};
     transform: translateY(-1px);
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 `;
 
 const CompletedBanner = styled.div`
   padding: 12px 16px;
-  background: ${({ theme }) => theme.colors.success || '#10b981'}20;
-  color: ${({ theme }) => theme.colors.success || '#10b981'};
+  background: ${({ theme }) => theme.colors.successSoft};
+  color: ${({ theme }) => theme.colors.success};
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   text-align: center;
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
 `;
 
 const ReviewCompletedBanner = styled.div`
   padding: 12px 16px;
-  background: ${({ theme }) => theme.colors.info || '#3b82f6'}20;
-  color: ${({ theme }) => theme.colors.info || '#3b82f6'};
+  background: ${({ theme }) => theme.colors.infoSoft};
+  color: ${({ theme }) => theme.colors.info};
   border-top: 1px solid ${({ theme }) => theme.colors.border};
   text-align: center;
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
 `;
 
@@ -1297,22 +1382,22 @@ const ReviewSection = styled.div`
 
 const ReviewButton = styled.button`
   padding: 10px 20px;
-  background: ${({ theme }) => theme.colors.warning || '#f59e0b'};
-  color: white;
+  background: ${({ theme }) => theme.colors.warning};
+  color: ${({ theme }) => theme.colors.textInverse};
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
 
   &:hover:not(:disabled) {
-    background: ${({ theme }) => theme.colors.warningDark || '#d97706'};
+    background: ${({ theme }) => theme.colors.warningDark};
     transform: translateY(-1px);
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 `;
@@ -1323,7 +1408,7 @@ const ReviewModal = styled.div`
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: ${({ theme }) => theme.colors.overlay};
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -1332,13 +1417,13 @@ const ReviewModal = styled.div`
 `;
 
 const ReviewModalContent = styled.div`
-  background: ${({ theme }) => theme.colors.surface || '#ffffff'};
-  border-radius: 12px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
   width: 100%;
   max-width: 500px;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  box-shadow: ${({ theme }) => theme.shadows.xl};
 `;
 
 const ReviewModalHeader = styled.div`
@@ -1351,7 +1436,7 @@ const ReviewModalHeader = styled.div`
 
 const ReviewModalTitle = styled.h2`
   margin: 0;
-  font-size: 20px;
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
 `;
@@ -1367,8 +1452,8 @@ const ReviewModalClose = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 50%;
-  transition: all 0.2s ease;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
 
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceHover};
@@ -1390,7 +1475,7 @@ const ReviewCommentSection = styled.div`
 const ReviewLabel = styled.label`
   display: block;
   margin-bottom: 8px;
-  font-size: 14px;
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
 `;
@@ -1409,7 +1494,7 @@ const StarButton = styled.button`
   padding: 0;
   line-height: 1;
   filter: ${({ active }) => active ? 'none' : 'grayscale(100%) opacity(0.3)'};
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
 
   &:hover {
     transform: scale(1.1);
@@ -1418,7 +1503,7 @@ const StarButton = styled.button`
 
 const RatingText = styled.span`
   margin-left: 8px;
-  font-size: 16px;
+  font-size: ${({ theme }) => theme.typography.h3.fontSize};
   font-weight: 600;
   color: ${({ theme }) => theme.colors.text};
 `;
@@ -1426,13 +1511,14 @@ const RatingText = styled.span`
 const ReviewTextarea = styled.textarea`
   width: 100%;
   padding: 12px;
-  border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  font-size: 14px;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-family: inherit;
   resize: vertical;
   color: ${({ theme }) => theme.colors.text};
   background: ${({ theme }) => theme.colors.background};
+  transition: border-color ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
 
   &:focus {
     outline: none;
@@ -1453,11 +1539,11 @@ const ReviewCancelButton = styled.button`
   background: ${({ theme }) => theme.colors.surface};
   color: ${({ theme }) => theme.colors.text};
   border: 1px solid ${({ theme }) => theme.colors.border};
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
 
   &:hover {
     background: ${({ theme }) => theme.colors.surfaceHover};
@@ -1467,21 +1553,44 @@ const ReviewCancelButton = styled.button`
 const ReviewSubmitButton = styled.button`
   padding: 10px 20px;
   background: ${({ theme }) => theme.colors.primary};
-  color: white;
+  color: ${({ theme }) => theme.colors.textInverse};
   border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all ${({ theme }) => theme.duration?.normal || '200ms'} ${({ theme }) => theme.easing?.easeOut || 'ease'};
 
   &:hover:not(:disabled) {
     background: ${({ theme }) => theme.colors.primaryDark};
   }
 
   &:disabled {
-    opacity: 0.6;
+    opacity: 0.4;
     cursor: not-allowed;
   }
 `;
 
+
+const ToastNotification = styled.div`
+  position: absolute;
+  top: calc(56px + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 10px 20px;
+  border-radius: ${({ theme }) => theme.borderRadius.lg};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
+  font-weight: 500;
+  white-space: nowrap;
+  box-shadow: ${({ theme }) => theme.shadows.md};
+  background: ${({ theme, type }) =>
+    type === 'success' ? theme.colors.success : theme.colors.error};
+  color: ${({ theme }) => theme.colors.textInverse};
+  animation: fadeInDown ${({ theme }) => theme.duration?.normal || '200ms'} ease;
+
+  @keyframes fadeInDown {
+    from { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+    to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+`;

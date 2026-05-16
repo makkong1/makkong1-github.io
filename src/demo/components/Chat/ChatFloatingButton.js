@@ -3,7 +3,7 @@ import styled from 'styled-components';
 
 const ChatFloatingButton = ({ onClick, unreadCount = 0 }) => {
   return (
-    <FloatingButton onClick={onClick} unreadCount={unreadCount}>
+    <FloatingButton type="button" onClick={onClick}>
       <ChatIcon>💬</ChatIcon>
       {unreadCount > 0 && <Badge>{unreadCount > 99 ? '99+' : unreadCount}</Badge>}
     </FloatingButton>
@@ -15,7 +15,7 @@ export default ChatFloatingButton;
 const FloatingButton = styled.button`
   position: fixed;
   bottom: 24px;
-  left: 24px;
+  right: 24px;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -28,19 +28,19 @@ const FloatingButton = styled.button`
   justify-content: center;
   z-index: 999;
   transition: all 0.3s ease;
-  
+
   &:hover {
     transform: scale(1.1);
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   }
-  
+
   &:active {
     transform: scale(0.95);
   }
-  
+
   @media (max-width: 768px) {
-    bottom: 20px;
-    left: 20px;
+    bottom: calc(60px + 16px + env(safe-area-inset-bottom, 0px));
+    right: max(16px, env(safe-area-inset-right, 0px));
     width: 52px;
     height: 52px;
   }

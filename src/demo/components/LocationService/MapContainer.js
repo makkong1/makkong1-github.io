@@ -8,7 +8,7 @@ const COORD_EPSILON = 0.00001;
 
 // 네이버맵 API 키 (환경변수에서 가져오거나 직접 설정)
 // 최신 버전에서는 ncpKeyId를 사용합니다
-const NAVER_MAPS_KEY_ID = import.meta.env.VITE_NAVER_MAPS_KEY_ID || import.meta.env.VITE_NAVER_MAPS_CLIENT_ID || '';
+const NAVER_MAPS_KEY_ID = import.meta.env?.VITE_NAVER_MAPS_KEY_ID || '';
 
 /**
  * 범용 지도 컨테이너 컴포넌트
@@ -31,7 +31,7 @@ const NAVER_MAPS_KEY_ID = import.meta.env.VITE_NAVER_MAPS_KEY_ID || import.meta.
  * @param {Function} onRegionClick - 지역 클릭 핸들러
  */
 const MapContainer = React.forwardRef(
-  ({ services = [], onServiceClick, userLocation, mapCenter, mapLevel, onMapDragStart, onMapIdle, hoverMarker = null, currentMapView = 'nation', selectedSido = null, selectedSigungu = null, selectedEupmyeondong = null, onRegionClick = null, onMapClick = null, selectedService = null, hoveredService = null }, ref) => {
+  ({ services = [], onServiceClick, userLocation, mapCenter, mapLevel, onMapDragStart, onMapIdle, hoverMarker = null, currentMapView = 'nation', selectedSido = null, selectedSigungu = null, selectedEupmyeondong = null, onRegionClick = null, onMapClick = null, selectedService = null, hoveredService = null, recommendedServiceIdxs = null }, ref) => {
     const mapRef = useRef(null);
     const mapInstanceRef = useRef(null);
     const markersRef = useRef([]);
@@ -42,7 +42,6 @@ const MapContainer = React.forwardRef(
     const mapReadyRef = useRef(false);
     const [mapReady, setMapReady] = useState(false);
     const userZoomedRef = useRef(false); // 사용자가 직접 줌 조정했는지 여부
-    const clustererReadyRef = useRef(false); // MarkerClusterer 로드 여부
     // GeoJSON 관련 ref 제거됨
 
     // 카카오맵 레벨을 네이버맵 줌으로 변환
@@ -90,7 +89,7 @@ const MapContainer = React.forwardRef(
           logoControl: false, // 네이버맵 로고 숨기기
           mapDataControl: false, // 지도 데이터 컨트롤 숨기기
           scaleControl: false, // 스케일 컨트롤 숨기기
-          scrollWheel: false, // 마우스 휠 확대/축소 비활성화
+          scrollWheel: true,
           disableDoubleClickZoom: false, // 더블클릭 확대 활성화
           disableDoubleClick: false,
         };
@@ -216,6 +215,7 @@ const MapContainer = React.forwardRef(
         console.error('3. 네이버 클라우드 플랫폼 > Application > Web Service URL에 현재 URL을 등록하세요.');
         console.error('   현재 URL:', window.location.origin);
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [mapCenter, mapLevel, mapLevelToZoom, zoomToMapLevel, onMapDragStart, onMapIdle]);
 
     // 네이버맵 스크립트 로드
@@ -328,7 +328,6 @@ const MapContainer = React.forwardRef(
       try {
         const currentServices = servicesRef.current;
         const currentSelectedService = selectedServiceRef.current;
-        const currentHoveredService = hoverMarkerRef.current?.service || hoveredService; // props.hoveredService -> hoveredService 수정
         const currentZoom = mapInstanceRef.current.getZoom();
         const currentBounds = mapInstanceRef.current.getBounds();
 
@@ -356,20 +355,23 @@ const MapContainer = React.forwardRef(
         if (validServices.length === 0) return;
 
         // 통합 핀 아이콘 생성 함수 (SVG)
-        // type: 'normal' | 'selected' | 'hovered' | 'missing'
-        const createPinIcon = (type) => {
-          let color = '#03C75A'; // 기본 녹색
+        // type: 'normal' | 'selected' | 'hovered' | 'missing' | 'top'
+        // rank: 'top' 타입일 때 순위 숫자 (1~10)
+        // customColor: 서비스별 커스텀 마커 색상 (예: '#4A90D9')
+        const createPinIcon = (type, rank = null, customColor = null, name = null) => {
+          let color = customColor || '#03C75A'; // 커스텀 색상 또는 기본 녹색
           let scale = 1;
           let zIndex = 100;
-          let label = '';
-          let labelSize = 13;
-          let labelColor = 'white';
 
           if (type === 'missing') {
             color = '#FF6B6B'; // 실종: 빨강
             zIndex = 150;
+          } else if (type === 'top') {
+            color = '#F5A623'; // AI 추천: 금색
+            scale = 1.15;
+            zIndex = 500;
           }
-          
+
           if (type === 'selected') {
             color = '#028A48'; // 선택: 진한 녹색
             scale = 1.25;
@@ -382,9 +384,11 @@ const MapContainer = React.forwardRef(
           // SVG 핀 아이콘 (더 날렵한 비율: 26x36)
           const width = 26 * scale;
           const height = 36 * scale;
-          
-          // 내부 컨텐츠: 흰 점 (개별 마커)
-          const innerContent = `<circle cx="12" cy="12" r="5" fill="white"/>`;
+
+          // 내부 컨텐츠: 순위 숫자(top) 또는 흰 점
+          const innerContent = (type === 'top' && rank != null)
+            ? `<text x="12" y="16" text-anchor="middle" dominant-baseline="middle" font-size="10" font-weight="bold" fill="white">${rank}</text>`
+            : `<circle cx="12" cy="12" r="5" fill="white"/>`;
 
           // SVG Path: 날렵한 핀 모양
            const svgContent = `
@@ -394,12 +398,20 @@ const MapContainer = React.forwardRef(
             </svg>
           `;
 
+          const shortName = name ? (name.length > 8 ? name.slice(0, 8) + '…' : name) : null;
+          const nameLabel = shortName
+            ? `<div style="background:rgba(255,255,255,0.95);padding:2px 5px;border-radius:3px;font-size:10px;font-weight:600;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,0.2);color:#333;margin-top:2px;line-height:1.3;">${shortName}</div>`
+            : '';
+
           return {
-            content: `<div style="cursor:pointer; filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.25));">${svgContent}</div>`,
+            content: `<div style="cursor:pointer;display:flex;flex-direction:column;align-items:center;"><div style="filter:drop-shadow(0px 2px 4px rgba(0,0,0,0.25));">${svgContent}</div>${nameLabel}</div>`,
             anchor: new window.naver.maps.Point(width / 2, height),
             zIndex: zIndex
           };
         };
+
+        // recommendedServiceIdxs: Map<idx, rank> (AI 추천 결과, rank는 1-based)
+        const recommendedMap = recommendedServiceIdxs instanceof Map ? recommendedServiceIdxs : null;
 
         // 모든 서비스에 대해 개별 마커 생성 (클러스터링 비활성화 - 사용자 요청)
         const individualMarkersList = validServices.map((service) => {
@@ -418,13 +430,16 @@ const MapContainer = React.forwardRef(
              (hoveredService.key && service.key === hoveredService.key)
           );
 
+          const recommendedRank = recommendedMap?.get(service.idx) ?? null;
+
           let type = 'normal';
           if (service.type === 'missingPet') type = 'missing';
+          else if (recommendedRank != null) type = 'top';
           if (isSelected) type = 'selected';
-          else if (isHovered) type = 'hovered';
+          else if (isHovered && type !== 'top') type = 'hovered';
 
-          // 개별 마커용 핀 아이콘
-          const markerIcon = createPinIcon(type);
+          // 개별 마커용 핀 아이콘 (service.markerColor로 커스텀 색상 지원)
+          const markerIcon = createPinIcon(type, recommendedRank, service.markerColor || null, service.name || null);
 
           const marker = new window.naver.maps.Marker({
             position,
@@ -471,6 +486,7 @@ const MapContainer = React.forwardRef(
       } catch (error) {
         console.error('마커 업데이트 중 오류:', error);
       }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [onServiceClick, clearMarkers, mapCenter, hoveredService]); // props.hoveredService -> hoveredService 수정
 
     // 마커 업데이트 실행 (서비스 변경 시)
@@ -536,10 +552,7 @@ const MapContainer = React.forwardRef(
           setTimeout(() => {
             map.setCenter(new window.naver.maps.LatLng(mapCenter.lat, mapCenter.lng));
             lastProgrammaticCenterRef.current = { ...mapCenter };
-            console.log('지도 줌 변경 완료:', mapCenter, '줌:', targetZoom, '레벨:', mapLevel);
           }, 300);
-        } else {
-          console.log('지도 줌 변경 완료 (중심 동일):', mapCenter, '줌:', targetZoom, '레벨:', mapLevel);
         }
         return;
       }
@@ -598,36 +611,6 @@ const MapContainer = React.forwardRef(
     }, [hoverMarker]);
 
     // GeoJSON 폴리곤 표시 기능 제거됨 (geojsonUtils 파일 없음)
-
-    // 네이버맵 인증 관련 요소 주기적으로 숨기기 (동적으로 생성될 수 있음)
-    useEffect(() => {
-      if (!mapReadyRef.current) return;
-
-      const hideAuthElements = () => {
-        const authElements = document.querySelectorAll('iframe[src*="oapi.map.naver.com"], iframe[src*="auth"], a[href*="oapi.map.naver.com"], a[href*="auth"]');
-        authElements.forEach((el) => {
-          if (el instanceof HTMLElement) {
-            el.style.display = 'none';
-            el.style.visibility = 'hidden';
-            el.style.opacity = '0';
-            el.style.width = '0';
-            el.style.height = '0';
-            el.style.position = 'absolute';
-            el.style.left = '-9999px';
-          }
-        });
-      };
-
-      // 주기적으로 인증 관련 요소 숨기기
-      const hideAuthInterval = setInterval(hideAuthElements, 1000);
-
-      // 초기 실행
-      hideAuthElements();
-
-      return () => {
-        clearInterval(hideAuthInterval);
-      };
-    }, [mapReady]);
 
     // 정리
     useEffect(() => {
@@ -743,63 +726,42 @@ const MapLoading = styled.div`
   color: #2563eb;
 `;
 
-const MapError = styled.div`
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  padding: 1rem 1.5rem;
-  border-radius: 8px;
-  background: rgba(239, 68, 68, 0.1);
-  color: #dc2626;
-  font-weight: 600;
-  text-align: center;
-  max-width: 400px;
-`;
-
 const ZoomControls = styled.div`
   position: absolute;
-  top: 20px;
-  right: 20px;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: 1000;
   display: flex;
   flex-direction: column;
-  gap: 4px;
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
   overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.07);
 `;
 
 const ZoomButton = styled.button`
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border: none;
   background: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
+  transition: background 0.12s;
   padding: 0;
 
-  &:hover {
-    background: #f3f4f6;
-  }
-
-  &:active {
-    background: #e5e7eb;
-  }
-
-  &:first-child {
-    border-bottom: 1px solid #e5e7eb;
-  }
+  &:hover { background: #f5f5f4; }
+  &:active { background: #eae8e4; }
+  &:first-child { border-bottom: 1px solid #e8e5e0; }
 `;
 
 const ZoomIcon = styled.span`
-  font-size: 28px;
+  font-size: 20px;
   font-weight: 300;
-  color: #374151;
+  color: #4b4743;
   line-height: 1;
   user-select: none;
 `;

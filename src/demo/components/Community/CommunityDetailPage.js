@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { boardApi } from '../../api/boardApi';
 import { commentApi } from '../../api/commentApi';
 import { reportApi } from '../../api/reportApi';
@@ -23,6 +23,7 @@ const CommunityDetailPage = ({
 }) => {
   const { requireLogin } = usePermission();
   const { user, redirectToLogin } = useAuth();
+  const themeObj = useTheme();
   const viewerId = user?.idx;
 
   const [board, setBoard] = useState(null);
@@ -42,34 +43,43 @@ const CommunityDetailPage = ({
 
   // 댓글 페이징 상태
   const [commentPage, setCommentPage] = useState(0);
-  const [commentPageSize, setCommentPageSize] = useState(20);
+  const [commentPageSize] = useState(20);
   const [commentTotalCount, setCommentTotalCount] = useState(0);
-  const [commentHasNext, setCommentHasNext] = useState(false);
 
   const categoryInfo = useMemo(() => {
     if (!board?.category) {
       return null;
     }
 
-    const mapping = {
-      ALL: { label: '전체', icon: '📋', color: '#6366F1' },
-      일상: { label: '일상', icon: '📖', color: '#EC4899' },
-      자랑: { label: '자랑', icon: '🐾', color: '#F472B6' },
-      질문: { label: '질문', icon: '❓', color: '#3B82F6' },
-      정보: { label: '정보', icon: '📢', color: '#10B981' },
-      후기: { label: '후기', icon: '📝', color: '#8B5CF6' },
-      모임: { label: '모임', icon: '🤝', color: '#F59E0B' },
-      공지: { label: '공지', icon: '📢', color: '#EF4444' },
-      // Legacy mappings for backward compatibility
-      TIP: { label: '꿀팁', icon: '💡', color: '#F59E0B' },
-      QUESTION: { label: '질문', icon: '❓', color: '#3B82F6' },
-      INFO: { label: '정보', icon: '📢', color: '#10B981' },
-      PRIDE: { label: '자랑', icon: '🐾', color: '#F472B6' },
-      STORY: { label: '일상', icon: '📖', color: '#EC4899' },
+    const DETAIL_CATEGORY_THEME_KEY = {
+      ALL: 'all', 일상: 'daily', 자랑: 'pride', 질문: 'question',
+      정보: 'info', 후기: 'review', 모임: 'meetup', 공지: 'notice',
+      TIP: 'meetup', QUESTION: 'question', INFO: 'info',
+      PRIDE: 'pride', STORY: 'daily',
     };
 
-    return mapping[board.category] || { label: board.category, icon: '📋', color: '#6366F1' };
-  }, [board]);
+    const DETAIL_CATEGORY_META = {
+      ALL: { label: '전체', icon: '📋' },
+      일상: { label: '일상', icon: '📖' },
+      자랑: { label: '자랑', icon: '🐾' },
+      질문: { label: '질문', icon: '❓' },
+      정보: { label: '정보', icon: '📢' },
+      후기: { label: '후기', icon: '📝' },
+      모임: { label: '모임', icon: '🤝' },
+      공지: { label: '공지', icon: '📢' },
+      TIP: { label: '꿀팁', icon: '💡' },
+      QUESTION: { label: '질문', icon: '❓' },
+      INFO: { label: '정보', icon: '📢' },
+      PRIDE: { label: '자랑', icon: '🐾' },
+      STORY: { label: '일상', icon: '📖' },
+    };
+
+    const cat = board.category;
+    const meta = DETAIL_CATEGORY_META[cat] || { label: cat, icon: '📋' };
+    const themeKey = DETAIL_CATEGORY_THEME_KEY[cat] || 'all';
+    const colors = themeObj.colors.category;
+    return { ...meta, color: colors[themeKey] || colors.all };
+  }, [board, themeObj]);
 
   const formattedDate = useMemo(() => {
     if (!board?.createdAt) {
@@ -102,7 +112,6 @@ const CommunityDetailPage = ({
     setUploadError('');
     setCommentPage(0);
     setCommentTotalCount(0);
-    setCommentHasNext(false);
   }, []);
 
   const fetchBoard = useCallback(async () => {
@@ -140,7 +149,6 @@ const CommunityDetailPage = ({
       setComments(commentsData);
 
       setCommentTotalCount(pageData.totalCount || 0);
-      setCommentHasNext(pageData.hasNext || false);
       setCommentPage(pageNum);
     } catch (err) {
       const message = err.response?.data?.error || err.message || '댓글을 불러오지 못했습니다.';
@@ -439,7 +447,7 @@ const CommunityDetailPage = ({
         setCommentError(message);
       }
     },
-    [boardId, currentUser, onCommentAdded]
+    [boardId, currentUser, fetchComments, onCommentAdded]
   );
 
   const handleViewProfile = useCallback((userId) => {
@@ -694,7 +702,7 @@ export default CommunityDetailPage;
 const Backdrop = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: ${(props) => props.theme.colors.overlay};
   backdrop-filter: blur(4px);
   z-index: 1090;
 `;
@@ -719,7 +727,7 @@ const DetailCard = styled.article`
   width: min(1000px, 100%);
   background: ${(props) => props.theme.colors.surface};
   border-radius: ${(props) => props.theme.borderRadius.xl};
-  box-shadow: 0 22px 48px rgba(15, 23, 42, 0.25);
+  box-shadow: ${(props) => props.theme.shadows.xl};
   border: 1px solid ${(props) => props.theme.colors.border};
   overflow: hidden;
   display: flex;
@@ -728,7 +736,7 @@ const DetailCard = styled.article`
   @media (max-width: 768px) {
     width: 100%;
     border-radius: ${(props) => props.theme.borderRadius.lg};
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.2);
+    box-shadow: ${(props) => props.theme.shadows.lg};
   }
 `;
 
@@ -766,7 +774,7 @@ const BackButton = styled.button`
   color: ${(props) => props.theme.colors.textSecondary};
   font-weight: 600;
   cursor: pointer;
-  font-size: 0.95rem;
+  font-size: ${(props) => props.theme.typography.body1.fontSize};
   transition: color 0.2s ease;
 
   &:hover {
@@ -793,7 +801,7 @@ const HeaderActionButton = styled.button.withConfig({
     ${(props) => (props.$active ? props.theme.colors.primary : props.theme.colors.border)};
   background: ${(props) =>
     props.$active ? props.theme.colors.primary : props.theme.colors.surface};
-  color: ${(props) => (props.$active ? '#ffffff' : props.theme.colors.textSecondary)};
+  color: ${(props) => (props.$active ? props.theme.colors.textInverse : props.theme.colors.textSecondary)};
   border-radius: ${(props) => props.theme.borderRadius.lg};
   padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
   font-weight: 600;
@@ -802,7 +810,7 @@ const HeaderActionButton = styled.button.withConfig({
 
   &:hover {
     border-color: ${(props) => props.theme.colors.primary};
-    color: ${(props) => (props.$active ? '#ffffff' : props.theme.colors.primary)};
+    color: ${(props) => (props.$active ? props.theme.colors.textInverse : props.theme.colors.primary)};
     transform: translateY(-1px);
     background: ${(props) =>
     props.$active ? props.theme.colors.primary : props.theme.colors.surfaceHover};
@@ -817,9 +825,9 @@ const CategoryBadge = styled.span`
   padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
   border-radius: ${(props) => props.theme.borderRadius.lg};
   background: ${(props) => `linear-gradient(135deg, ${props.$color} 0%, ${props.$color}dd 100%)`};
-  color: #fff;
+  color: ${(props) => props.theme.colors.textInverse};
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
   box-shadow: 0 6px 20px ${(props) => `${props.$color}30`};
 `;
 
@@ -839,7 +847,7 @@ const MetaInfo = styled.div`
   flex-wrap: wrap;
   gap: ${(props) => props.theme.spacing.xs};
   color: ${(props) => props.theme.colors.textSecondary};
-  font-size: 0.9rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
   align-items: center;
 `;
 
@@ -856,7 +864,7 @@ const AuthorBadge = styled.span`
   background: ${(props) => props.theme.colors.surfaceElevated};
   color: ${(props) => props.theme.colors.text};
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
 `;
 
 const HeroImage = styled.div`
@@ -912,7 +920,7 @@ const CommentHeader = styled.div`
 
 const CommentTitle = styled.h2`
   margin: 0;
-  font-size: 1.2rem;
+  font-size: ${(props) => props.theme.typography.h3.fontSize};
   color: ${(props) => props.theme.colors.text};
 `;
 
@@ -935,7 +943,7 @@ const EmptyState = styled.div`
 `;
 
 const EmptyIcon = styled.div`
-  font-size: 40px;
+  font-size: ${(props) => props.theme.typography.hero.fontSize};
 `;
 
 const EmptyText = styled.div`
@@ -971,12 +979,12 @@ const CommentAvatar = styled.div`
   height: 44px;
   border-radius: ${(props) => props.theme.borderRadius.full};
   background: ${(props) => props.theme.colors.gradient};
-  color: #fff;
+  color: ${(props) => props.theme.colors.textInverse};
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 1rem;
+  font-size: ${(props) => props.theme.typography.body1.fontSize};
 `;
 
 const CommentAuthorInfo = styled.div`
@@ -996,7 +1004,7 @@ const CommentAuthorName = styled.span`
 `;
 
 const CommentTimestamp = styled.span`
-  font-size: 0.8rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
   color: ${(props) => props.theme.colors.textSecondary};
 `;
 
@@ -1055,7 +1063,7 @@ const ReactionIcon = styled.span`
 `;
 
 const ReactionCount = styled.span`
-  font-size: 0.9rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
 `;
 
 const DeleteCommentButton = styled.button`
@@ -1064,15 +1072,15 @@ const DeleteCommentButton = styled.button`
   justify-content: center;
   padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
   border-radius: ${(props) => props.theme.borderRadius.md};
-  border: 1px solid ${(props) => props.theme.colors.error || '#dc2626'};
+  border: 1px solid ${(props) => props.theme.colors.error};
   background: transparent;
-  color: ${(props) => props.theme.colors.error || '#dc2626'};
+  color: ${(props) => props.theme.colors.error};
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(220, 38, 38, 0.08);
+    background: ${(props) => props.theme.colors.errorSoft};
     transform: translateY(-1px);
   }
 `;
@@ -1083,15 +1091,15 @@ const ReportCommentButton = styled.button`
   justify-content: center;
   padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
   border-radius: ${(props) => props.theme.borderRadius.md};
-  border: 1px solid ${(props) => props.theme.colors.warning || '#f97316'};
+  border: 1px solid ${(props) => props.theme.colors.warning};
   background: transparent;
-  color: ${(props) => props.theme.colors.warning || '#f97316'};
+  color: ${(props) => props.theme.colors.warning};
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(249, 115, 22, 0.1);
+    background: ${(props) => props.theme.colors.warningSoft};
     transform: translateY(-1px);
   }
 `;
@@ -1109,7 +1117,7 @@ const CommentComposer = styled.div`
 const LoginNotice = styled.div`
   text-align: center;
   color: ${(props) => props.theme.colors.textSecondary};
-  font-size: 0.95rem;
+  font-size: ${(props) => props.theme.typography.body1.fontSize};
 `;
 
 const CommentForm = styled.form`
@@ -1123,7 +1131,7 @@ const CommentTextarea = styled.textarea`
   border-radius: ${(props) => props.theme.borderRadius.md};
   border: 1px solid ${(props) => props.theme.colors.border};
   background: ${(props) => props.theme.colors.surface};
-  font-size: 0.95rem;
+  font-size: ${(props) => props.theme.typography.body1.fontSize};
   resize: vertical;
   min-height: 140px;
   color: ${(props) => props.theme.colors.text};
@@ -1131,7 +1139,7 @@ const CommentTextarea = styled.textarea`
   &:focus {
     outline: none;
     border-color: ${(props) => props.theme.colors.primary};
-    box-shadow: 0 0 0 3px rgba(255, 126, 54, 0.2);
+    box-shadow: ${(props) => props.theme.shadows.focus};
   }
 `;
 
@@ -1190,25 +1198,25 @@ const RemoveImageButton = styled.button`
   transition: all 0.2s ease;
 
   &:hover {
-    border-color: ${(props) => props.theme.colors.error || '#dc2626'};
-    color: ${(props) => props.theme.colors.error || '#dc2626'};
+    border-color: ${(props) => props.theme.colors.error};
+    color: ${(props) => props.theme.colors.error};
   }
 `;
 
 const HelperText = styled.span`
-  font-size: 0.8rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
   color: ${(props) => props.theme.colors.textSecondary};
 `;
 
 const ErrorText = styled.span`
-  font-size: 0.85rem;
-  color: ${(props) => props.theme.colors.error || '#e11d48'};
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
+  color: ${(props) => props.theme.colors.error};
 `;
 
 const SubmitButton = styled.button`
   align-self: flex-end;
   background: ${(props) => props.theme.colors.primary};
-  color: #ffffff;
+  color: ${(props) => props.theme.colors.textInverse};
   border: none;
   border-radius: ${(props) => props.theme.borderRadius.md};
   padding: ${(props) => props.theme.spacing.sm} ${(props) => props.theme.spacing.lg};
@@ -1265,12 +1273,12 @@ const SkeletonBody = styled(SkeletonBlock)`
 `;
 
 const ErrorBanner = styled.div`
-  background: rgba(220, 38, 38, 0.1);
-  color: ${(props) => props.theme.colors.error || '#dc2626'};
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  background: ${(props) => props.theme.colors.errorSoft};
+  color: ${(props) => props.theme.colors.error};
+  border: 1px solid ${(props) => props.theme.colors.error}33;
   border-radius: ${(props) => props.theme.borderRadius.lg};
   padding: ${(props) => props.theme.spacing.md};
-  font-size: 0.95rem;
+  font-size: ${(props) => props.theme.typography.body1.fontSize};
 `;
 
 const CommentPaginationWrapper = styled.div`

@@ -12,12 +12,14 @@
     "deploy": "gh-pages -d dist"
   },
   "dependencies": {
+    "@stomp/stompjs": "^7.3.0",
     "axios": "^1.13.6",
     "mermaid": "^10.6.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-router-dom": "^6.28.0",
     "recharts": "^3.6.0",
+    "sockjs-client": "^1.6.1",
     "styled-components": "^6.1.19"
   },
   "devDependencies": {

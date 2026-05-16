@@ -29,6 +29,9 @@ api.interceptors.request.use(
 const mockResolve = (data) => Promise.resolve({ data });
 
 export const missingPetApi = {
+  getHomeMissing: (lat, lng, size = 6) =>
+    mockResolve(DEMO_MISSING_PETS.slice(0, size)),
+
   list: (params) => {
     if (isDemoMode()) {
       const { page = 0, size = 20, status } = params || {};

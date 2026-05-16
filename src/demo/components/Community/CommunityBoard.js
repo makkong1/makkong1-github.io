@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
-import styled from 'styled-components';
+import styled, { useTheme } from 'styled-components';
 import { boardApi } from '../../api/boardApi';
 import { reportApi } from '../../api/reportApi';
 import { usePermission } from '../../hooks/usePermission';
@@ -8,18 +8,36 @@ import PageNavigation from '../Common/PageNavigation';
 import CommunityPostModal from './CommunityPostModal';
 import CommunityDetailPage from './CommunityDetailPage';
 
+const CATEGORY_THEME_KEY = {
+  ALL: 'all', 일상: 'daily', 자랑: 'pride', PRIDE: 'pride',
+  질문: 'question', 정보공유: 'info', 정보: 'info',
+  후기: 'review', 모임: 'meetup', 공지: 'notice',
+};
+
+const CATEGORY_META = {
+  ALL: { label: '전체', icon: '📋' },
+  일상: { label: '일상', icon: '📖' },
+  자랑: { label: '자랑', icon: '🐾' },
+  질문: { label: '질문', icon: '❓' },
+  정보공유: { label: '정보공유', icon: '📢' },
+  정보: { label: '정보공유', icon: '📢' },
+  후기: { label: '후기', icon: '📝' },
+  모임: { label: '모임', icon: '🤝' },
+  공지: { label: '공지', icon: '📢' },
+  PRIDE: { label: '자랑', icon: '🐾' },
+};
+
 const CommunityBoard = () => {
   const { requireLogin } = usePermission();
   const { user, redirectToLogin } = useAuth();
+  const theme = useTheme();
 
-  const [posts, setPosts] = useState([]); // 레거시 호환 (점진적 제거 예정)
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeCategory, setActiveCategory] = useState('ALL');
   const [isPostModalOpen, setIsPostModalOpen] = useState(false);
   const [isSubmittingPost, setIsSubmittingPost] = useState(false);
   const [selectedBoard, setSelectedBoard] = useState(null);
-  const [isCommentDrawerOpen, setIsCommentDrawerOpen] = useState(false);
   const [selectedBoardId, setSelectedBoardId] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [popularPosts, setPopularPosts] = useState([]);
@@ -31,7 +49,6 @@ const CommunityBoard = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
-  const [hasNext, setHasNext] = useState(false);
   // Map + Array 조합: Map으로 빠른 조회/업데이트, Array로 순서 유지
   // React 상태에서 Map을 직접 사용하기 어려우므로 객체로 관리
   const [postsData, setPostsData] = useState({ map: {}, order: [] }); // { map: {[id]: BoardDTO}, order: [id, ...] }
@@ -43,7 +60,6 @@ const CommunityBoard = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchPage, setSearchPage] = useState(0);
   const [searchTotalCount, setSearchTotalCount] = useState(0);
-  const [searchHasNext, setSearchHasNext] = useState(false);
   // 검색 결과도 동일한 구조 사용
   const [searchPostsData, setSearchPostsData] = useState({ map: {}, order: [] });
 
@@ -67,49 +83,24 @@ const CommunityBoard = () => {
     return { map, order };
   }, []);
 
-  // 게시글 추가 (중복 체크 포함)
-  const addPostsToMap = useCallback((existingData, newBoards) => {
-    const map = { ...existingData.map };
-    const order = [...existingData.order];
-    newBoards.forEach(board => {
-      if (board?.idx) {
-        if (!map[board.idx]) {
-          map[board.idx] = board;
-          order.push(board.idx);
-        } else {
-          // 이미 있으면 업데이트
-          map[board.idx] = board;
-        }
-      }
-    });
-    return { map, order };
-  }, []);
+  const categoryColors = theme.colors.category;
 
-  const categories = [
-    { key: 'ALL', label: '전체', icon: '📋', color: '#6366F1' },
-    { key: '일상', label: '일상', icon: '📖', color: '#EC4899' },
-    { key: '자랑', label: '자랑', icon: '🐾', color: '#F472B6' },
-    { key: '질문', label: '질문', icon: '❓', color: '#3B82F6' },
-    { key: '정보공유', label: '정보공유', icon: '📢', color: '#10B981' },
-    { key: '후기', label: '후기', icon: '📝', color: '#8B5CF6' },
-    { key: '모임', label: '모임', icon: '🤝', color: '#F59E0B' },
-    { key: '공지', label: '공지', icon: '📢', color: '#EF4444' },
-  ];
+  const categories = useMemo(() => [
+    { key: 'ALL', label: '전체', icon: '📋', color: categoryColors.all },
+    { key: '일상', label: '일상', icon: '📖', color: categoryColors.daily },
+    { key: '자랑', label: '자랑', icon: '🐾', color: categoryColors.pride },
+    { key: '질문', label: '질문', icon: '❓', color: categoryColors.question },
+    { key: '정보공유', label: '정보공유', icon: '📢', color: categoryColors.info },
+    { key: '후기', label: '후기', icon: '📝', color: categoryColors.review },
+    { key: '모임', label: '모임', icon: '🤝', color: categoryColors.meetup },
+    { key: '공지', label: '공지', icon: '📢', color: categoryColors.notice },
+  ], [categoryColors]);
 
   const getCategoryInfo = useCallback((category) => {
-    const mapping = {
-      ALL: { label: '전체', icon: '📋', color: '#6366F1' },
-      일상: { label: '일상', icon: '📖', color: '#EC4899' },
-      자랑: { label: '자랑', icon: '🐾', color: '#F472B6' },
-      질문: { label: '질문', icon: '❓', color: '#3B82F6' },
-      정보: { label: '정보공유', icon: '📢', color: '#10B981' },
-      후기: { label: '후기', icon: '📝', color: '#8B5CF6' },
-      모임: { label: '모임', icon: '🤝', color: '#F59E0B' },
-      공지: { label: '공지', icon: '📢', color: '#EF4444' },
-      PRIDE: { label: '자랑', icon: '🐾', color: '#F472B6' }, // 레거시 호환
-    };
-    return mapping[category] || { label: category || '전체', icon: '📋', color: '#6366F1' };
-  }, []);
+    const meta = CATEGORY_META[category] || { label: category || '전체', icon: '📋' };
+    const themeKey = CATEGORY_THEME_KEY[category] || 'all';
+    return { ...meta, color: categoryColors[themeKey] || categoryColors.all };
+  }, [categoryColors]);
 
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -165,7 +156,6 @@ const CommunityBoard = () => {
       setPostsData(newData);
 
       setTotalCount(pageData.totalCount || 0);
-      setHasNext(pageData.hasNext || false);
       setPage(pageNum);
     } catch (err) {
       console.error('❌ [CommunityBoard] 게시글 조회 실패:', err);
@@ -322,7 +312,6 @@ const CommunityBoard = () => {
       setSearchPostsData(newData);
 
       setSearchTotalCount(pageData.totalCount || 0);
-      setSearchHasNext(pageData.hasNext || false);
       setSearchPage(pageNum);
     } catch (err) {
       console.error('❌ 검색 실패:', err);
@@ -341,7 +330,6 @@ const CommunityBoard = () => {
     setSearchType('TITLE_CONTENT');
     setSearchPage(0);
     setSearchTotalCount(0);
-    setSearchHasNext(false);
   }, []);
 
   const handleSearchPageChange = useCallback((newPage) => {
@@ -386,7 +374,7 @@ const CommunityBoard = () => {
         boardFilePath: form.boardFilePath || null,
         userId: user.idx,
       };
-      const response = await boardApi.createBoard(payload);
+      await boardApi.createBoard(payload);
       setIsPostModalOpen(false);
       // 게시글 작성 후 첫 페이지부터 다시 로드
       await fetchBoards(0);
@@ -402,7 +390,6 @@ const CommunityBoard = () => {
   const handleDetailClose = () => {
     setIsDetailOpen(false);
     setSelectedBoardId(null);
-    setIsCommentDrawerOpen(false);
     setSelectedBoard(null);
   };
 
@@ -462,7 +449,6 @@ const CommunityBoard = () => {
   };
 
   const handleCommentDrawerClose = () => {
-    setIsCommentDrawerOpen(false);
     setSelectedBoard(null);
   };
 
@@ -669,10 +655,9 @@ const CommunityBoard = () => {
           <Title>커뮤니티</Title>
           <Subtitle>반려동물과 함께하는 따뜻한 이야기</Subtitle>
         </TitleSection>
-        <WriteButton onClick={handleWriteClick}>
-          <WriteIcon>✏️</WriteIcon>
+        <HeaderWriteButton type="button" onClick={handleWriteClick}>
           글쓰기
-        </WriteButton>
+        </HeaderWriteButton>
       </Header>
 
       <CategoryTabs>
@@ -681,7 +666,7 @@ const CommunityBoard = () => {
             key={category.key}
             active={activeCategory === category.key}
             onClick={() => setActiveCategory(category.key)}
-            categoryColor={category.color}
+            $categoryColor={category.color}
           >
             <CategoryIcon>{category.icon}</CategoryIcon>
             {category.label}
@@ -823,7 +808,7 @@ const CommunityBoard = () => {
                         <PostTitle>{post.title}</PostTitle>
                         <PostNumber>#{post.idx}</PostNumber>
                       </PostTitleRow>
-                      <CategoryBadge categoryColor={categoryInfo.color}>
+                      <CategoryBadge $categoryColor={categoryInfo.color}>
                         <CategoryBadgeIcon>{categoryInfo.icon}</CategoryBadgeIcon>
                         {categoryInfo.label}
                       </CategoryBadge>
@@ -902,7 +887,7 @@ const CommunityBoard = () => {
                         <PostTitle>{post.title}</PostTitle>
                         <PostNumber>#{post.idx}</PostNumber>
                       </PostTitleRow>
-                      <CategoryBadge categoryColor={categoryInfo.color}>
+                      <CategoryBadge $categoryColor={categoryInfo.color}>
                         <CategoryBadgeIcon>{categoryInfo.icon}</CategoryBadgeIcon>
                         {categoryInfo.label}
                       </CategoryBadge>
@@ -981,7 +966,7 @@ const CommunityBoard = () => {
                         <PostTitle>{post.title}</PostTitle>
                         <PostNumber>#{post.idx}</PostNumber>
                       </PostTitleRow>
-                      <CategoryBadge categoryColor={categoryInfo.color}>
+                      <CategoryBadge $categoryColor={categoryInfo.color}>
                         <CategoryBadgeIcon>{categoryInfo.icon}</CategoryBadgeIcon>
                         {categoryInfo.label}
                       </CategoryBadge>
@@ -1093,13 +1078,13 @@ const Header = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
+  gap: ${props => props.theme.spacing.md};
   margin-bottom: ${props => props.theme.spacing.xxl};
   padding-bottom: ${props => props.theme.spacing.xl};
   border-bottom: 2px solid ${props => props.theme.colors.borderLight};
   
   @media (max-width: 768px) {
     flex-direction: column;
-    gap: ${props => props.theme.spacing.md};
     align-items: stretch;
   }
 `;
@@ -1111,7 +1096,7 @@ const TitleSection = styled.div`
 `;
 
 const TitleIcon = styled.span`
-  font-size: 28px;
+  font-size: ${props => props.theme.typography.h1.fontSize};
   margin-bottom: ${props => props.theme.spacing.xs};
 `;
 
@@ -1137,33 +1122,40 @@ const Subtitle = styled.p`
   margin-top: ${props => props.theme.spacing.xs};
 `;
 
-const WriteButton = styled.button`
-  background: ${props => props.theme.colors.gradient};
-  color: white;
+const HeaderWriteButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: ${props => props.theme.spacing.xs};
+  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.xl};
   border: none;
-  padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.xl};
-  border-radius: ${props => props.theme.borderRadius.xl};
+  border-radius: ${props => props.theme.borderRadius.full};
+  background: linear-gradient(135deg, #e8714a 0%, #c9573a 100%);
+  color: ${props => props.theme.colors.textInverse};
   font-size: ${props => props.theme.typography.body1.fontSize};
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  display: flex;
-  align-items: center;
-  gap: ${props => props.theme.spacing.sm};
-  box-shadow: 0 4px 12px rgba(255, 126, 54, 0.25);
-  
+  box-shadow: ${props => props.theme.shadows.md};
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
   &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(255, 126, 54, 0.35);
+    transform: translateY(-1px);
+    box-shadow: ${props => props.theme.shadows.lg};
   }
-  
+
   &:active {
     transform: translateY(0);
   }
-`;
 
-const WriteIcon = styled.span`
-  font-size: 15px;
+  @media (max-width: 768px) {
+    align-self: stretch;
+    margin-top: 0;
+    padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.lg};
+    text-align: center;
+    justify-content: center;
+  }
 `;
 
 const CategoryTabs = styled.div`
@@ -1175,120 +1167,75 @@ const CategoryTabs = styled.div`
 `;
 
 const CategoryTab = styled.button`
-  background: ${props => props.active
-    ? `linear-gradient(135deg, ${props.categoryColor} 0%, ${props.categoryColor}dd 100%)`
-    : props.theme.colors.surface};
-  color: ${props => props.active ? 'white' : props.theme.colors.text};
-  border: 2px solid ${props => props.active ? props.categoryColor : props.theme.colors.border};
-  padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.lg};
-  border-radius: ${props => props.theme.borderRadius.full};
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1.5px solid ${props => props.active ? props.theme.colors.primary : props.theme.colors.border};
+  background: ${props => props.active ? props.theme.colors.primary : 'transparent'};
+  color: ${props => props.active ? 'white' : props.theme.colors.textSecondary};
+  font-size: 13px;
+  font-weight: ${props => props.active ? '600' : '400'};
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  font-size: ${props => props.theme.typography.body2.fontSize};
-  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: ${props => props.theme.spacing.xs};
-  box-shadow: ${props => props.active
-    ? `0 4px 12px ${props.categoryColor}40`
-    : 'none'};
-  
+
   &:hover {
-    background: ${props => props.active
-    ? `linear-gradient(135deg, ${props.categoryColor}dd 0%, ${props.categoryColor}cc 100%)`
-    : props.theme.colors.surfaceHover};
-    transform: translateY(-2px);
-    box-shadow: ${props => props.active
-    ? `0 6px 16px ${props.categoryColor}50`
-    : `0 4px 8px ${props.theme.colors.shadow}`};
+    border-color: ${props => props.theme.colors.primary};
+    color: ${props => props.theme.colors.primary};
   }
 `;
 
 const CategoryIcon = styled.span`
-  font-size: 14px;
+  font-size: ${props => props.theme.typography.body2.fontSize};
 `;
 
 const PostGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: ${(props) => props.theme.spacing.lg};
-  grid-auto-flow: row dense;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(4, 1fr);
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: ${(props) => props.theme.spacing.md};
-    grid-auto-flow: row;
+  @media (min-width: 769px) {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 `;
 
 
 const ErrorBanner = styled.div`
-  background: rgba(220, 38, 38, 0.1);
-  color: ${props => props.theme.colors.error || '#dc2626'};
-  border: 1px solid rgba(220, 38, 38, 0.2);
+  background: ${props => props.theme.colors.errorSoft};
+  color: ${props => props.theme.colors.error};
+  border: 1px solid ${props => props.theme.colors.error}33;
   border-radius: ${props => props.theme.borderRadius.lg};
   padding: ${props => props.theme.spacing.md} ${props => props.theme.spacing.lg};
   margin-bottom: ${props => props.theme.spacing.lg};
-  font-size: 0.95rem;
+  font-size: ${props => props.theme.typography.body1.fontSize};
 `;
 
 const PostCard = styled.div.withConfig({
   shouldForwardProp: (prop) => prop !== 'size',
 })`
-  background: ${(props) => props.theme.colors.surface};
+  background: ${(props) => props.theme.colors.surfaceElevated};
   border: 1px solid ${(props) => props.theme.colors.borderLight};
-  border-radius: ${(props) => props.theme.borderRadius.xl};
-  padding: ${(props) => props.theme.spacing.xl};
-  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 2px 12px ${(props) => props.theme.colors.shadow};
   cursor: pointer;
   display: flex;
   flex-direction: column;
   gap: ${(props) => props.theme.spacing.md};
-  background-image: linear-gradient(135deg, ${(props) =>
-    props.theme.colors.surface} 0%, ${(props) => props.theme.colors.surfaceElevated} 100%);
-
-  /* 대형 카드: 전체 너비 (12칸) */
-  ${(props) => props.size === 'large' && `
-    grid-column: span 12;
-    min-height: 350px;
-  `}
-
-  /* 중간 카드: PC에서 6칸 (2개씩), Tablet에서 2칸 (2개씩) */
-  ${(props) => props.size === 'medium' && `
-    grid-column: span 6;
-    min-height: 300px;
-
-    @media (max-width: 1024px) {
-      grid-column: span 2;
-      min-height: 280px;
-    }
-  `}
-
-  /* 작은 카드: PC에서 3칸 (4개씩), Tablet에서 2칸 (2개씩) */
-  ${(props) => props.size === 'small' && `
-    grid-column: span 3;
-    min-height: 250px;
-
-    @media (max-width: 1024px) {
-      grid-column: span 2;
-      min-height: 230px;
-    }
-  `}
-
-  /* Mobile: 모든 카드 1열 */
-  @media (max-width: 768px) {
-    grid-column: span 1 !important;
-    min-height: auto;
-  }
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 
   &:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 16px 36px ${(props) => props.theme.colors.shadow};
-    border-color: ${(props) => props.theme.colors.primary}55;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px ${(props) => props.theme.colors.shadowHover};
   }
 `;
 
@@ -1352,8 +1299,8 @@ const PostNumber = styled.span`
 `;
 
 const CategoryBadge = styled.span`
-  background: ${props => `linear-gradient(135deg, ${props.categoryColor} 0%, ${props.categoryColor}dd 100%)`};
-  color: white;
+  background: ${props => `linear-gradient(135deg, ${props.$categoryColor} 0%, ${props.$categoryColor}dd 100%)`};
+  color: ${props => props.theme.colors.textInverse};
   padding: ${props => props.theme.spacing.xs} ${props => props.theme.spacing.md};
   border-radius: ${props => props.theme.borderRadius.md};
   font-size: ${props => props.theme.typography.caption.fontSize};
@@ -1362,11 +1309,11 @@ const CategoryBadge = styled.span`
   align-items: center;
   gap: ${props => props.theme.spacing.xs};
   width: fit-content;
-  box-shadow: 0 2px 8px ${props => `${props.categoryColor}40`};
+  box-shadow: 0 2px 8px ${props => `${props.$categoryColor}40`};
 `;
 
 const CategoryBadgeIcon = styled.span`
-  font-size: 12px;
+  font-size: ${props => props.theme.typography.caption.fontSize};
 `;
 
 const PostContent = styled.p.withConfig({
@@ -1421,10 +1368,10 @@ const AuthorAvatar = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  color: white;
+  color: ${(props) => props.theme.colors.textInverse};
   font-weight: 700;
-  font-size: 14px;
-  box-shadow: 0 3px 10px rgba(255, 126, 54, 0.25);
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
+  box-shadow: ${(props) => props.theme.shadows.sm};
 `;
 
 const AuthorDetails = styled.div`
@@ -1456,7 +1403,7 @@ const AuthorLocation = styled.div`
 `;
 
 const LocationIcon = styled.span`
-  font-size: 12px;
+  font-size: ${props => props.theme.typography.caption.fontSize};
 `;
 
 const PostActions = styled.div`
@@ -1509,7 +1456,7 @@ const StatInfo = styled.div`
 `;
 
 const StatIcon = styled.span`
-  font-size: 14px;
+  font-size: ${props => props.theme.typography.body2.fontSize};
 `;
 
 const StatValue = styled.span`
@@ -1537,23 +1484,23 @@ const ReportButton = styled.button`
   justify-content: center;
   
   &:hover {
-    color: ${props => props.theme.colors.error || '#dc3545'};
-    background: ${props => props.theme.colors.surfaceHover || 'rgba(220, 53, 69, 0.1)'};
+    color: ${props => props.theme.colors.error};
+    background: ${props => props.theme.colors.errorSoft};
     transform: scale(1.1);
   }
 `;
 
 const DeleteButton = styled.button`
   background: none;
-  border: 1px solid ${props => props.theme.colors.error || '#dc2626'};
-  color: ${props => props.theme.colors.error || '#dc2626'};
+  border: 1px solid ${props => props.theme.colors.error};
+  color: ${props => props.theme.colors.error};
   cursor: pointer;
   padding: ${props => props.theme.spacing.sm};
   border-radius: ${props => props.theme.borderRadius.md};
   transition: all 0.2s ease;
 
   &:hover {
-    background: rgba(220, 38, 38, 0.08);
+    background: ${props => props.theme.colors.errorSoft};
     transform: translateY(-1px);
   }
 `;
@@ -1566,7 +1513,7 @@ const PostActionsRight = styled.div`
 `;
 
 const ReportIcon = styled.span`
-  font-size: 15px;
+  font-size: ${props => props.theme.typography.body1.fontSize};
 `;
 
 const PopularSection = styled.section`
@@ -1608,7 +1555,7 @@ const PopularTab = styled.button`
   padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
   border: none;
   background: ${(props) => (props.active ? props.theme.colors.primary : 'transparent')};
-  color: ${(props) => (props.active ? '#fff' : props.theme.colors.textSecondary)};
+  color: ${(props) => (props.active ? props.theme.colors.textInverse : props.theme.colors.textSecondary)};
   cursor: pointer;
   font-weight: 600;
   font-size: ${props => props.theme.typography.body2.fontSize};
@@ -1669,7 +1616,7 @@ const PopularCard = styled.button`
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+    box-shadow: ${(props) => props.theme.shadows.lg};
   }
 `;
 
@@ -1697,7 +1644,7 @@ const PopularStats = styled.div`
   display: flex;
   gap: ${(props) => props.theme.spacing.sm};
   color: ${(props) => props.theme.colors.textSecondary};
-  font-size: 0.85rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
   flex-wrap: wrap;
 `;
 
@@ -1769,7 +1716,7 @@ const EmptyState = styled.div`
 `;
 
 const EmptyIcon = styled.div`
-  font-size: 56px;
+  font-size: ${props => props.theme.typography.hero.fontSize};
   margin-bottom: ${props => props.theme.spacing.md};
 `;
 
@@ -1842,7 +1789,7 @@ const SearchTypeSelect = styled.select`
 const SearchButton = styled.button`
   padding: ${props => props.theme.spacing.sm} ${props => props.theme.spacing.lg};
   background: ${props => props.theme.colors.gradient};
-  color: white;
+  color: ${props => props.theme.colors.textInverse};
   border: none;
   border-radius: ${props => props.theme.borderRadius.md};
   font-size: ${props => props.theme.typography.body2.fontSize};
@@ -1853,7 +1800,7 @@ const SearchButton = styled.button`
   
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: ${props => props.theme.shadows.md};
   }
   
   &:disabled {
@@ -1913,7 +1860,7 @@ const PageSizeButton = styled.button`
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: ${props => props.theme.borderRadius.md};
   background: ${props => props.active ? props.theme.colors.primary : 'transparent'};
-  color: ${props => props.active ? 'white' : props.theme.colors.text};
+  color: ${props => props.active ? props.theme.colors.textInverse : props.theme.colors.text};
   font-size: ${props => props.theme.typography.body2.fontSize};
   font-weight: ${props => props.active ? 600 : 400};
   cursor: pointer;

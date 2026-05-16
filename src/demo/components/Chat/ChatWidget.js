@@ -20,7 +20,7 @@ const ChatWidget = () => {
 
     setLoading(true);
     try {
-      const data = await getMyConversations(user.idx);
+      const data = await getMyConversations();
       setConversations(data || []);
       
       // 전체 읽지 않은 메시지 수 계산
@@ -48,7 +48,8 @@ const ChatWidget = () => {
     }, 30000); // 30초
 
     return () => clearInterval(interval);
-  }, [isAuthenticated, user?.idx]); // user?.id → user?.idx 수정
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, user?.idx]);
 
   // 채팅방 클릭 핸들러
   const handleConversationClick = (conversation) => {
@@ -149,6 +150,7 @@ const ChatRoomModal = styled.div`
   right: 0;
   height: 80vh;
   max-height: 800px;
+  min-height: 0;
   background: ${({ theme }) => theme.colors.background};
   border-radius: 16px 16px 0 0;
   box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
@@ -156,6 +158,24 @@ const ChatRoomModal = styled.div`
   display: flex;
   flex-direction: column;
   animation: slideUp 0.3s ease;
+
+  > * {
+    flex: 1 1 0;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (max-width: 768px) {
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    height: min(85vh, calc(100vh - 120px));
+    height: min(
+      85vh,
+      calc(100dvh - 60px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px))
+    );
+    max-height: calc(100vh - 68px - env(safe-area-inset-bottom, 0px));
+    max-height: calc(100dvh - 68px - env(safe-area-inset-bottom, 0px));
+    overflow: hidden;
+  }
   
   @keyframes slideUp {
     from {

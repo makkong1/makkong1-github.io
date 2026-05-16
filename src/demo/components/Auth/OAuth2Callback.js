@@ -8,7 +8,6 @@ const OAuth2Callback = () => {
   const { updateUserProfile } = useAuth();
   const [status, setStatus] = useState('processing'); // 'processing', 'success', 'error', 'nickname-setup'
   const [message, setMessage] = useState('로그인 처리 중...');
-  const [needsNickname, setNeedsNickname] = useState(false);
 
   useEffect(() => {
     const handleCallback = async () => {
@@ -38,7 +37,6 @@ const OAuth2Callback = () => {
 
           // 닉네임 설정이 필요한지 확인
           if (needsNicknameParam === 'true') {
-            setNeedsNickname(true);
             setStatus('nickname-setup');
             return;
           }
@@ -49,7 +47,6 @@ const OAuth2Callback = () => {
             if (response.valid && response.user) {
               // 닉네임이 없으면 닉네임 설정 페이지로
               if (!response.user.nickname || response.user.nickname.trim().length === 0) {
-                setNeedsNickname(true);
                 setStatus('nickname-setup');
                 return;
               }
@@ -150,17 +147,17 @@ const StatusCard = styled.div`
   align-items: center;
   gap: 1.5rem;
   padding: 3rem;
-  background: white;
+  background: ${({ theme }) => theme.colors.surfaceElevated};
   border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: ${({ theme }) => theme.shadows.lg};
   min-width: 300px;
 `;
 
 const Spinner = styled.div`
   width: 50px;
   height: 50px;
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #007bff;
+  border: 4px solid ${({ theme }) => theme.colors.border};
+  border-top: 4px solid ${({ theme }) => theme.colors.primary};
   border-radius: 50%;
   animation: spin 1s linear infinite;
 
@@ -173,9 +170,9 @@ const Spinner = styled.div`
 const SuccessIcon = styled.div`
   width: 50px;
   height: 50px;
-  border-radius: 50%;
-  background: #28a745;
-  color: white;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  background: ${({ theme }) => theme.colors.success};
+  color: ${({ theme }) => theme.colors.textInverse};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -186,9 +183,9 @@ const SuccessIcon = styled.div`
 const ErrorIcon = styled.div`
   width: 50px;
   height: 50px;
-  border-radius: 50%;
-  background: #dc3545;
-  color: white;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
+  background: ${({ theme }) => theme.colors.error};
+  color: ${({ theme }) => theme.colors.textInverse};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -199,10 +196,10 @@ const ErrorIcon = styled.div`
 const Message = styled.p`
   font-size: 1rem;
   text-align: center;
-  color: ${props => {
-    if (props.success) return '#28a745';
-    if (props.error) return '#dc3545';
-    return '#333';
+  color: ${({ theme, success, error }) => {
+    if (success) return theme.colors.success;
+    if (error) return theme.colors.error;
+    return theme.colors.text;
   }};
 `;
 

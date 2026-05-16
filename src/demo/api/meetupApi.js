@@ -29,6 +29,14 @@ api.interceptors.request.use(
 const mockResolve = (data) => Promise.resolve({ data });
 
 export const meetupApi = {
+  // 홈 화면용
+  getHomeMeetups: (lat, lng, size = 6) =>
+    mockResolve(DEMO_MEETUPS.slice(0, size)),
+
+  // 참여 가능한 모임 조회 (위치 기반 fallback용)
+  getRecruitingMeetups: (size = 6) =>
+    mockResolve(DEMO_MEETUPS.slice(0, size)),
+
   // 반경 기반 모임 조회 (마커 표시용)
   getNearbyMeetups: (lat, lng, radius = 5) => {
     if (isDemoMode()) {
@@ -76,6 +84,10 @@ export const meetupApi = {
 
   // 참가 여부 확인
   checkParticipation: (meetupIdx) =>
-    isDemoMode() ? mockResolve({ participating: false }) : api.get(`/${meetupIdx}/participants/check`),
+    isDemoMode() ? mockResolve({ isParticipating: false, liked: false }) : api.get(`/${meetupIdx}/participants/check`),
+
+  // 히스토리 좋아요
+  updateHistoryLike: (meetupIdx, liked) =>
+    mockResolve({ history: { meetupIdx, liked } }),
 };
 

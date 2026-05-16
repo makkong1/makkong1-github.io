@@ -2,6 +2,17 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
 import { userProfileApi } from '../../api/userApi';
+import {
+  FormHeader,
+  FormHeaderLogo,
+  FormTitle,
+  FormSubtitle,
+  PillInput,
+  PillSelect,
+  GradientButton,
+  OutlineButton,
+  FormSwitchLink,
+} from './AuthShell';
 
 const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
   const { register } = useAuth();
@@ -56,6 +67,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (e) => {
@@ -394,14 +406,18 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
   };
 
   return (
-    <RegisterContainer>
-      <Title>회원가입</Title>
+    <>
+      <FormHeader>
+        <FormHeaderLogo>🐾 Petory</FormHeaderLogo>
+        <FormTitle>회원가입</FormTitle>
+        <FormSubtitle>몇 가지 정보만 입력하면 시작할 수 있어요</FormSubtitle>
+      </FormHeader>
 
       <Form onSubmit={handleSubmit}>
         <InputGroup>
           <Label htmlFor="id">아이디 *</Label>
           <NicknameInputGroup>
-            <Input
+            <PillInput
               type="text"
               id="id"
               name="id"
@@ -411,13 +427,13 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
               disabled={loading}
               placeholder="아이디를 입력하세요"
             />
-            <CheckButton
+            <OutlineButton
               type="button"
               onClick={handleIdCheck}
               disabled={loading || idCheck.checking || !formData.id}
             >
               {idCheck.checking ? '확인 중...' : '중복 확인'}
-            </CheckButton>
+            </OutlineButton>
           </NicknameInputGroup>
           {idCheck.message && (
             <NicknameMessage available={idCheck.available}>
@@ -428,7 +444,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
 
         <InputGroup>
           <Label htmlFor="username">이름 *</Label>
-          <Input
+          <PillInput
             type="text"
             id="username"
             name="username"
@@ -442,7 +458,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
         <InputGroup>
           <Label htmlFor="nickname">닉네임 *</Label>
           <NicknameInputGroup>
-            <Input
+            <PillInput
               type="text"
               id="nickname"
               name="nickname"
@@ -453,13 +469,13 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
               placeholder="닉네임을 입력하세요"
               maxLength={50}
             />
-            <CheckButton
+            <OutlineButton
               type="button"
               onClick={handleNicknameCheck}
               disabled={loading || nicknameCheck.checking || !formData.nickname}
             >
               {nicknameCheck.checking ? '확인 중...' : '중복 확인'}
-            </CheckButton>
+            </OutlineButton>
           </NicknameInputGroup>
           {nicknameCheck.message && (
             <NicknameMessage available={nicknameCheck.available}>
@@ -470,7 +486,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
 
         <InputGroup>
           <Label htmlFor="password">비밀번호 *</Label>
-          <Input
+          <PillInput
             type="password"
             id="password"
             name="password"
@@ -484,7 +500,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
         <InputGroup>
           <Label htmlFor="email">이메일 *</Label>
           <EmailInputGroup>
-            <EmailIdInput
+            <PillInput
               type="text"
               id="emailId"
               name="emailId"
@@ -493,15 +509,17 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
               placeholder="이메일 아이디"
               required
               disabled={loading}
+              style={{ flex: 1, minWidth: 0 }}
             />
             <EmailAt>@</EmailAt>
-            <EmailDomainSelect
+            <PillSelect
               id="emailDomain"
               name="emailDomain"
               value={formData.emailDomain}
               onChange={handleChange}
               disabled={loading}
               required
+              style={{ flex: 1, minWidth: 0 }}
             >
               <option value="gmail.com">gmail.com</option>
               <option value="naver.com">naver.com</option>
@@ -512,9 +530,9 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
               <option value="outlook.com">outlook.com</option>
               <option value="yahoo.com">yahoo.com</option>
               <option value="custom">직접 입력</option>
-            </EmailDomainSelect>
+            </PillSelect>
             {formData.emailDomain === 'custom' && (
-              <EmailCustomInput
+              <PillInput
                 type="text"
                 name="customEmailDomain"
                 value={formData.customEmailDomain || ''}
@@ -529,6 +547,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                 placeholder="도메인 입력 (예: example.com)"
                 disabled={loading}
                 required
+                style={{ flex: 1, minWidth: 0 }}
               />
             )}
           </EmailInputGroup>
@@ -546,13 +565,13 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
               <EmailVerificationStatus verified={false}>
                 ⚠ 이메일 인증을 완료하면 더 많은 기능을 이용할 수 있습니다
               </EmailVerificationStatus>
-              <EmailVerificationButton
+              <OutlineButton
                 type="button"
                 onClick={handleSendVerificationEmail}
                 disabled={loading || emailVerificationSending || !formData.emailId || !formData.emailDomain}
               >
                 {emailVerificationSending ? '발송 중...' : emailVerificationSent ? '인증 메일 재발송' : '이메일 인증 메일 발송'}
-              </EmailVerificationButton>
+              </OutlineButton>
               {emailVerificationSent && !emailVerified && (
                 <EmailVerificationInfo>
                   이메일 인증 메일이 발송되었습니다. 이메일을 확인하여 인증을 완료해주세요.
@@ -566,7 +585,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
 
         <InputGroup>
           <Label htmlFor="role">역할 *</Label>
-          <Select
+          <PillSelect
             id="role"
             name="role"
             value={formData.role}
@@ -576,12 +595,12 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
           >
             <option value="USER">🐾 일반 사용자 (펫케어 서비스 이용)</option>
             <option value="SERVICE_PROVIDER">🏥 서비스 제공자 (펫케어 서비스 제공)</option>
-          </Select>
+          </PillSelect>
         </InputGroup>
 
         <InputGroup>
           <Label htmlFor="location">지역</Label>
-          <Input
+          <PillInput
             type="text"
             id="location"
             name="location"
@@ -611,7 +630,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                   <PetInputRow>
                     <PetInputGroup>
                       <PetLabel>이름 *</PetLabel>
-                      <PetInput
+                      <PillInput
                         type="text"
                         value={pet.petName}
                         onChange={(e) => handlePetChange(index, 'petName', e.target.value)}
@@ -623,7 +642,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                     </PetInputGroup>
                     <PetInputGroup>
                       <PetLabel>종류 *</PetLabel>
-                      <PetSelect
+                      <PillSelect
                         value={pet.petType}
                         onChange={(e) => handlePetChange(index, 'petType', e.target.value)}
                         disabled={loading}
@@ -635,9 +654,9 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                         <option value="RABBIT">토끼</option>
                         <option value="HAMSTER">햄스터</option>
                         <option value="ETC">기타</option>
-                      </PetSelect>
+                      </PillSelect>
                       {pet.petType === 'ETC' && (
-                        <PetInput
+                        <PillInput
                           type="text"
                           value={pet.customPetType}
                           onChange={(e) => handlePetChange(index, 'customPetType', e.target.value)}
@@ -653,7 +672,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                   <PetInputRow>
                     <PetInputGroup>
                       <PetLabel>품종</PetLabel>
-                      <PetInput
+                      <PillInput
                         type="text"
                         value={pet.breed}
                         onChange={(e) => handlePetChange(index, 'breed', e.target.value)}
@@ -664,7 +683,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                     </PetInputGroup>
                     <PetInputGroup>
                       <PetLabel>성별</PetLabel>
-                      <PetSelect
+                      <PillSelect
                         value={pet.gender}
                         onChange={(e) => handlePetChange(index, 'gender', e.target.value)}
                         disabled={loading}
@@ -672,14 +691,14 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                         <option value="UNKNOWN">미확인</option>
                         <option value="M">수컷</option>
                         <option value="F">암컷</option>
-                      </PetSelect>
+                      </PillSelect>
                     </PetInputGroup>
                   </PetInputRow>
 
                   <PetInputRow>
                     <PetInputGroup>
                       <PetLabel>나이</PetLabel>
-                      <PetInput
+                      <PillInput
                         type="text"
                         value={pet.age}
                         onChange={(e) => handlePetChange(index, 'age', e.target.value)}
@@ -690,7 +709,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                     </PetInputGroup>
                     <PetInputGroup>
                       <PetLabel>색상/털색</PetLabel>
-                      <PetInput
+                      <PillInput
                         type="text"
                         value={pet.color}
                         onChange={(e) => handlePetChange(index, 'color', e.target.value)}
@@ -704,7 +723,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                   <PetInputRow>
                     <PetInputGroup>
                       <PetLabel>몸무게 (kg)</PetLabel>
-                      <PetInput
+                      <PillInput
                         type="number"
                         step="0.1"
                         min="0"
@@ -716,7 +735,7 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
                     </PetInputGroup>
                     <PetInputGroup>
                       <PetLabel>생년월일</PetLabel>
-                      <PetInput
+                      <PillInput
                         type="date"
                         value={pet.birthDate}
                         onChange={(e) => handlePetChange(index, 'birthDate', e.target.value)}
@@ -780,207 +799,81 @@ const RegisterForm = ({ onRegisterSuccess, onSwitchToLogin }) => {
         {error && <ErrorMessage>{error}</ErrorMessage>}
         {success && <SuccessMessage>{success}</SuccessMessage>}
 
-        <Button type="submit" disabled={loading}>
+        <GradientButton type="submit" disabled={loading}>
           {loading ? '회원가입 중...' : '회원가입'}
-        </Button>
+        </GradientButton>
       </Form>
 
-      <LinkText>
-        이미 계정이 있으신가요?{' '}
-        <a href="#" onClick={(e) => {
-          e.preventDefault();
-          if (onSwitchToLogin) onSwitchToLogin();
-        }}>
+      <FormSwitchLink>
+        이미 계정이 있으신가요?
+        <button type="button" onClick={() => { if (onSwitchToLogin) onSwitchToLogin(); }}>
           로그인
-        </a>
-      </LinkText>
-    </RegisterContainer>
+        </button>
+      </FormSwitchLink>
+    </>
   );
 };
 
 export default RegisterForm;
 
-const RegisterContainer = styled.div`
-  max-width: 600px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 2.5rem;
-  background: white;
-  border-radius: 12px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-  
-  @media (max-width: 768px) {
-    max-width: 90%;
-    padding: 2rem;
-  }
-`;
-
-const Title = styled.h2`
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #333;
-`;
-
 const Form = styled.form`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing.lg};
 `;
 
 const InputGroup = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing.sm};
 `;
 
 const Label = styled.label`
-  font-weight: 500;
-  color: #555;
-`;
-
-const Input = styled.input`
-  padding: 0.75rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-    transform: translateY(-1px);
-  }
-  
-  &:hover {
-    border-color: #007bff;
-  }
-`;
-
-const Select = styled.select`
-  padding: 0.75rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  background: white;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-    transform: translateY(-1px);
-  }
-  
-  &:hover {
-    border-color: #007bff;
-  }
-`;
-
-const Button = styled.button`
-  padding: 0.75rem 1.5rem;
-  background: #28a745;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
   font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  
-  &:hover {
-    background: #218838;
-    transform: translateY(-1px);
-    box-shadow: 0 3px 8px rgba(40, 167, 69, 0.3);
-  }
-  
-  &:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-  }
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const ErrorMessage = styled.div`
-  color: #dc3545;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
+  color: ${({ theme }) => theme.colors.error};
+  font-size: 13px;
+  margin-top: 4px;
 `;
 
 const SuccessMessage = styled.div`
-  color: #28a745;
-  font-size: 0.875rem;
-  margin-top: 0.5rem;
-`;
-
-const LinkText = styled.p`
-  text-align: center;
-  margin-top: 1rem;
-  color: #666;
-  
-  a {
-    color: #007bff;
-    text-decoration: none;
-    
-    &:hover {
-      text-decoration: underline;
-    }
-  }
+  color: ${({ theme }) => theme.colors.success};
+  font-size: 13px;
+  margin-top: 4px;
 `;
 
 const NicknameInputGroup = styled.div`
   display: flex;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing.sm};
   align-items: flex-start;
 `;
 
-const CheckButton = styled.button`
-  padding: 0.75rem 1rem;
-  background: #007bff;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.2s ease;
-  
-  &:hover:not(:disabled) {
-    background: #0056b3;
-    transform: translateY(-1px);
-  }
-  
-  &:disabled {
-    background: #6c757d;
-    cursor: not-allowed;
-    transform: none;
-  }
-`;
-
 const NicknameMessage = styled.div`
-  font-size: 0.875rem;
-  margin-top: 0.25rem;
-  color: ${props => props.available ? '#28a745' : '#dc3545'};
+  font-size: 13px;
+  margin-top: 4px;
+  color: ${({ theme, available }) => available ? theme.colors.success : theme.colors.error};
 `;
 
 const PetCardsContainer = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: ${({ theme }) => theme.spacing.lg};
 `;
 
 const PetCard = styled.div`
-  border: 2px solid #e1e5e9;
-  border-radius: 8px;
-  padding: 1rem;
-  background: #f8f9fa;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.xl};
+  padding: ${({ theme }) => theme.spacing.lg};
+  background: ${({ theme }) => theme.colors.surface};
   transition: all 0.2s ease;
-  
+
   &:hover {
-    border-color: #007bff;
-    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: ${({ theme }) => theme.shadows.sm};
   }
 `;
 
@@ -988,38 +881,38 @@ const PetCardHeader = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: ${({ theme }) => theme.spacing.md};
 `;
 
 const PetCardTitle = styled.h4`
   margin: 0;
-  color: #333;
-  font-size: 0.95rem;
+  color: ${({ theme }) => theme.colors.text};
+  font-size: 14px;
   font-weight: 600;
 `;
 
 const RemovePetButton = styled.button`
-  background: #dc3545;
-  color: white;
+  background: ${({ theme }) => theme.colors.error};
+  color: #fff;
   border: none;
-  border-radius: 50%;
+  border-radius: ${({ theme }) => theme.borderRadius.full};
   width: 24px;
   height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  font-size: 1rem;
+  font-size: 14px;
   line-height: 1;
   transition: all 0.2s ease;
-  
+
   &:hover:not(:disabled) {
-    background: #c82333;
+    background: ${({ theme }) => theme.colors.errorDark};
     transform: scale(1.1);
   }
-  
+
   &:disabled {
-    background: #6c757d;
+    background: ${({ theme }) => theme.colors.textLight};
     cursor: not-allowed;
   }
 `;
@@ -1027,13 +920,13 @@ const RemovePetButton = styled.button`
 const PetCardBody = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: ${({ theme }) => theme.spacing.md};
 `;
 
 const PetInputRow = styled.div`
   display: flex;
-  gap: 0.75rem;
-  
+  gap: ${({ theme }) => theme.spacing.md};
+
   @media (max-width: 768px) {
     flex-direction: column;
   }
@@ -1043,111 +936,70 @@ const PetInputGroup = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: ${({ theme }) => theme.spacing.xs};
 `;
 
 const PetLabel = styled.label`
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #555;
-`;
-
-const PetInput = styled.input`
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-  }
-  
-  &:disabled {
-    background: #e9ecef;
-    cursor: not-allowed;
-  }
-`;
-
-const PetSelect = styled.select`
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  background: white;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-  }
-  
-  &:disabled {
-    background: #e9ecef;
-    cursor: not-allowed;
-  }
+  font-size: 13px;
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.text};
 `;
 
 const AddPetButton = styled.button`
-  padding: 0.75rem;
-  background: #f8f9fa;
-  border: 2px dashed #ced4da;
-  border-radius: 8px;
-  color: #495057;
-  font-size: 0.95rem;
-  font-weight: 500;
+  width: 100%;
+  padding: 14px;
+  background: linear-gradient(135deg, #E8714A 0%, #C9573A 100%);
+  border: none;
+  border-radius: 50px;
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  
+  gap: ${({ theme }) => theme.spacing.sm};
+
   &:hover:not(:disabled) {
-    background: #e9ecef;
-    border-color: #007bff;
-    color: #007bff;
-    transform: translateY(-1px);
+    opacity: 0.9;
   }
-  
+
   &:disabled {
-    background: #e9ecef;
+    opacity: 0.5;
     cursor: not-allowed;
-    opacity: 0.6;
   }
 `;
 
 const PetCheckbox = styled.input`
-  margin-right: 0.5rem;
+  margin-right: ${({ theme }) => theme.spacing.sm};
   width: 18px;
   height: 18px;
   cursor: pointer;
-  
-  &:disabled {
-    cursor: not-allowed;
-  }
+  accent-color: ${({ theme }) => theme.colors.primary};
+
+  &:disabled { cursor: not-allowed; }
 `;
 
 const PetTextarea = styled.textarea`
-  padding: 0.5rem;
-  border: 1px solid #ced4da;
-  border-radius: 4px;
-  font-size: 0.9rem;
+  padding: 8px 12px;
+  border: 1.5px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: 13px;
   font-family: inherit;
+  background: ${({ theme }) => theme.colors.background};
+  color: ${({ theme }) => theme.colors.text};
   resize: vertical;
-  transition: all 0.2s ease;
-  
+  transition: border-color 0.2s ease;
+  outline: none;
+
   &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
+    border-color: ${({ theme }) => theme.colors.primary};
+    box-shadow: 0 0 0 3px ${({ theme }) => theme.colors.primary}20;
   }
-  
+
   &:disabled {
-    background: #e9ecef;
+    background: ${({ theme }) => theme.colors.surfaceSoft};
     cursor: not-allowed;
   }
 `;
@@ -1155,141 +1007,43 @@ const PetTextarea = styled.textarea`
 const EmailInputGroup = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: ${({ theme }) => theme.spacing.sm};
   flex-wrap: wrap;
 `;
 
-const EmailIdInput = styled.input`
-  flex: 1;
-  min-width: 120px;
-  padding: 0.75rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-    transform: translateY(-1px);
-  }
-  
-  &:hover {
-    border-color: #007bff;
-  }
-  
-  &:disabled {
-    background: #f5f5f5;
-    cursor: not-allowed;
-  }
-`;
-
 const EmailAt = styled.span`
-  font-size: 1rem;
+  font-size: 14px;
   font-weight: 600;
-  color: #666;
+  color: ${({ theme }) => theme.colors.textSecondary};
   white-space: nowrap;
 `;
 
-const EmailDomainSelect = styled.select`
-  flex: 1;
-  min-width: 150px;
-  padding: 0.75rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  background: white;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-    transform: translateY(-1px);
-  }
-  
-  &:hover {
-    border-color: #007bff;
-  }
-  
-  &:disabled {
-    background: #f5f5f5;
-    cursor: not-allowed;
-  }
-`;
-
 const EmailVerificationErrorMessage = styled.div`
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  font-size: 0.875rem;
-  color: #dc3545;
+  margin-top: ${({ theme }) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.sm};
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.error};
   font-weight: 500;
-  background: #fff5f5;
-  border-left: 3px solid #dc3545;
-  border-radius: 4px;
+  background: ${({ theme }) => theme.colors.error}10;
+  border-left: 3px solid ${({ theme }) => theme.colors.error};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
 `;
 
 const EmailVerificationStatus = styled.div`
-  margin-top: 0.5rem;
-  padding: 0.5rem;
-  font-size: 0.875rem;
-  color: ${props => props.verified ? '#4caf50' : '#ff9800'};
-  font-weight: ${props => props.verified ? '600' : '500'};
-`;
-
-const EmailVerificationButton = styled.button`
-  margin-top: 0.5rem;
-  padding: 0.5rem 1rem;
-  background: ${props => props.theme.colors.primary || '#007bff'};
-  color: white;
-  border: none;
-  border-radius: 6px;
-  font-size: 0.875rem;
-  font-weight: 600;
-  cursor: ${props => props.disabled ? 'not-allowed' : 'pointer'};
-  opacity: ${props => props.disabled ? 0.6 : 1};
-  transition: all 0.2s ease;
-  
-  &:hover:not(:disabled) {
-    background: ${props => props.theme.colors.primaryDark || '#0056b3'};
-    transform: translateY(-1px);
-  }
+  margin-top: ${({ theme }) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.sm};
+  font-size: 13px;
+  color: ${({ theme, verified }) => verified ? theme.colors.success : theme.colors.warning};
+  font-weight: ${({ verified }) => verified ? '600' : '500'};
 `;
 
 const EmailVerificationInfo = styled.div`
-  margin-top: 0.5rem;
-  padding: 0.75rem;
-  background: #e3f2fd;
-  border-left: 3px solid #2196f3;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  color: #1976d2;
+  margin-top: ${({ theme }) => theme.spacing.sm};
+  padding: ${({ theme }) => theme.spacing.md};
+  background: ${({ theme }) => theme.colors.info}15;
+  border-left: 3px solid ${({ theme }) => theme.colors.info};
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  font-size: 13px;
+  color: ${({ theme }) => theme.colors.infoDark};
   line-height: 1.5;
-`;
-
-const EmailCustomInput = styled.input`
-  flex: 1;
-  min-width: 150px;
-  padding: 0.75rem;
-  border: 2px solid #e1e5e9;
-  border-radius: 6px;
-  font-size: 0.95rem;
-  transition: all 0.2s ease;
-  
-  &:focus {
-    outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.1);
-    transform: translateY(-1px);
-  }
-  
-  &:hover {
-    border-color: #007bff;
-  }
-  
-  &:disabled {
-    background: #f5f5f5;
-    cursor: not-allowed;
-  }
 `;

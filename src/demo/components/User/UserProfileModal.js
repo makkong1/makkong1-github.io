@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
 import { userProfileApi, petApiClient } from '../../api/userApi';
 import { uploadApi } from '../../api/uploadApi';
+import { meetupApi } from '../../api/meetupApi';
 
 const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
   const { user } = useAuth();
@@ -40,10 +41,6 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
   });
   const [isUploading, setIsUploading] = useState(false);
   const [uploadError, setUploadError] = useState('');
-  const [showDatePicker, setShowDatePicker] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [datePickerPosition, setDatePickerPosition] = useState({ top: 0, left: 0 });
-  const datePickerButtonRef = useRef(null);
 
   const isMyProfile = user && (user.idx === userId || user.id === userId);
 
@@ -59,6 +56,7 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
       setIsEditMode(false);
       setPets([]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, userId, isMyProfile]);
 
   const fetchProfile = async () => {
@@ -240,6 +238,28 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
     M: '수컷',
     F: '암컷',
     UNKNOWN: '미확인',
+  };
+
+  const handleMeetupLikeToggle = async (history) => {
+    if (!history?.meetupIdx) return;
+
+    const nextLiked = !history.liked;
+    try {
+      await meetupApi.updateHistoryLike(history.meetupIdx, nextLiked);
+      setProfile(prev => {
+        if (!prev?.meetupHistories) return prev;
+        const meetupHistories = prev.meetupHistories.map(item => (
+          item.meetupIdx === history.meetupIdx ? { ...item, liked: nextLiked } : item
+        ));
+        return {
+          ...prev,
+          meetupHistories,
+          meetupLikedCount: meetupHistories.filter(item => item.liked).length,
+        };
+      });
+    } catch (err) {
+      alert(err.response?.data?.error || '모임 좋아요 변경에 실패했습니다.');
+    }
   };
 
   if (!isOpen) return null;
@@ -576,19 +596,19 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
                 </PetsSection>
               )}
 
-              {profile.user?.role === 'SERVICE_PROVIDER' && (
+              {profile.reviewCount > 0 && (
                 <ReviewSummarySection>
-                  <ReviewSummaryTitle>펫케어 리뷰</ReviewSummaryTitle>
+                  <ReviewSummaryTitle>{profile.careReviewMode === 'WRITTEN' ? '내가 남긴 펫케어 리뷰' : '받은 펫케어 리뷰'}</ReviewSummaryTitle>
                   <ReviewStats>
                     <StatItem>
-                      <StatLabel>평균 평점</StatLabel>
+                      <StatLabel>{profile.careReviewMode === 'WRITTEN' ? '평균 남긴 평점' : '평균 받은 평점'}</StatLabel>
                       <StatValue>
                         {profile.averageRating ? profile.averageRating.toFixed(1) : '-'}
                         {profile.averageRating && <StarIcon>⭐</StarIcon>}
                       </StatValue>
                     </StatItem>
                     <StatItem>
-                      <StatLabel>리뷰 개수</StatLabel>
+                      <StatLabel>{profile.careReviewMode === 'WRITTEN' ? '작성 리뷰 개수' : '받은 리뷰 개수'}</StatLabel>
                       <StatValue>{profile.reviewCount || 0}개</StatValue>
                     </StatItem>
                   </ReviewStats>
@@ -597,12 +617,12 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
 
               {profile.reviews && profile.reviews.length > 0 && (
                 <ReviewsSection>
-                  <ReviewsTitle>리뷰 목록</ReviewsTitle>
+                  <ReviewsTitle>{profile.careReviewMode === 'WRITTEN' ? '내가 남긴 펫케어 리뷰' : '받은 펫케어 리뷰'}</ReviewsTitle>
                   <ReviewList>
                     {profile.reviews.map((review) => (
                       <ReviewItem key={review.idx}>
                         <ReviewHeader>
-                          <ReviewerName>{review.reviewerName || '알 수 없음'}</ReviewerName>
+                          <ReviewerName>{profile.careReviewMode === 'WRITTEN' ? (review.revieweeName || '알 수 없음') : (review.reviewerName || '알 수 없음')}</ReviewerName>
                           <ReviewRating>
                             {'⭐'.repeat(review.rating)}
                             <RatingNumber>{review.rating}</RatingNumber>
@@ -622,8 +642,8 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
                 </ReviewsSection>
               )}
 
-              {profile.user?.role === 'SERVICE_PROVIDER' && (!profile.reviews || profile.reviews.length === 0) && (
-                <EmptyReviewsMessage>아직 리뷰가 없습니다.</EmptyReviewsMessage>
+              {profile.reviewCount === 0 && (
+                <EmptyReviewsMessage>아직 펫케어 리뷰가 없습니다.</EmptyReviewsMessage>
               )}
 
               {profile.locationServiceReviewCount > 0 && (
@@ -666,6 +686,53 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
                             ? new Date(review.createdAt).toLocaleDateString('ko-KR')
                             : ''}
                         </ReviewDate>
+                      </ReviewItem>
+                    ))}
+                  </ReviewList>
+                </ReviewsSection>
+              )}
+
+              {profile.meetupHistoryCount > 0 && (
+                <ReviewSummarySection>
+                  <ReviewSummaryTitle>모임 히스토리</ReviewSummaryTitle>
+                  <ReviewStats>
+                    <StatItem>
+                      <StatLabel>참여/주최 기록</StatLabel>
+                      <StatValue>{profile.meetupHistoryCount || 0}개</StatValue>
+                    </StatItem>
+                    <StatItem>
+                      <StatLabel>좋아요 기록</StatLabel>
+                      <StatValue>{profile.meetupLikedCount || 0}개</StatValue>
+                    </StatItem>
+                  </ReviewStats>
+                </ReviewSummarySection>
+              )}
+
+              {profile.meetupHistories && profile.meetupHistories.length > 0 && (
+                <ReviewsSection>
+                  <ReviewsTitle>모임 기록</ReviewsTitle>
+                  <ReviewList>
+                    {profile.meetupHistories.map((history) => (
+                      <ReviewItem key={`meetup-history-${history.meetupIdx}`}>
+                        <ReviewHeader>
+                          <ReviewerName>{history.title || `모임 #${history.meetupIdx}`}</ReviewerName>
+                          <MeetupRoleBadge>{history.participationRole === 'ORGANIZER' ? '주최' : '참가'}</MeetupRoleBadge>
+                        </ReviewHeader>
+                        {history.location && <ReviewComment>{history.location}</ReviewComment>}
+                        <ReviewDate>
+                          {history.date
+                            ? new Date(history.date).toLocaleString('ko-KR')
+                            : ''}
+                        </ReviewDate>
+                        {isMyProfile && (
+                          <MeetupLikeButton
+                            type="button"
+                            onClick={() => handleMeetupLikeToggle(history)}
+                            $liked={history.liked}
+                          >
+                            {history.liked ? '❤️ 좋아요 기록됨' : '🤍 좋아요로 기록'}
+                          </MeetupLikeButton>
+                        )}
                       </ReviewItem>
                     ))}
                   </ReviewList>
@@ -1239,6 +1306,32 @@ const ReviewRating = styled.div`
   display: flex;
   align-items: center;
   gap: ${(props) => props.theme.spacing.xs};
+`;
+
+
+const MeetupRoleBadge = styled.span`
+  padding: 2px 8px;
+  border-radius: ${(props) => props.theme.borderRadius.sm};
+  background: ${(props) => props.theme.colors.surfaceHover};
+  color: ${(props) => props.theme.colors.textSecondary};
+  font-size: 0.8rem;
+  font-weight: 600;
+`;
+
+const MeetupLikeButton = styled.button`
+  margin-top: ${(props) => props.theme.spacing.sm};
+  padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.md};
+  border-radius: ${(props) => props.theme.borderRadius.md};
+  border: 1px solid ${(props) => props.$liked ? props.theme.colors.primary : props.theme.colors.border};
+  background: ${(props) => props.$liked ? `${props.theme.colors.primary}18` : props.theme.colors.surface};
+  color: ${(props) => props.$liked ? props.theme.colors.primary : props.theme.colors.textSecondary};
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+
+  &:hover {
+    background: ${(props) => props.theme.colors.surfaceHover};
+  }
 `;
 
 const RatingNumber = styled.span`

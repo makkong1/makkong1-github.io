@@ -20,6 +20,24 @@ const statusLabel = {
   RESOLVED: '완료',
 };
 
+const getElapsedInfo = (lostDate) => {
+  if (!lostDate) return null;
+  const lost = new Date(lostDate);
+  if (Number.isNaN(lost.getTime())) return null;
+  const now = new Date();
+  const diffMs = now - lost;
+  if (diffMs < 0) return null;
+
+  const hours = Math.floor(diffMs / 3600000);
+  const days = Math.floor(diffMs / 86400000);
+
+  if (hours < 24) return { text: `${hours}시간 경과`, level: 'critical' };
+  if (days <= 3) return { text: `${days}일 경과`, level: 'critical' };
+  if (days <= 7) return { text: `${days}일 경과`, level: 'urgent' };
+  if (days <= 30) return { text: `${days}일 경과`, level: 'warning' };
+  return { text: `${days}일 경과`, level: 'cold' };
+};
+
 const MissingPetBoardPage = () => {
   const { user } = useAuth();
   const { checkAndRedirect, EmailVerificationPromptComponent } = useEmailVerification('MISSING_PET');
@@ -39,7 +57,6 @@ const MissingPetBoardPage = () => {
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [totalCount, setTotalCount] = useState(0);
-  const [hasNext, setHasNext] = useState(false);
 
   // 서버 사이드 페이징으로 게시글 가져오기
   const fetchBoards = useCallback(async (pageNum = 0) => {
@@ -60,7 +77,6 @@ const MissingPetBoardPage = () => {
       setBoards(boardsData);
 
       setTotalCount(pageData.totalCount || 0);
-      setHasNext(pageData.hasNext || false);
       setPage(pageNum);
       setLastUpdated(new Date());
     } catch (err) {
@@ -319,46 +335,48 @@ const MissingPetBoardPage = () => {
             </EmptyAction>
           </EmptyState>
         ) : (
-          <BoardGrid>
-            {boards.map((board) => (
-              <BoardCard key={board.idx} onClick={() => handleCardClick(board)}>
-                {board.imageUrl && (
-                  <CardImage>
-                    <img src={board.imageUrl} alt={board.title} />
-                  </CardImage>
-                )}
-                <CardBody>
-                  <CardHeader>
-                    <StatusBadge status={board.status}>
-                      {statusLabel[board.status] || board.status}
-                    </StatusBadge>
-                    <LostDate>
-                      {board.lostDate ? `실종일: ${board.lostDate}` : '실종일 정보 없음'}
-                    </LostDate>
-                  </CardHeader>
-                  <CardTitleRow>
-                    <CardTitle>{board.title}</CardTitle>
-                    <CardNumber>#{board.idx}</CardNumber>
-                  </CardTitleRow>
-                  <MetaRow>
-                    {board.petName && <MetaItem>이름: {board.petName}</MetaItem>}
-                    {board.species && <MetaItem>종: {board.species}</MetaItem>}
-                    {board.breed && <MetaItem>품종: {board.breed}</MetaItem>}
-                    {board.color && <MetaItem>색상: {board.color}</MetaItem>}
-                    {board.gender && <MetaItem>성별: {board.gender === 'M' ? '수컷' : '암컷'}</MetaItem>}
-                  </MetaRow>
-                  {board.lostLocation && (
-                    <LostLocation>실종 위치: {board.lostLocation}</LostLocation>
-                  )}
-                  {board.content && <Description>{board.content}</Description>}
-                </CardBody>
-                <CardFooter>
-                  <Reporter>제보자: {board.username || '알 수 없음'}</Reporter>
-                  <CommentCount>댓글 {board.commentCount ?? 0}개</CommentCount>
-                </CardFooter>
-              </BoardCard>
-            ))}
-          </BoardGrid>
+          <div style={{ position: 'relative' }}>
+            <BoardGrid>
+              {boards.map((board) => (
+                <BoardCard key={board.idx} onClick={() => handleCardClick(board)}>
+                  <CardImageArea>
+                    {board.imageUrl
+                      ? <img src={board.imageUrl} alt={board.petName || board.title || '반려동물'} onError={e => { e.target.style.display = 'none'; }} />
+                      : <CardImagePlaceholder>🐾</CardImagePlaceholder>
+                    }
+                    <ImageStatusBadge $found={board.status === 'FOUND'}>
+                      {board.status === 'FOUND' ? '발견됨' : board.status === 'RESOLVED' ? '완료' : '실종중'}
+                    </ImageStatusBadge>
+                  </CardImageArea>
+                  <CardInfo>
+                    {board.petName && <CardPetName>{board.petName}</CardPetName>}
+                    <CardMetaInfo>
+                      {board.species && <span>{board.species}</span>}
+                      {board.breed && <span>{board.breed}</span>}
+                      {board.color && <span>{board.color}</span>}
+                      {board.gender && <span>{board.gender === 'M' ? '수컷' : '암컷'}</span>}
+                    </CardMetaInfo>
+                    {board.lostDate && <LostDate>{board.lostDate}</LostDate>}
+                  </CardInfo>
+                  <CardBody>
+                    <CardTitleRow>
+                      <CardTitle>{board.title}</CardTitle>
+                      <CardNumber>#{board.idx}</CardNumber>
+                    </CardTitleRow>
+                    {board.lostLocation && (
+                      <LostLocation>실종 위치: {board.lostLocation}</LostLocation>
+                    )}
+                    {board.content && <Description>{board.content}</Description>}
+                  </CardBody>
+                  <CardFooter>
+                    <Reporter>제보자: {board.username || '알 수 없음'}</Reporter>
+                    <CommentCount>댓글 {board.commentCount ?? 0}개</CommentCount>
+                  </CardFooter>
+                </BoardCard>
+              ))}
+            </BoardGrid>
+            <ReportFAB onClick={openCreateForm}>+</ReportFAB>
+          </div>
         )}
 
         {totalCount > 0 && (
@@ -459,20 +477,17 @@ const StatusFilter = styled.div`
 const StatusButton = styled.button.withConfig({
   shouldForwardProp: (prop) => prop !== 'active',
 })`
-  padding: ${(props) => props.theme.spacing.sm} ${(props) => props.theme.spacing.md};
-  border-radius: ${(props) => props.theme.borderRadius.md};
-  border: none;
-  font-weight: 600;
+  padding: 8px 16px;
+  border-radius: 50px;
+  border: 1.5px solid ${(props) => props.active ? '#EF4444' : props.theme.colors.border};
+  background: ${(props) => props.active ? '#EF4444' : 'transparent'};
+  color: ${(props) => props.active ? 'white' : props.theme.colors.textSecondary};
+  font-size: 13px;
+  font-weight: ${(props) => props.active ? '600' : '400'};
   cursor: pointer;
-  background: ${(props) => (props.active ? props.theme.colors.primary : 'transparent')};
-  color: ${(props) => (props.active ? '#ffffff' : props.theme.colors.text)};
-  transition: background 0.2s ease, color 0.2s ease, transform 0.1s ease;
-
-  &:hover {
-    transform: translateY(-1px);
-    background: ${(props) =>
-    props.active ? props.theme.colors.primaryDark : 'rgba(255, 126, 54, 0.1)'};
-  }
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 `;
 
 const RefreshButton = styled.button`
@@ -500,7 +515,7 @@ const RefreshButton = styled.button`
 const CreateButton = styled.button`
   border: none;
   background: ${(props) => props.theme.colors.primary};
-  color: #ffffff;
+  color: ${(props) => props.theme.colors.textInverse};
   border-radius: ${(props) => props.theme.borderRadius.md};
   padding: ${(props) => props.theme.spacing.sm} ${(props) => props.theme.spacing.lg};
   font-weight: 600;
@@ -519,9 +534,9 @@ const ControlRow = styled.div`
 `;
 
 const ErrorBanner = styled.div`
-  background: #fdecea;
-  color: #c0392b;
-  border: 1px solid #f5c6cb;
+  background: ${(props) => props.theme.colors.error}12;
+  color: ${(props) => props.theme.colors.errorDark};
+  border: 1px solid ${(props) => props.theme.colors.error}40;
   border-radius: ${(props) => props.theme.borderRadius.md};
   padding: ${(props) => props.theme.spacing.md} ${(props) => props.theme.spacing.lg};
   margin-bottom: ${(props) => props.theme.spacing.lg};
@@ -530,7 +545,7 @@ const ErrorBanner = styled.div`
 const UpdatedAt = styled.div`
   margin-bottom: ${(props) => props.theme.spacing.md};
   color: ${(props) => props.theme.colors.textSecondary};
-  font-size: 0.9rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
 `;
 
 const EmptyState = styled.div`
@@ -548,51 +563,100 @@ const EmptyState = styled.div`
 `;
 
 const BoardGrid = styled.div`
-  display: grid;
-  gap: ${(props) => props.theme.spacing.lg};
-  grid-template-columns: repeat(4, 1fr);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-    gap: ${(props) => props.theme.spacing.md};
+  @media (min-width: 769px) {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    padding: 24px;
+    max-width: 1200px;
+    margin: 0 auto;
   }
 `;
 
 const BoardCard = styled.div`
-  background: ${(props) => props.theme.colors.surface};
-  border: 1px solid ${(props) => props.theme.colors.border};
-  border-radius: ${(props) => props.theme.borderRadius.lg};
+  background: ${(props) => props.theme.colors.surfaceElevated};
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid ${(props) => props.theme.colors.borderLight};
+  box-shadow: 0 2px 12px ${(props) => props.theme.colors.shadow};
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
   display: grid;
   grid-template-rows: auto 1fr auto;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
-  cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
-  overflow: hidden;
 
   &:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.14);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px ${(props) => props.theme.colors.shadowHover};
   }
 `;
 
-const CardImage = styled.div`
+const CardImageArea = styled.div`
   width: 100%;
-  height: 180px;
+  aspect-ratio: 4 / 3;
   background: ${(props) => props.theme.colors.surfaceHover};
   overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
 
   img {
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
   }
+`;
+
+const CardImagePlaceholder = styled.div`
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48px;
+  background: linear-gradient(135deg, #EF444422, #EF444444);
+`;
+
+const ImageStatusBadge = styled.span`
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 50px;
+  font-size: 11px;
+  font-weight: 700;
+  background: ${(props) => props.$found
+    ? props.theme.colors.successSoft
+    : props.theme.colors.errorSoft};
+  color: ${(props) => props.$found
+    ? props.theme.colors.success
+    : props.theme.colors.error};
+  border: 1px solid ${(props) => props.$found
+    ? props.theme.colors.success + '44'
+    : props.theme.colors.error + '44'};
+`;
+
+
+const CardInfo = styled.div`
+  padding: 14px 16px;
+`;
+
+const CardPetName = styled.div`
+  font-size: 16px;
+  font-weight: 700;
+  color: ${(props) => props.theme.colors.text};
+  margin-bottom: 4px;
+`;
+
+const CardMetaInfo = styled.div`
+  font-size: 12px;
+  color: ${(props) => props.theme.colors.textSecondary};
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
 `;
 
 const CardBody = styled.div`
@@ -602,36 +666,11 @@ const CardBody = styled.div`
   gap: ${(props) => props.theme.spacing.sm};
 `;
 
-const CardHeader = styled.div`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${(props) => props.theme.spacing.sm};
-`;
 
-const StatusBadge = styled.span.withConfig({
-  shouldForwardProp: (prop) => prop !== 'status',
-})`
-  padding: ${(props) => props.theme.spacing.xs} ${(props) => props.theme.spacing.sm};
-  border-radius: ${(props) => props.theme.borderRadius.md};
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #ffffff;
-  background: ${(props) => {
-    switch (props.status) {
-      case 'FOUND':
-        return '#10b981';
-      case 'RESOLVED':
-        return '#6366f1';
-      case 'MISSING':
-      default:
-        return '#ef4444';
-    }
-  }};
-`;
+
 
 const LostDate = styled.span`
-  font-size: 0.85rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
   color: ${(props) => props.theme.colors.textSecondary};
 `;
 
@@ -645,7 +684,7 @@ const CardTitleRow = styled.div`
 
 const CardTitle = styled.h2`
   margin: 0;
-  font-size: 1.1rem;
+  font-size: ${(props) => props.theme.typography.h4.fontSize};
   color: ${(props) => props.theme.colors.text};
   flex: 1;
   min-width: 0;
@@ -658,19 +697,6 @@ const CardNumber = styled.span`
   white-space: nowrap;
 `;
 
-const MetaRow = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${(props) => props.theme.spacing.xs};
-  font-size: 0.9rem;
-  color: ${(props) => props.theme.colors.textSecondary};
-`;
-
-const MetaItem = styled.span`
-  background: ${(props) => props.theme.colors.surfaceHover};
-  border-radius: ${(props) => props.theme.borderRadius.sm};
-  padding: 2px 8px;
-`;
 
 const LostLocation = styled.div`
   font-weight: 600;
@@ -688,7 +714,7 @@ const CardFooter = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
+  font-size: ${(props) => props.theme.typography.body2.fontSize};
   color: ${(props) => props.theme.colors.textSecondary};
 `;
 
@@ -700,14 +726,14 @@ const Reporter = styled.span`
 const CommentCount = styled.span`
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: ${(props) => props.theme.spacing.xs};
 `;
 
 const EmptyAction = styled.button`
   margin-top: ${(props) => props.theme.spacing.lg};
   border: none;
   background: ${(props) => props.theme.colors.primary};
-  color: #ffffff;
+  color: ${(props) => props.theme.colors.textInverse};
   border-radius: ${(props) => props.theme.borderRadius.md};
   padding: ${(props) => props.theme.spacing.sm} ${(props) => props.theme.spacing.lg};
   font-weight: 600;
@@ -721,7 +747,7 @@ const EmptyAction = styled.button`
 const DrawerBackdrop = styled.div`
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.35);
+  background: ${(props) => props.theme.colors.overlay};
   backdrop-filter: blur(2px);
   z-index: 900;
 `;
@@ -734,7 +760,7 @@ const DrawerLoader = styled.div`
   background: ${(props) => props.theme.colors.surface};
   border-radius: ${(props) => props.theme.borderRadius.lg};
   padding: ${(props) => props.theme.spacing.lg} ${(props) => props.theme.spacing.xl};
-  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.2);
+  box-shadow: ${(props) => props.theme.shadows.xl};
   z-index: 1001;
   font-weight: 600;
   color: ${(props) => props.theme.colors.text};
@@ -795,7 +821,7 @@ const PageSizeButton = styled.button`
   border: 1px solid ${props => props.theme.colors.border};
   border-radius: ${props => props.theme.borderRadius.md};
   background: ${props => props.active ? props.theme.colors.primary : 'transparent'};
-  color: ${props => props.active ? 'white' : props.theme.colors.text};
+  color: ${props => props.active ? props.theme.colors.textInverse : props.theme.colors.text};
   font-size: ${props => props.theme.typography.body2.fontSize};
   font-weight: ${props => props.active ? 600 : 400};
   cursor: pointer;
@@ -818,6 +844,33 @@ const PaginationWrapper = styled.div`
   align-items: center;
   padding: ${props => props.theme.spacing.xl} 0;
   margin-top: ${props => props.theme.spacing.lg};
+`;
+
+const ReportFAB = styled.button`
+  position: fixed;
+  bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  right: 20px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
+  color: white;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(239, 68, 68, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.2s ease;
+  z-index: 50;
+
+  &:hover { transform: scale(1.1); }
+
+  @media (min-width: 769px) {
+    bottom: 32px;
+    right: 32px;
+  }
 `;
 
 
