@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../api/authApi';
+import { isDemoMode } from '../mock/isDemoMode';
+import { DEMO_USER } from '../mock/demoData';
 
 const AuthContext = createContext();
 
@@ -12,12 +14,14 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(isDemoMode() ? DEMO_USER : null);
+  const [loading, setLoading] = useState(!isDemoMode());
+  const [isAuthenticated, setIsAuthenticated] = useState(isDemoMode());
 
   // 앱 시작 시 토큰 검증
   useEffect(() => {
+    if (isDemoMode()) return; // 데모 모드는 자동 로그인
+
     let isMounted = true; // 컴포넌트 언마운트 체크
 
     const checkAuth = async () => {
