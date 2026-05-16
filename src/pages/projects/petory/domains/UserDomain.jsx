@@ -2,18 +2,53 @@ import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
+function Card({ children, style }) {
+  return (
+    <div
+      className="section-card"
+      style={{
+        padding: '1.5rem',
+        backgroundColor: 'var(--card-bg)',
+        borderRadius: '8px',
+        border: '1px solid var(--nav-border)',
+        ...style
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CodeBlock({ children }) {
+  return (
+    <pre
+      style={{
+        padding: '0.95rem 1rem',
+        backgroundColor: 'var(--bg-color)',
+        borderRadius: '6px',
+        overflowX: 'auto',
+        fontSize: '0.84rem',
+        color: 'var(--text-secondary)',
+        fontFamily: 'monospace',
+        lineHeight: '1.65',
+        margin: '0.75rem 0 0'
+      }}
+    >
+      {children}
+    </pre>
+  );
+}
+
 function UserDomain() {
   const sections = [
-    { id: 'intro', title: '도메인 소개' },
+    { id: 'intro', title: '도메인 개요' },
     { id: 'features', title: '주요 기능' },
+    { id: 'service-logic', title: '핵심 서비스 로직' },
+    { id: 'architecture', title: '아키텍처' },
     { id: 'troubleshooting', title: '트러블슈팅' },
-    { id: 'db-optimization', title: 'DB 최적화' },
-    { id: 'refactoring', title: '리팩토링' },
-    { id: 'entities', title: 'Entity 구조' },
-    { id: 'security', title: '보안 및 권한 체계' },
-    { id: 'relationships', title: '다른 도메인과의 연관관계' },
-    { id: 'api', title: 'API 엔드포인트' },
-    { id: 'docs', title: '관련 문서' }
+    { id: 'performance', title: '성능 최적화' },
+    { id: 'summary', title: '핵심 포인트' },
+    { id: 'docs', title: '관련 페이지' }
   ];
 
   const entityDiagram = `erDiagram
@@ -21,7 +56,7 @@ function UserDomain() {
     Users ||--o{ UserSanction : "has"
     Users ||--o{ Pet : "owns"
     Pet ||--o{ PetVaccination : "has"
-    
+
     Users {
         Long idx PK
         String id
@@ -39,7 +74,7 @@ function UserDomain() {
         LocalDateTime suspendedUntil
         Boolean isDeleted
     }
-    
+
     Pet {
         Long idx PK
         Long user_idx FK
@@ -51,14 +86,14 @@ function UserDomain() {
         String imageUrl
         String description
     }
-    
+
     SocialUser {
         Long idx PK
         Long user_idx FK
         String provider
         String providerId
     }
-    
+
     UserSanction {
         Long idx PK
         Long user_idx FK
@@ -68,7 +103,7 @@ function UserDomain() {
         LocalDateTime startedAt
         LocalDateTime endedAt
     }
-    
+
     PetVaccination {
         Long idx PK
         Long pet_idx FK
@@ -77,1049 +112,416 @@ function UserDomain() {
         LocalDate nextDueDate
     }`;
 
+  const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
+
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
       <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         <div className="domain-page-content" style={{ flex: 1 }}>
-          <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>유저 도메인</h1>
-          
-          {/* 1. 도메인 소개 */}
+          <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>유저 도메인</h1>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '2.5rem', fontSize: '0.95rem' }}>
+            User 도메인은 인증·인가, 소셜 연동, 이메일 인증·제재, 반려동물(Pet)·예방접종까지 한 레이어에서 다룹니다. 서비스 전역에서 참조되는 사용자 루트이기 때문에
+            로그인 경로 성능과 제재 동시성, 소셜 가입 레이스가 특히 신경 쓰였습니다.
+          </p>
+
           <section id="intro" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 소개</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                User 도메인은 인증·인가 및 사용자 상태 관리, 반려동물 등록/관리를 담당합니다.
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 개요</h2>
+            <Card style={{ marginBottom: '1rem' }}>
+              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                `docs/domains/user.md` 기준으로 User 도메인의 핵심은{' '}
+                <strong style={{ color: 'var(--text-color)' }}>
+                  신뢰할 수 있는 인증 상태를 빠르게 만들고, 제재·이메일 인증 같은 정책을 사용자 생명주기 안에 안정적으로 끼워 넣는 것
+                </strong>
+                입니다.
               </p>
-              {/* <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>실서비스 환경에서 가장 빈번하게 호출되는 도메인 중 하나</strong>입니다.
-              </p> */}
-              <div style={{
-                padding: '1rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '6px',
-                marginTop: '1rem',
-                border: '1px solid var(--nav-border)'
-              }}>
-                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과</h3>
-                <ul style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                  fontSize: '0.9rem'
-                }}>
-                  <li>• 로그인 쿼리: <strong style={{ color: 'var(--text-color)' }}>21개 → 4개</strong> (80.95% 감소)</li>
-                  <li>• 실행 시간: <strong style={{ color: 'var(--text-color)' }}>305ms → 55ms</strong> (81.97% 감소)</li>
-                  <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>0.58MB → 0.13MB</strong> (77.24% 감소)</li>
-                </ul>
-              </div>
-            </div>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('JWT(Access/Refresh) + 폼 로그인 + OAuth2(Google/Naver)로 로그인 흐름을 제공합니다.')}
+                {li('이메일 인증은 회원가입 전·비밀번호 변경·펫케어/모임 이용 등 목적별로 검증 포인트를 나눕니다.')}
+                {li('경고 누적·이용 제한·영구 차단은 관리자 API와 연동되며 동시 증가는 DB 원자 연산으로 막았습니다.')}
+              </ul>
+            </Card>
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과 (로그인 N+1 개선 예시)</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <li>• 로그인 시 연관 로딩 쿼리: <strong style={{ color: 'var(--text-color)' }}>21개 → 4개</strong> (약 81% 감소)</li>
+                <li>• 실행 시간: <strong style={{ color: 'var(--text-color)' }}>305ms → 55ms</strong></li>
+                <li>• 메모리 사용량: <strong style={{ color: 'var(--text-color)' }}>0.58MB → 0.13MB</strong></li>
+              </ul>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', marginTop: '0.75rem', marginBottom: 0, fontSize: '0.9rem' }}>
+                수치 근거·시퀀스·테스트 코드는{' '}
+                <Link to="/domains/user/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                  User 성능 최적화 페이지
+                </Link>
+                에 정리했습니다.
+              </p>
+            </Card>
           </section>
 
-          {/* 2. 주요 기능 */}
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. 회원가입 및 로그인 (JWT 기반)</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>JWT 기반 인증 시스템으로 Access Token과 Refresh Token을 발급합니다.</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 회원가입 (ID, 비밀번호, 닉네임, 이메일)</li>
-                  <li>• 로그인 시 Access Token (15분) + Refresh Token (1일) 발급</li>
-                  <li>• Refresh Token으로 Access Token 갱신</li>
-                  <li>• 제재 상태 확인 (정지/차단 시 로그인 불가)</li>
-                </ul>
-              </div>
-            </div>
 
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>2. 소셜 로그인 (Google, Naver)</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>OAuth2 기반 소셜 로그인으로 Google/Naver 계정으로 간편 로그인 및 회원가입이 가능합니다.</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 소셜 로그인 성공 시 일반 로그인과 동일하게 JWT 토큰 발급</li>
-                  <li>• 기존 사용자: 자동 로그인 및 JWT 토큰 발급</li>
-                  <li>• 신규 사용자: 자동 회원가입 후 로그인 및 JWT 토큰 발급</li>
-                  <li>• 이메일이 동일한 기존 사용자: 소셜 계정 자동 연결</li>
-                  <li>• 닉네임이 없는 경우: 닉네임 설정 페이지로 리다이렉트</li>
-                  <li>• Provider별 사용자 정보 표준화 (Google: sub, Naver: id)</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. 이메일 인증 시스템</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>단일 이메일 인증 시스템으로 비밀번호 변경, 펫케어/모임 서비스 이용을 위한 인증을 제공합니다.</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>소셜 로그인</strong>: Google/Naver 로그인 시 자동으로 이메일 인증 완료</li>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>일반 회원가입</strong>: 회원가입 전 이메일 인증 가능 (Redis에 임시 저장), 회원가입 시 이메일 인증 메일 발송</li>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>비밀번호 변경</strong>: 비밀번호 재설정 전 이메일 인증 필수 확인</li>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>펫케어/모임 서비스</strong>: 서비스 이용 시 이메일 인증 확인 → 미인증 시 예외 발생</li>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>권한 제어</strong>: 인증 안 된 사용자는 주변 서비스, 커뮤니티만 조회 가능, 펫케어/모임은 이용 불가</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. 사용자 제재 시스템</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}>관리자가 사용자에게 경고, 이용제한, 영구 차단을 부여할 수 있습니다.</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 경고 3회 누적 시 자동 이용제한 3일 적용</li>
-                  <li>• 이용제한 기간 만료 시 자동 해제 (스케줄러)</li>
-                  <li>• 영구 차단 시 로그인 불가</li>
-                  <li>• 동시성 문제 해결: DB 레벨에서 원자적 증가 쿼리 사용</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>5. 반려동물 등록 및 관리</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 반려동물 등록 (이름, 종류, 품종, 성별, 나이 등)</li>
-                  <li>• 프로필 이미지 업로드</li>
-                  <li>• 반려동물 정보 수정/삭제</li>
-                  <li>• 예방접종 기록 관리</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* 3. 문제 재현 방식 (테스트 설계)
-          <section id="test-design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 재현 방식 (테스트 설계)</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                다수 사용자가 동시에 접근하는 상황에서, 인증 과정 중 연관 엔티티 조회로 인해 N+1 문제가 발생했습니다.
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>1. 회원가입·로그인 (JWT)</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                폼 회원가입 후 Access(짧음) + Refresh(길음) 발급, Refresh 로 Access 재발급, 제재·차단 상태일 때 로그인 차단.
               </p>
-              <div style={{
-                padding: '1rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '6px',
-                marginTop: '1rem'
-              }}>
-                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>테스트 구성</h3>
-                <ul style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8'
-                }}>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>동시 로그인 요청 시나리오</strong>: 다수 사용자 동시 접근 상황 시뮬레이션</li>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>운영 환경과 유사한 더미 데이터</strong>: 채팅방 10개, 참여자 3명, 메시지 20개</li>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>반복 호출 기반 부하 테스트</strong>: 실제 사용 패턴 반영</li>
-                </ul>
-              </div>
-              <div style={{
-                marginTop: '1rem',
-                padding: '1rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '6px',
-                border: '1px solid var(--link-color)'
-              }}>
-                <Link
-                  to="/domains/user/optimization"
-                  style={{
-                    color: 'var(--link-color)',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    display: 'inline-block'
-                  }}
-                >
-                  → 성능 최적화 상세 페이지 보기
-                </Link>
-                <p style={{
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)',
-                  marginTop: '0.5rem',
-                  marginBottom: 0
-                }}>
-                  (시퀀스 다이어그램, 테스트 코드, 상세 최적화 과정 포함)
-                </p>
-              </div>
-            </div>
-          </section>
-
-           4. 성능 최적화 및 동시성 제어 
-          <section id="optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화 및 동시성 제어</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 최적화 방법</h3>
-              <ul style={{
-                listStyle: 'none',
-                padding: 0,
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8'
-              }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>배치 조회 패턴</strong>: 채팅방 ID 목록을 IN 절로 한 번에 조회</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch Join 활용</strong>: 참여자 조회 시 Users 엔티티도 함께 조회하여 추가 쿼리 방지</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>최신 메시지만 조회</strong>: 모든 메시지 대신 최신 메시지만 조회하여 메모리 사용량 감소</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>메모리에서 매핑</strong>: 조회한 데이터를 Map으로 변환하여 빠르게 매핑</li>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('비밀번호 BCrypt 저장, JwtAuthenticationFilter에서 토큰 검증')}
+                {li('제재 또는 삭제 상태를 로그인 흐름에서 선제 검증')}
               </ul>
-              <div style={{
-                marginTop: '1rem',
-                padding: '1rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '6px',
-                border: '1px solid var(--link-color)'
-              }}>
-                <Link
-                  to="/domains/user/optimization"
-                  style={{
-                    color: 'var(--link-color)',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    display: 'inline-block'
-                  }}
-                >
-                  → 성능 최적화 상세 페이지 보기
-                </Link>
-                <p style={{
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)',
-                  marginTop: '0.5rem',
-                  marginBottom: 0
-                }}>
-                  (코드 예시, 단계별 설명, Before/After 비교 포함)
-                </p>
-              </div>
-            </div>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>2. 소셜 로그인 (Google, Naver)</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('기존 SocialUser 또는 이메일 매칭 시 연결 후 동일하게 JWT 발급')}
+                {li('신규면 회원 생성 후 로그인, 닉네임 미설정 시 리다이렉트 플래그 처리')}
+                {li('Provider별 OAuth2UserService에서 식별자·프로필 필드 표준화')}
+                {li('Naver는 TokenResponse 형식 차이를 커스텀 클라이언트로 흡수')}
+              </ul>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>3. 이메일 인증</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('소셜 로그인은 검증 완료로 간주, 일반 회원은 Redis 임시 토큰 + 메일 플로우')}
+                {li('비밀번호 변경·펫케어·모임 등 민감 기능 전 이메일 인증 검사')}
+                {li('미인증 사용자는 커뮤니티/위치 조회 위주, 일부 기능은 예외 처리')}
+              </ul>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>4. 제재 시스템</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('관리자: 경고·이용 제한·영구 차단, 경고 3회 자동 이용 제한 규칙')}
+                {li('만료 일정 스케줄러와 연계해 제한 해제')}
+                {li('경고 카운트는 DB 단일 UPDATE로 원자 증가 (Lost Update 방지)')}
+              </ul>
+            </Card>
+
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>5. 반려동물 및 예방접종</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('내 반려동물 CRUD, 프로필 이미지')}
+                {li('예방접종 이력 Pet 하위에서 관리')}
+              </ul>
+            </Card>
           </section>
 
-           5. 성능 개선 결과 
-          <section id="after" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 개선 결과</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <div style={{
-                overflowX: 'auto'
-              }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  color: 'var(--text-secondary)'
-                }}>
-                  <thead>
-                    <tr style={{
-                      borderBottom: '2px solid var(--nav-border)'
-                    }}>
-                      <th style={{
-                        padding: '0.75rem',
-                        textAlign: 'left',
-                        color: 'var(--text-color)',
-                        fontWeight: 'bold'
-                      }}>항목</th>
-                      <th style={{
-                        padding: '0.75rem',
-                        textAlign: 'left',
-                        color: 'var(--text-color)',
-                        fontWeight: 'bold'
-                      }}>개선 전</th>
-                      <th style={{
-                        padding: '0.75rem',
-                        textAlign: 'left',
-                        color: 'var(--text-color)',
-                        fontWeight: 'bold'
-                      }}>개선 후</th>
-                      <th style={{
-                        padding: '0.75rem',
-                        textAlign: 'left',
-                        color: 'var(--text-color)',
-                        fontWeight: 'bold'
-                      }}>개선율</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{
-                      borderBottom: '1px solid var(--nav-border)'
-                    }}>
-                      <td style={{ padding: '0.75rem' }}>쿼리 수</td>
-                      <td style={{ padding: '0.75rem' }}>21개</td>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>4개</td>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>80.95% ↓</td>
-                    </tr>
-                    <tr style={{
-                      borderBottom: '1px solid var(--nav-border)'
-                    }}>
-                      <td style={{ padding: '0.75rem' }}>평균 응답 시간</td>
-                      <td style={{ padding: '0.75rem' }}>305ms</td>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>55ms</td>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>81.97% ↓</td>
-                    </tr>
-                    <tr>
-                      <td style={{ padding: '0.75rem' }}>메모리 사용량</td>
-                      <td style={{ padding: '0.75rem' }}>0.58MB</td>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>0.13MB</td>
-                      <td style={{ padding: '0.75rem', fontWeight: 'bold', color: 'var(--link-color)' }}>77.24% ↓</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </section> */}
+          <section id="service-logic" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 서비스 로직</h2>
 
-          {/* 7. 트러블슈팅 */}
-          <section id="troubleshooting" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>트러블슈팅</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>1. 로그인 시 N+1 문제</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong> 로그인 시 채팅방 목록 조회 과정에서 N+1 문제 발생 (채팅방 N개 기준: 2N+1번 쿼리)</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결:</strong> 배치 조회 패턴, Fetch Join, 최신 메시지만 조회, 메모리 매핑</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>효과:</strong> 쿼리 수 21개 → 4개 (80.95% 감소), 실행 시간 305ms → 55ms (81.97% 단축)</p>
-                <div style={{
-                  marginTop: '1rem',
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  border: '1px solid var(--link-color)'
-                }}>
-                  <Link
-                    to="/domains/user/optimization"
-                    style={{
-                      color: 'var(--link-color)',
-                      textDecoration: 'none',
-                      fontWeight: 'bold',
-                      display: 'inline-block'
-                    }}
-                  >
-                    → N+1 문제 해결 상세 보기
-                  </Link>
-                </div>
-              </div>
-            </div>
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                로그인 응답 구성 시 N+1 제거 방향
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                로그인 직후 채팅방 목록·참여자·메시지를 단계별로 조회하면 쿼리가 선형으로 늘어납니다. 채팅방 ID 목록을 먼저 모은 뒤 IN·Fetch Join 등으로 묶어
+                단일 패스에서 DTO를 구성했습니다 (상세는 최적화 문서 참고).
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('배치 IN 조회와 Fetch Join 조합')}
+                {li('최신 메시지만 가져오는 식으로 읽기 범위 축소')}
+              </ul>
+            </Card>
 
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>2. 제재 시스템 동시성 문제</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>가정 상황:</strong> 여러 관리자가 동시에 같은 사용자에게 경고 부여</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 여러 스레드가 동시에 경고 횟수를 읽고 증가시키면 Lost Update 발생</li>
-                  <li>• 경고 2회 상태에서 3명이 동시에 경고 부여 시, 예상값 5가 아닌 3~4로 누락 가능</li>
-                  <li>• 경고 3회 도달 판단이 부정확해져 자동 이용제한이 누락되거나 중복 적용될 수 있음</li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결 방법:</strong> DB 레벨에서 원자적 증가 쿼리 사용</p>
-                <pre style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  overflow: 'auto',
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'monospace',
-                  lineHeight: '1.6',
-                  marginTop: '0.5rem'
-                }}>
-{`// UsersRepository.java
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                경고 카운트 동시 증가
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                관리자가 동시에 경고를 줄 때 메모리에서 read-modify-write 하면 카운트가 덜 올라갈 수 있습니다. 한 문장 UPDATE로 증가시킵니다.
+              </p>
+              <CodeBlock>{`// UsersRepository.java
 @Modifying
 @Query("UPDATE Users u SET u.warningCount = u.warningCount + 1 WHERE u.idx = :userId")
-void incrementWarningCount(@Param("userId") Long userId);`}
-                </pre>
-                <p style={{ marginTop: '0.5rem', marginBottom: 0 }}><strong style={{ color: 'var(--text-color)' }}>효과:</strong> 동시 요청 시에도 경고 횟수가 정확하게 증가하며, 경고 3회 도달 시 자동 이용제한이 정확히 한 번만 적용됨</p>
-              </div>
-            </div>
+void incrementWarningCount(@Param("userId") Long userId);`}</CodeBlock>
+            </Card>
 
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>3. 소셜 로그인 동시성 문제</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>가정 상황:</strong> 같은 소셜 계정(같은 provider + providerId 또는 같은 email)으로 동시에 여러 번 로그인 시도</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 여러 스레드가 동시에 조회 시 모두 null 반환</li>
-                  <li>• 각 스레드가 신규 사용자로 판단하여 중복 계정 생성 가능 (Race Condition)</li>
-                  <li>• 같은 이메일로 여러 Users 엔티티가 생성되거나, 같은 provider+providerId로 여러 SocialUser가 생성될 수 있음</li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결 방법:</strong> DB UNIQUE 제약조건 + 트랜잭션 격리 수준 활용</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>Users.email</code> UNIQUE 제약조건: 같은 이메일로 중복 계정 생성 방지</li>
-                  <li>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>SocialUser.provider + providerId</code> UNIQUE 제약조건: 같은 소셜 계정으로 중복 SocialUser 생성 방지</li>
-                  <li>• <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Transactional</code>: 트랜잭션 내에서 일관성 보장</li>
-                  <li>• 중복 생성 시도 시 DB 제약조건 위반 예외 발생 → 트랜잭션 롤백</li>
-                </ul>
-                <p style={{ marginTop: '0.5rem', marginBottom: 0 }}><strong style={{ color: 'var(--text-color)' }}>효과:</strong> 동시 요청 시에도 하나의 사용자 계정만 생성되며, 기존 계정과의 연결도 정확하게 처리됨</p>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4. 소셜 로그인 Provider별 데이터 표준화</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>문제:</strong> Google과 Naver의 OAuth2 응답 형식이 다름</p>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>해결:</strong> Provider별 OAuth2UserService에서 표준화된 형태로 변환</p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>Google</strong>: sub, email, name, picture, email_verified</li>
-                  <li>• <strong style={{ color: 'var(--text-color)' }}>Naver</strong>: id, email, name, profile_image, birthyear, birthday, gender</li>
-                  <li>• Naver는 커스텀 TokenResponseClient 사용 (표준 OAuth2와 다른 응답 형식)</li>
-                  <li>• Google은 기본 클라이언트 사용</li>
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* 8. DB 최적화 */}
-          <section id="db-optimization" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>DB 최적화</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인덱스 전략</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>users 테이블:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 이메일 조회 (UNIQUE): <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE UNIQUE INDEX email ON users(email)</code></li>
-                  <li>• 로그인용 ID 조회 (UNIQUE): <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE UNIQUE INDEX id ON users(id)</code></li>
-                  <li>• 닉네임 조회 (UNIQUE): <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE UNIQUE INDEX uk_users_nickname ON users(nickname)</code></li>
-                  <li>• 사용자명 조회 (UNIQUE): <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE UNIQUE INDEX username ON users(username)</code></li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>socialuser 테이블:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 사용자별 소셜 계정 조회: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX users_idx ON socialuser(users_idx)</code></li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>user_sanctions 테이블:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• 제재 종료일 조회 (만료된 제재 조회): <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX idx_ends_at ON user_sanctions(ends_at)</code></li>
-                  <li>• 사용자별 제재 조회: <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>CREATE INDEX idx_user_idx ON user_sanctions(user_idx)</code></li>
-                </ul>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>선정 이유:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-                  <li>• 자주 조회되는 컬럼 (id, email, nickname, username)</li>
-                  <li>• UNIQUE 제약조건으로 중복 방지</li>
-                  <li>• JOIN에 사용되는 외래키 (user_idx, users_idx)</li>
-                  <li>• 제재 만료일 조회 최적화</li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 최적화</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Before:</strong> 비효율적인 쿼리 (N+1 문제)</p>
-                <pre style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  overflow: 'auto',
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'monospace',
-                  lineHeight: '1.6',
-                  marginBottom: '1rem'
-                }}>
-{`SELECT * FROM users WHERE id = ?;
-SELECT * FROM pet WHERE user_idx = ?;  -- N+1`}
-                </pre>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>After:</strong> 최적화된 쿼리 (Fetch Join)</p>
-                <pre style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  overflow: 'auto',
-                  fontSize: '0.85rem',
-                  color: 'var(--text-secondary)',
-                  fontFamily: 'monospace',
-                  lineHeight: '1.6',
-                  marginBottom: '1rem'
-                }}>
-{`SELECT u.*, p.* 
-FROM users u 
-LEFT JOIN pet p ON u.idx = p.user_idx 
-WHERE u.id = ? AND u.is_deleted = false;`}
-                </pre>
-                <p style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>개선 포인트:</strong></p>
-                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1rem 0' }}>
-                  <li>• Fetch Join으로 N+1 문제 해결</li>
-                  <li>• 소프트 삭제 필터링</li>
-                </ul>
-                <p style={{ marginBottom: 0 }}><strong style={{ color: 'var(--text-color)' }}>성능 측정:</strong> Before: 사용자 조회 + 펫 조회 = 2개 쿼리 → After: Fetch Join으로 1개 쿼리</p>
-              </div>
-            </div>
-          </section>
-
-          {/* 9. 리팩토링 */}
-          <section id="refactoring" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>리팩토링</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>DTO → record 리팩토링</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.75rem' }}>
-                  User 도메인의 DTO 중 record 적용에 적합한 항목을 선별하여 리팩토링했습니다.
-                </p>
-                
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  marginBottom: '1rem'
-                }}>
-                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>record로 전환한 DTO (3개)</h4>
-                  <ul style={{
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    fontSize: '0.9rem',
-                    lineHeight: '1.8'
-                  }}>
-                    <li>• <strong style={{ color: 'var(--text-color)' }}>LoginRequest</strong> - 로그인 요청 (2개 필드: id, password)</li>
-                    <li>• <strong style={{ color: 'var(--text-color)' }}>TokenResponse</strong> - 토큰 발급 응답 (3개 필드: accessToken, refreshToken, user)</li>
-                    <li>• <strong style={{ color: 'var(--text-color)' }}>SocialUserDTO</strong> - 소셜 로그인 사용자 정보 응답 (3개 필드: idx, provider, providerId)</li>
-                  </ul>
-                </div>
-
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  marginBottom: '1rem'
-                }}>
-                  <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>record로 전환하지 않은 DTO (5개)</h4>
-                  <ul style={{
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    fontSize: '0.9rem',
-                    lineHeight: '1.8'
-                  }}>
-                    <li>• <strong style={{ color: 'var(--text-color)' }}>UsersDTO</strong> - 필드 17개로 생성자 과도하게 김, Request/Response 겸용, 중첩 구조 포함</li>
-                    <li>• <strong style={{ color: 'var(--text-color)' }}>PetDTO</strong> - 필드 18개로 생성자 과도하게 김, Request/Response 겸용, 중첩 구조 포함</li>
-                    <li>• <strong style={{ color: 'var(--text-color)' }}>PetVaccinationDTO</strong> - 필드 8개로 적당하지만 사용 빈도 낮고 Request/Response 겸용 가능성</li>
-                    <li>• <strong style={{ color: 'var(--text-color)' }}>UserProfileWithReviewsDTO</strong> - 사용처 및 setter 사용 여부 확인 필요</li>
-                    <li>• <strong style={{ color: 'var(--text-color)' }}>UserPageResponseDTO</strong> - 페이징 응답으로 record 적합할 수 있으나 별도 확인 필요</li>
-                  </ul>
-                </div>
-
-                <div style={{
-                  padding: '0.75rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '4px',
-                  marginBottom: '1rem',
-                  fontSize: '0.9rem'
-                }}>
-                  <p style={{ marginBottom: '0.5rem' }}>
-                    <strong style={{ color: 'var(--text-color)' }}>변경 사항 요약:</strong>
-                  </p>
-                  <ul style={{
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    lineHeight: '1.8'
-                  }}>
-                    <li>• DTO 정의: Lombok <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Data</code> <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>@Builder</code> 제거 → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>public record XxxDTO(...)</code></li>
-                    <li>• 생성: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>.builder().field(x).build()</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>new XxxDTO(...)</code></li>
-                    <li>• 접근: <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>dto.getXxx()</code> → <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>dto.xxx()</code> (record accessor)</li>
-                  </ul>
-                </div>
-
-                <div style={{
-                  padding: '0.75rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '4px',
-                  marginBottom: '1rem',
-                  fontSize: '0.9rem'
-                }}>
-                  <p style={{ marginBottom: '0.5rem' }}>
-                    <strong style={{ color: 'var(--text-color)' }}>수정된 파일:</strong>
-                  </p>
-                  <ul style={{
-                    listStyle: 'none',
-                    padding: 0,
-                    margin: 0,
-                    lineHeight: '1.8'
-                  }}>
-                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>LoginRequest.java</code> - class → record</li>
-                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>TokenResponse.java</code> - class → record</li>
-                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>SocialUserDTO.java</code> - class → record</li>
-                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>AuthController.java</code> - getter → accessor</li>
-                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>AuthService.java</code> - builder → 생성자</li>
-                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>OAuth2Service.java</code> - builder → 생성자</li>
-                    <li>• <code style={{ backgroundColor: 'var(--card-bg)', padding: '0.2rem 0.4rem', borderRadius: '4px' }}>SocialUserConverter.java</code> - builder → 생성자, getter → accessor</li>
-                  </ul>
-                </div>
-
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  border: '1px solid var(--link-color)'
-                }}>
-                  <a
-                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/recordType/user/dto-record-refactoring.md"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: 'var(--link-color)',
-                      textDecoration: 'none',
-                      fontWeight: 'bold',
-                      display: 'inline-block'
-                    }}
-                  >
-                    → DTO → record 리팩토링 상세 문서 보기
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginTop: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Fetch 전략 개선</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <p style={{ marginBottom: '0.75rem' }}>
-                  단건 상세 → Fetch Join / 페이징 목록 → Batch Size 규칙에 따라 User 도메인 Fetch 전략을 개선했습니다.
-                </p>
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  marginBottom: '1rem',
-                  overflowX: 'auto'
-                }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
-                    <thead>
-                      <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>구분</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>대상</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>전략</th>
-                        <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>상태</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                        <td style={{ padding: '0.75rem' }}>단건 상세</td>
-                        <td style={{ padding: '0.75rem' }}>getMyProfile, getUserWithPets</td>
-                        <td style={{ padding: '0.75rem' }}>Fetch Join</td>
-                        <td style={{ padding: '0.75rem' }}>적용 필요</td>
-                      </tr>
-                      <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                        <td style={{ padding: '0.75rem' }}>페이징 목록</td>
-                        <td style={{ padding: '0.75rem' }}>getAllUsersWithPaging</td>
-                        <td style={{ padding: '0.75rem' }}>Batch Size</td>
-                        <td style={{ padding: '0.75rem' }}>✅ 이미 적용됨</td>
-                      </tr>
-                      <tr>
-                        <td style={{ padding: '0.75rem' }}>Pet 하위</td>
-                        <td style={{ padding: '0.75rem' }}>getPetsByUserIdx 등</td>
-                        <td style={{ padding: '0.75rem' }}>Batch Size</td>
-                        <td style={{ padding: '0.75rem' }}>✅ 이미 적용됨</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-color)',
-                  borderRadius: '6px',
-                  border: '1px solid var(--link-color)'
-                }}>
-                  <a
-                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/refactoring/fetch-optimization/user/Fetch%20%EC%A0%84%EB%9E%B5%20%EA%B0%9C%EC%84%A0%20(Fetch%20Join%20vs%20Batch%20Size).md"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: 'var(--link-color)',
-                      textDecoration: 'none',
-                      fontWeight: 'bold',
-                      display: 'inline-block'
-                    }}
-                  >
-                    → Fetch 전략 개선 상세 문서 보기
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginTop: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>백엔드 성능 최적화 리팩토링</h3>
-              <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                getAllUsers 제거, Auth 중복 조회 제거, Admin 삭제 최적화, socialUsers N+1 해결, 프로필+리뷰 통합, OAuth2 ID 생성 최적화 등 백엔드 리팩토링 내역을 정리했습니다.
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                소셜 가입 레이스
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                동일 providerId·이메일에 대해 두 요청이 동시에 들어오면 중복 사용자가 생길 수 있어 DB UNIQUE(users.email, socialuser 복합)와 트랜잭션으로 방어합니다.
               </p>
-              <div style={{
-                padding: '1rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '6px',
-                border: '1px solid var(--link-color)'
-              }}>
-                <Link
-                  to="/domains/user/refactoring"
-                  style={{
-                    color: 'var(--link-color)',
-                    textDecoration: 'none',
-                    fontWeight: 'bold',
-                    display: 'inline-block'
-                  }}
-                >
-                  → 리팩토링 상세 페이지 보기
-                </Link>
-              </div>
-            </div>
+            </Card>
+
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                DTO 레이어 (record 적용 예)
+              </h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                LoginRequest, TokenResponse, SocialUserDTO 등은 Java record로 단순화했고 필드 많은 프로필 DTO는 class 유지 근거를 두었습니다. 전체 표와 파일 목록은 리팩토링 페이지 참고.
+              </p>
+            </Card>
           </section>
 
-        
-          {/* 10. Entity 구조 */}
-          <section id="entities" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Entity 구조</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
+          <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>도메인 구조</h3>
+              <CodeBlock>{`domain/user/
+  controller/
+    AuthController.java
+    UsersController.java
+    OAuth2 관련 진입점
+  service/
+    AuthService.java
+    UsersService.java
+    OAuth2Service.java
+    EmailVerificationService.java
+    UserSanctionService.java
+    PetService.java
+  entity/
+    Users.java
+    SocialUser.java
+    UserSanction.java
+    Pet.java
+    PetVaccination.java
+  repository/
+    사용자·소셜·제재·펫 레포지토리`}</CodeBlock>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 엔티티</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>엔티티</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>역할</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>핵심</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['Users', '계정·역할·제재 카운터·토큰', 'idx, id, email, role, refreshToken, warningCount, suspendedUntil'],
+                    ['SocialUser', 'OAuth 연결 행', 'provider, providerId, user FK'],
+                    ['UserSanction', '관리자 제재 이력', 'type, reason, startedAt, endedAt'],
+                    ['Pet', '사용자 소유 펫', 'species, breed, imageUrl 등'],
+                    ['PetVaccination', '접종 이력', 'vaccineName, vaccinationDate, nextDueDate']
+                  ].map(([name, role, fields], index, arr) => (
+                    <tr key={name} style={{ borderBottom: index < arr.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
+                      <td style={{ padding: '0.65rem 0.75rem', color: 'var(--text-color)' }}>{name}</td>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>{role}</td>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>{fields}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>엔티티 관계도</h3>
               <MermaidDiagram chart={entityDiagram} />
-            </div>
-          </section>
+            </Card>
 
-          {/* 11. 보안 및 권한 체계 */}
-          <section id="security" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 및 권한 체계</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>권한 체계 (Role)</h3>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <div>• <strong style={{ color: 'var(--text-color)' }}>USER</strong> - 일반 사용자</div>
-                <div>• <strong style={{ color: 'var(--text-color)' }}>ADMIN</strong> - 관리자</div>
-              </div>
-            </div>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>보안 처리</h3>
-              <ul style={{
-                listStyle: 'none',
-                padding: 0,
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8'
-              }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>비밀번호 암호화</strong>: BCryptPasswordEncoder 사용</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>JWT 토큰</strong>: Access Token (15분), Refresh Token (1일)</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>소프트 삭제</strong>: isDeleted 플래그로 논리 삭제</li>
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 API (요약)</h3>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>엔드포인트</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>Method</th>
+                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>설명</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['/api/auth/register', 'POST', '회원가입'],
+                    ['/api/auth/login', 'POST', '로그인·토큰 발급'],
+                    ['/api/auth/refresh', 'POST', 'Access 갱신'],
+                    ['/api/auth/logout', 'POST', '로그아웃·Refresh 무효'],
+                    ['/api/oauth2/authorization/google|naver', 'GET', '소셜 로그인 시작'],
+                    ['/api/users/me', 'GET/PATCH', '내 프로필·비밀번호·닉네임 등'],
+                    ['/api/users/email/verify/...', 'POST/GET', '인증 메일·토큰 검증'],
+                    ['/api/users/pets', 'CRUD', '반려동물'],
+                    ['/api/admin/users/...', 'GET/POST', '관리자 목록·제재']
+                  ].map(([path, method, desc], index, arr) => (
+                    <tr key={path + method} style={{ borderBottom: index < arr.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>
+                        <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>{path}</code>
+                      </td>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>{method}</td>
+                      <td style={{ padding: '0.65rem 0.75rem' }}>{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>보안 및 권한</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('역할 계층(USER 등)과 `@PreAuthorize`로 API별 접근 제어')}
+                {li('JWT 만료·서명 검증, Refresh 저장으로 세션 유사 안정성 확보')}
+                {li('비밀번호 BCrypt, 소프트 삭제(`isDeleted`)로 계정 상태 분리')}
               </ul>
-            </div>
+            </Card>
+
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>다른 도메인과의 연관</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('Board: 작성자·댓글·반응 주체')}
+                {li('Care / Meetup / Chat: 요청·모임·채팅 참여자 식별, 이메일 인증 연계')}
+                {li('Missing Pet · Location · Report 등: 작성자 FK로 Users 참조')}
+                <li>
+                  • 게시판 패턴 참고:{' '}
+                  <Link to="/domains/board" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    Board 도메인
+                  </Link>
+                </li>
+              </ul>
+            </Card>
           </section>
 
-          {/* 13. 다른 도메인과의 연관관계 */}
-          <section id="relationships" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>다른 도메인과의 연관관계</h2>
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                <div style={{ marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Board 도메인:</strong></div>
-                <div>• Users가 게시글/댓글 작성, 좋아요/싫어요 반응</div>
-                <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Care 도메인:</strong></div>
-                <div>• Users가 펫케어 요청 생성, 펫케어에 지원, 펫케어 리뷰 작성</div>
-                <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>Chat 도메인:</strong></div>
-                <div>• Users가 채팅방 참여, 메시지 전송</div>
-                <div style={{ marginTop: '1rem', marginBottom: '0.5rem' }}><strong style={{ color: 'var(--text-color)' }}>기타:</strong></div>
-                <div>• Users가 실종 신고 작성, 모임 주최/참여, 위치 서비스 리뷰 작성</div>
-              </div>
-            </div>
+          <section id="troubleshooting" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>트러블슈팅</h2>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>로그인 N+1</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>문제:</strong> 채팅방·참여자·메시지를 반복 로딩하며 로그인 응답이 느려짐.
+              </p>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>해결:</strong> 배치 조회, Fetch Join, 읽기 범위 제한 후 쿼리·시간 단축.
+              </p>
+              <Link to="/domains/user/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 600 }}>
+                → 성능 최적화 상세
+              </Link>
+            </Card>
+
+            {[
+              [
+                '제재 동시성',
+                '여러 관리자가 동시에 경고하면 경고 횟수가 밀리거나 자동 이용 제한이 어긋날 수 있음.',
+                '경고 카운트를 단일 UPDATE로 원자 증가.'
+              ],
+              [
+                '소셜 가입 레이스',
+                '동시에 최초 진입하면 중복 행 생성 위험.',
+                'email·(provider, providerId) UNIQUE + 트랜잭션으로 한 건만 남도록 설계.'
+              ],
+              [
+                'Provider별 응답 차이',
+                'Google과 Naver 필드 이름·토큰 응답 형식이 달라 매핑이 깨질 수 있음.',
+                '전용 OAuth2UserService와 Naver용 Token 클라이언트로 표준화.'
+              ]
+            ].map(([title, problem, solution]) => (
+              <Card key={title} style={{ marginBottom: '1rem' }}>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>{title}</h3>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.4rem' }}>
+                  <strong style={{ color: 'var(--text-color)' }}>문제:</strong> {problem}
+                </p>
+                <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: 0 }}>
+                  <strong style={{ color: 'var(--text-color)' }}>해결:</strong> {solution}
+                </p>
+              </Card>
+            ))}
           </section>
 
-          {/* 11. API 엔드포인트 */}
-          <section id="api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>API 엔드포인트</h2>
-            
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인증 (/api/auth)</h3>
-              <div style={{
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8',
-                fontFamily: 'monospace',
-                fontSize: '0.9rem'
-              }}>
-                <div>• POST /register - 회원가입</div>
-                <div>• POST /login - 로그인</div>
-                <div>• POST /refresh - 토큰 갱신</div>
-                <div>• POST /logout - 로그아웃</div>
-                <div>• POST /validate - 토큰 검증</div>
-                <div>• POST /forgot-password - 비밀번호 찾기 (비밀번호 재설정 이메일 발송)</div>
-              </div>
-            </div>
+          <section id="performance" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>성능 최적화</h2>
 
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>소셜 로그인 (/oauth2)</h3>
-              <div style={{
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8',
-                fontFamily: 'monospace',
-                fontSize: '0.9rem'
-              }}>
-                <div>• GET /authorization/google - Google 소셜 로그인 시작</div>
-                <div>• GET /authorization/naver - Naver 소셜 로그인 시작</div>
-                <div>• GET /callback - 소셜 로그인 콜백 (토큰 포함 리다이렉트)</div>
-              </div>
-              <div style={{
-                marginTop: '1rem',
-                padding: '1rem',
-                backgroundColor: 'var(--bg-color)',
-                borderRadius: '6px',
-                fontSize: '0.85rem',
-                color: 'var(--text-secondary)'
-              }}>
-                <strong style={{ color: 'var(--text-color)' }}>소셜 로그인 플로우:</strong>
-                <ol style={{ margin: '0.5rem 0 0 1.5rem', padding: 0 }}>
-                  <li>사용자가 /oauth2/authorization/{'{provider}'} 접근</li>
-                  <li>Spring Security가 소셜 제공자로 리다이렉트</li>
-                  <li>사용자가 소셜 제공자에서 인증 완료</li>
-                  <li>소셜 제공자가 /oauth2/callback으로 리다이렉트</li>
-                  <li>JWT 토큰 발급 후 프론트엔드로 리다이렉트 (쿼리 파라미터로 토큰 전달)</li>
-                  <li>닉네임이 없으면 needsNickname=true 파라미터와 함께 리다이렉트</li>
-                </ol>
-              </div>
-            </div>
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>인덱스 전략 (발췌)</h3>
+              <CodeBlock>{`CREATE UNIQUE INDEX email ON users(email);
+CREATE UNIQUE INDEX id ON users(id);
+CREATE UNIQUE INDEX uk_users_nickname ON users(nickname);
+CREATE INDEX users_idx ON socialuser(users_idx);
+CREATE INDEX idx_ends_at ON user_sanctions(ends_at);
+CREATE INDEX idx_user_idx ON user_sanctions(user_idx);`}</CodeBlock>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginTop: '0.75rem', marginBottom: 0 }}>
+                로그인·중복 검사·제재 만료 스케줄 조회 패턴을 기준으로 인덱스를 잡았습니다.
+              </p>
+            </Card>
 
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>사용자 (/api/users)</h3>
-              <div style={{
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8',
-                fontFamily: 'monospace',
-                fontSize: '0.9rem'
-              }}>
-                <div>• GET /me - 내 프로필 조회 (리뷰 포함)</div>
-                <div>• PUT /me - 프로필 수정</div>
-                <div>• PATCH /me/password - 비밀번호 변경</div>
-                <div>• PATCH /me/username - 닉네임 변경</div>
-                <div>• POST /me/nickname - 닉네임 설정 (소셜 로그인 사용자용)</div>
-                <div>• GET /{'{userId}'}/profile - 다른 사용자 프로필 조회 (리뷰 포함)</div>
-                <div>• GET /{'{userId}'}/reviews - 특정 사용자의 리뷰 목록 조회</div>
-                <div>• GET /id/check - 아이디 중복 검사</div>
-                <div>• GET /nickname/check - 닉네임 중복 검사</div>
-              </div>
-            </div>
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>프로필 조회 예 (N+1 완화)</h3>
+              <CodeBlock>{`-- 패턴 예시
+SELECT u.*, p.*
+FROM users u
+LEFT JOIN pet p ON u.idx = p.user_idx
+WHERE u.id = ? AND u.is_deleted = false;`}</CodeBlock>
+              <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('페이징 목록에는 Batch Size / 전용 쿼리로 과도한 join을 피함')}
+              </ul>
+            </Card>
 
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>이메일 인증 (/api/users/email/verify)</h3>
-              <div style={{
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8',
-                fontFamily: 'monospace',
-                fontSize: '0.9rem'
-              }}>
-                <div>• POST /verify - 이메일 인증 메일 발송</div>
-                <div>• POST /pre-registration - 회원가입 전 이메일 인증 메일 발송</div>
-                <div>• GET /pre-registration/check - 회원가입 전 이메일 인증 완료 여부 확인</div>
-                <div>• GET /{'{token}'} - 이메일 인증 처리</div>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)',
-              marginBottom: '1rem'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>반려동물 (/api/users/pets)</h3>
-              <div style={{
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8',
-                fontFamily: 'monospace',
-                fontSize: '0.9rem'
-              }}>
-                <div>• GET / - 내 반려동물 목록</div>
-                <div>• POST / - 반려동물 등록</div>
-                <div>• PUT /{'{petIdx}'} - 반려동물 수정</div>
-                <div>• DELETE /{'{petIdx}'} - 반려동물 삭제</div>
-              </div>
-            </div>
-
-            <div className="section-card" style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관리자 (/api/admin/users)</h3>
-              <div style={{
-                color: 'var(--text-secondary)',
-                lineHeight: '1.8',
-                fontFamily: 'monospace',
-                fontSize: '0.9rem'
-              }}>
-                <div>• GET / - 사용자 목록 (페이징)</div>
-                <div>• POST /{'{id}'}/warn - 경고 부여</div>
-                <div>• POST /{'{id}'}/suspend - 이용제한 부여</div>
-                <div>• POST /{'{id}'}/ban - 영구 차단</div>
-              </div>
-            </div>
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>더 보기</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.9' }}>
+                <li>
+                  •{' '}
+                  <Link to="/domains/user/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    User 도메인 성능 최적화 전용 페이지
+                  </Link>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/users/login-n-plus-one-issue.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    로그인 N+1 트러블슈팅 문서 (GitHub)
+                  </a>
+                </li>
+              </ul>
+            </Card>
           </section>
 
-          {/* 15. 관련 문서 */}
+          <section id="summary" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 포인트</h2>
+            <Card>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                <li>• 사용자는 모든 기능의 신원·권한·정책(인증·제재·이메일)의 중심 축이라 경로 최적화가 체감 성능과 직결됩니다.</li>
+                <li>• 로그인 응답에서 연관 로딩을 배치화해 N+1을 제거한 것이 대표적인 이득이었습니다.</li>
+                <li>• 제재·경고와 소셜 가입 모두 동시 요청 전제 하에 DB 무결성(원자 연산·UNIQUE)으로 닫았습니다.</li>
+                <li>• 레코드 적용 같은 구조 리팩터는{' '}
+                  <Link to="/domains/user/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    리팩토링 페이지
+                  </Link>
+                  에서 단계별로 다룹니다.
+                </li>
+              </ul>
+            </Card>
+          </section>
+
           <section id="docs" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
-            <div className="section-card" style={{
-              padding: '1rem',
-              backgroundColor: 'var(--card-bg)',
-              borderRadius: '8px',
-              border: '1px solid var(--nav-border)'
-            }}>
-              <a
-                href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/troubleshooting/users/login-n-plus-one-issue.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  color: 'var(--link-color)',
-                  textDecoration: 'none',
-                  display: 'block',
-                  marginBottom: '0.5rem'
-                }}
-              >
-                → 로그인 N+1 문제 해결 상세 문서
-              </a>
-              <a
-                href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/user.md"
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  color: 'var(--link-color)',
-                  textDecoration: 'none',
-                  display: 'block'
-                }}
-              >
-                → User 도메인 상세 문서
-              </a>
-            </div>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 페이지</h2>
+            <Card>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '2' }}>
+                <li>
+                  •{' '}
+                  <Link to="/domains/user/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    User 도메인 성능 최적화
+                  </Link>
+                </li>
+                <li>
+                  •{' '}
+                  <Link to="/domains/user/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    User 도메인 리팩토링
+                  </Link>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href="https://github.com/makkong1/makkong1-github.io/blob/main/docs/domains/user.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    docs/domains/user.md
+                  </a>
+                </li>
+              </ul>
+            </Card>
           </section>
         </div>
+
         <TableOfContents sections={sections} />
       </div>
     </div>

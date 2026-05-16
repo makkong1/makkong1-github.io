@@ -1,23 +1,37 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { SITE_THEME_SYNC } from '../themeSync';
 
 const ThemeContext = createContext();
 
+function readStoredSiteTheme() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'dark' || saved === 'light') return saved;
+  if (localStorage.getItem('petory-theme') === 'dark') return 'dark';
+  return 'light';
+}
+
 export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    // localStorage에서 저장된 테마 불러오기
-    const savedTheme = localStorage.getItem('theme');
-    return savedTheme || 'light';
-  });
+  const [theme, setTheme] = useState(readStoredSiteTheme);
 
   useEffect(() => {
-    // 테마 변경 시 localStorage에 저장
     localStorage.setItem('theme', theme);
-    // body에 클래스 추가/제거
+    localStorage.setItem('petory-theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
+    window.dispatchEvent(new CustomEvent(SITE_THEME_SYNC, { detail: theme }));
   }, [theme]);
 
+  useEffect(() => {
+    const onSync = (e) => {
+      const m = e.detail;
+      if (m !== 'dark' && m !== 'light') return;
+      setTheme((prev) => (prev === m ? prev : m));
+    };
+    window.addEventListener(SITE_THEME_SYNC, onSync);
+    return () => window.removeEventListener(SITE_THEME_SYNC, onSync);
+  }, []);
+
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
   return (
