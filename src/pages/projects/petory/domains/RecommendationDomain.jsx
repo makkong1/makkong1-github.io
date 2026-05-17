@@ -45,9 +45,7 @@ function CodeBlock({ children }) {
 function RecommendationDomain() {
   const sections = [
     { id: "intro", title: "도메인 개요" },
-    { id: "api", title: "API 계약" },
-    { id: "service-flow", title: "서비스 흐름" },
-    { id: "client", title: "HTTP 클라이언트" },
+    { id: "design", title: "흐름 & 설계" },
     { id: "ops", title: "운영 포인트" },
     { id: "summary", title: "핵심 포인트" },
     { id: "docs", title: "관련 문서" },
@@ -156,114 +154,56 @@ function RecommendationDomain() {
             </Card>
           </section>
 
-          <section id="api" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>API 계약</h2>
-            <Card style={{ marginBottom: "1rem" }}>
-              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
-                `GET /api/recommend`
-              </h3>
-              <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem", color: "var(--text-secondary)" }}>
-                <tbody>
-                  {[
-                    ["메서드", "GET"],
-                    ["쿼리", "`lat`(필수), `lng`(필수), `context`(필수)"],
-                    ["인증", "로그인 필수, `Authentication.getName()`을 userId로 사용"],
-                    ["성공", "200 + `RecommendResponse` JSON"],
-                    ["외부 API 실패", "`PetDataApiClient` 예외 전파, 일반적으로 5xx"],
-                  ].map(([key, value], index, arr) => (
-                    <tr key={key} style={{ borderBottom: index < arr.length - 1 ? "1px solid var(--nav-border)" : "none" }}>
-                      <td style={{ padding: "0.65rem 0.75rem", color: "var(--text-color)", width: "9rem" }}>{key}</td>
-                      <td style={{ padding: "0.65rem 0.75rem" }}>{value}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </Card>
+          {/* ── 흐름 & 설계 ── */}
+          <section id="design" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
+            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>흐름 & 설계</h2>
 
-            <Card>
-              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
-                응답 DTO `RecommendResponse`
-              </h3>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, color: "var(--text-secondary)", lineHeight: "1.8" }}>
-                {li("`context`: 외부 API가 echo할 수 있는 맥락 문자열")}
-                {li("`facilities`: 시설 후보 목록 — `name`, `distance_m`, `address`, `lat`, `lng`")}
-                {li("`trends`: 트렌드 목록 — `keyword`, `score`")}
-                {li("`recommendation`: 자연어 추천 문구")}
-                {li("`generated_at`: 생성 시각 문자열")}
-              </ul>
-            </Card>
-          </section>
-
-          <section id="service-flow" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>서비스 흐름</h2>
+            {/* E2E 흐름 */}
             <Card style={{ marginBottom: "1rem" }}>
-              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
-                End-to-End 흐름
-              </h3>
+              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>End-to-End 흐름</h3>
               <MermaidDiagram chart={flowDiagram} />
-            </Card>
-
-            <Card style={{ marginBottom: "1rem" }}>
-              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
-                `RecommendService` 처리 순서
-              </h3>
-              <ol style={{ margin: 0, paddingLeft: "1.2rem", color: "var(--text-secondary)", lineHeight: "1.8" }}>
-                <li>`RecommendController`가 `userId`, `lat`, `lng`, `context`를 서비스에 전달합니다.</li>
-                <li>`PetRepository.findByUserIdAndNotDeleted(userId)`로 반려동물 목록을 조회합니다.</li>
-                <li>펫이 있으면 첫 번째 반려동물만 꺼내 `PetInfo`를 구성합니다.</li>
-                <li>`RecommendRequest`를 만들 때 `radius_km=10.0`, `top_n=5`를 고정값으로 넣습니다.</li>
-                <li>`PetDataApiClient.recommend(request)`로 외부 API에 POST 요청합니다.</li>
-                <li>돌아온 `RecommendResponse`를 그대로 클라이언트에 반환합니다.</li>
+              <ol style={{ margin: "0.75rem 0 0", paddingLeft: "1.2rem", color: "var(--text-secondary)", lineHeight: "1.8" }}>
+                <li>Controller가 userId/lat/lng/context를 서비스에 전달합니다.</li>
+                <li>PetRepository에서 사용자 반려동물 목록 조회 → 첫 번째 Pet으로 PetInfo 구성.</li>
+                <li>RecommendRequest 조립: <code style={{ backgroundColor: "var(--bg-color)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}>radius_km=10.0</code>, <code style={{ backgroundColor: "var(--bg-color)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}>top_n=5</code> 고정.</li>
+                <li>PetDataApiClient → <code style={{ backgroundColor: "var(--bg-color)", padding: "0.1rem 0.3rem", borderRadius: "4px" }}>POST {"{baseUrl}"}/recommend</code> (헤더: X-API-Key).</li>
+                <li>응답을 그대로 클라이언트에 반환합니다.</li>
               </ol>
             </Card>
 
-            <Card>
-              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
-                외부 요청 DTO `RecommendRequest`
-              </h3>
-              <CodeBlock>{`{
-  "lat": 37.5665,
-  "lng": 126.9780,
-  "context": "location_home",
-  "radius_km": 10.0,
-  "top_n": 5,
-  "pet": {
-    "type": "dog",
-    "breed": "Pomeranian",
-    "age_months": 18
-  }
-}`}</CodeBlock>
-              <ul style={{ listStyle: "none", padding: 0, marginTop: "0.75rem", color: "var(--text-secondary)", lineHeight: "1.8" }}>
-                {li("JSON은 스네이크 케이스를 사용합니다: `radius_km`, `top_n`, `age_months`.")}
-                {li("`pet`이 없으면 `@JsonInclude(NON_NULL)` 기준으로 요청에서 생략 가능합니다.")}
-                {li("반려동물 나이는 `birthDate`가 있을 때만 `ChronoUnit.MONTHS`로 계산합니다.")}
-              </ul>
-            </Card>
-          </section>
-
-          <section id="client" style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}>
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>HTTP 클라이언트</h2>
+            {/* 요청/응답 계약 */}
             <Card style={{ marginBottom: "1rem" }}>
-              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
-                `PetDataApiClient`
-              </h3>
-              <ul style={{ listStyle: "none", padding: 0, margin: 0, color: "var(--text-secondary)", lineHeight: "1.8" }}>
-                {li("`@Component`로 등록된 애플리케이션 빈입니다.")}
-                {li("내부적으로 `RestClient.builder()`로 HTTP 클라이언트를 구성합니다.")}
-                {li("`POST {baseUrl}/recommend`로 JSON body를 보내고 `X-API-Key` 헤더를 붙입니다.")}
-                {li("실패 시 예외를 래핑해 `RuntimeException`으로 던집니다.")}
-              </ul>
+              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>요청 / 응답 계약</h3>
+              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginBottom: "0.4rem" }}>
+                <strong style={{ color: "var(--text-color)" }}>GET /api/recommend</strong> — lat·lng·context 쿼리 필수, 로그인 필수. pet이 없으면 pet 필드 생략.
+              </p>
+              <CodeBlock>{`// 외부 요청 DTO (스네이크 케이스)
+{
+  "lat": 37.5665, "lng": 126.9780,
+  "context": "grooming",   // grooming | hospital | snack | food | clothes
+  "radius_km": 10.0, "top_n": 5,
+  "pet": { "type": "dog", "breed": "Pomeranian", "age_months": 18 }
+}
+
+// 응답 DTO
+{
+  "context": "grooming",
+  "facilities": [{ "name": "...", "distance_m": 320, "lat": ..., "lng": ... }],
+  "trends":    [{ "keyword": "미용", "score": 0.92 }],
+  "recommendation": "근처 그루밍샵 3곳을 추천합니다...",
+  "generated_at": "2026-05-17T14:00:00"
+}`}</CodeBlock>
             </Card>
 
+            {/* HTTP 클라이언트 */}
             <Card>
-              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>
-                설정값
-              </h3>
+              <h3 style={{ marginBottom: "0.75rem", color: "var(--text-color)", fontSize: "1rem" }}>PetDataApiClient</h3>
+              <ul style={{ listStyle: "none", padding: 0, marginBottom: "0.75rem", color: "var(--text-secondary)", lineHeight: "1.8" }}>
+                {li("@Component — RestClient.builder()로 구성. 실패 시 RuntimeException으로 래핑해 전파.")}
+                {li("설정: app.pet-data-api.base-url / app.pet-data-api.api-key (운영 필수).")}
+              </ul>
               <CodeBlock>{`app.pet-data-api.base-url=https://...
-app.pet-data-api.api-key=...`}</CodeBlock>
-              <p style={{ color: "var(--text-secondary)", lineHeight: "1.8", marginTop: "0.75rem", marginBottom: 0 }}>
-                운영에서는 두 값이 사실상 필수입니다. base URL이 잘못되거나 API Key가 틀리면 Recommendation 경로 전체가 외부 서비스 예외로 실패합니다.
-              </p>
+app.pet-data-api.api-key=your-key`}</CodeBlock>
             </Card>
           </section>
 

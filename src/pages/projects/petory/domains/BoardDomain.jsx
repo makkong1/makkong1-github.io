@@ -42,9 +42,7 @@ function CodeBlock({ children }) {
 function BoardDomain() {
   const sections = [
     { id: 'intro', title: '도메인 개요' },
-    { id: 'features', title: '주요 기능' },
-    { id: 'service-logic', title: '핵심 서비스 로직' },
-    { id: 'architecture', title: '아키텍처' },
+    { id: 'design', title: '기능 & 아키텍처' },
     { id: 'troubleshooting', title: '트러블슈팅' },
     { id: 'performance', title: '성능 최적화' },
     { id: 'summary', title: '핵심 포인트' },
@@ -154,293 +152,154 @@ function BoardDomain() {
             </Card>
           </section>
 
-          <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>주요 기능</h2>
+          {/* ── 기능 & 아키텍처 ── */}
+          <section id="design" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기능 & 아키텍처</h2>
 
+            {/* 게시글 CRUD & 검색 */}
             <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>1. 게시글 작성 및 조회</h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                사용자는 게시글을 작성하고 카테고리별로 필터링된 목록을 페이지 단위로 조회할 수 있습니다.
-              </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                {li('제목, 내용, 카테고리 기반 게시글 작성')}
-                {li('이미지 첨부 지원')}
-                {li('기본 20개 단위 페이징')}
-                {li('내 게시글 조회, 관리자용 단일 조회/목록 조회 분리')}
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>게시글 CRUD & 검색</h3>
+              <ul style={{ listStyle: 'none', padding: 0, marginBottom: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('카테고리 필터·페이지(기본 20개) 목록, 이미지 첨부 지원.')}
+                {li('게시글·댓글 수정/삭제 전 이메일 인증 확인 (BOARD_EDIT / COMMENT_EDIT).')}
+                {li('댓글 수정 서비스는 구현돼 있지만 컨트롤러 수정 엔드포인트는 현재 미노출.')}
               </ul>
-            </Card>
-
-            <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>2. 댓글 및 반응 시스템</h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                댓글 작성, 삭제, 복구와 게시글/댓글 좋아요·싫어요 토글을 지원합니다.
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.3rem' }}>
+                검색은 두 경로로 단순화:
               </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                {li('댓글 작성 시 게시글 작성자에게 `BOARD_COMMENT` 알림 발송')}
-                {li('같은 반응 재클릭 시 취소, 다른 반응 클릭 시 타입 변경')}
-                {li('댓글 삭제/복구 시 `commentCount`를 실시간 반영')}
-                {li('댓글 수정 서비스는 구현돼 있지만 현재 컨트롤러 수정 엔드포인트는 열려 있지 않습니다.')}
-              </ul>
-            </Card>
-
-            <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>3. 인기글 시스템</h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                인기글은 실시간 집계가 아니라 스냅샷 기반으로 운영합니다.
-              </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                {li('매일 18:30 주간 스냅샷, 매주 월요일 18:30 월간 스냅샷 생성')}
-                {li('인기도 점수 = 좋아요 × 3 + 댓글 × 2 + 조회수')}
-                {li('생성 대상은 기본적으로 "자랑" 카테고리 게시글')}
-                {li('조회 시 정확한 날짜 매칭 → 겹치는 기간 → 최근 스냅샷 → 새 생성 순으로 fallback')}
-              </ul>
-            </Card>
-
-            <Card>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>4. 게시글 검색</h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                검색은 `searchType` 기준으로 `TITLE_CONTENT`와 `NICKNAME` 두 가지 모드로 정리했습니다.
-              </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                {li('`TITLE_CONTENT`: 제목+내용 통합 검색, FULLTEXT 인덱스 활용')}
-                {li('`NICKNAME`: 작성자 닉네임 검색, JOIN 쿼리 + DB 레벨 페이징')}
-                {li('기본 검색 타입은 `TITLE_CONTENT`')}
-              </ul>
-            </Card>
-          </section>
-
-          <section id="service-logic" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 서비스 로직</h2>
-
-            <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                게시글 목록 조회: N+1을 배치 집계로 전환
-              </h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                목록 API는 게시글만 가져오고 끝나지 않습니다. 좋아요/싫어요 수, 첨부파일, 사용자 반응 여부까지 함께 보여줘야 해서
-                가장 먼저 N+1 문제가 터지던 지점이었습니다.
-              </p>
-              <CodeBlock>{`List<Long> boardIds = boards.stream()
-    .map(Board::getIdx)
-    .collect(Collectors.toList());
-
-Map<Long, Map<ReactionType, Long>> reactionCountsMap =
-    getReactionCountsBatch(boardIds);   // 500개 단위 배치
-
-Map<Long, List<FileDTO>> attachmentsMap =
-    attachmentFileService.getAttachmentsBatch(FileTargetType.BOARD, boardIds);`}</CodeBlock>
-              <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                {li('반응 수는 `GROUP BY` 집계 쿼리로 한 번에 가져옵니다.')}
-                {li('IN 절 크기를 고려해 500개 단위로 쪼개는 배치 전략을 사용합니다.')}
-                {li('첨부파일도 배치 조회해 목록 DTO 매핑 단계에서 한 번에 붙입니다.')}
-              </ul>
-            </Card>
-
-            <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                조회수 중복 방지: `BoardViewLog`
-              </h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                상세 조회는 단순히 `viewCount++`로 끝내면 새로고침만으로 왜곡됩니다. 로그인 사용자는 게시글-사용자 조합을 로그 테이블에 남겨
-                같은 사용자의 반복 조회를 막습니다.
-              </p>
-              <CodeBlock>{`boolean alreadyViewed =
-    boardViewLogRepository.existsByBoardAndUser(board, viewer);
-
-if (!alreadyViewed) {
-  boardViewLogRepository.save(log);
-  board.setViewCount(board.getViewCount() + 1);
-}`}</CodeBlock>
-            </Card>
-
-            <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                반응 토글과 실시간 카운트 필드
-              </h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                반응은 별도 테이블에 저장하지만, 조회 성능을 위해 `Board.likeCount`, `dislikeCount`, `lastReactionAt`을 실시간 갱신합니다.
-              </p>
-              <CodeBlock>{`if (existing.isPresent() && sameReaction) {
-  boardReactionRepository.delete(existing.get());   // 토글 취소
-} else if (existing.isPresent()) {
-  existing.get().setReactionType(reactionType);     // LIKE ↔ DISLIKE 변경
-  board.setLastReactionAt(LocalDateTime.now());
-} else {
-  boardReactionRepository.save(newReaction);        // 신규 반응
-  board.setLastReactionAt(LocalDateTime.now());
-}`}</CodeBlock>
-              <ul style={{ listStyle: 'none', padding: 0, marginTop: '0.75rem', color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                {li('`board_idx + user_idx` 유니크 제약으로 중복 저장 자체를 막습니다.')}
-                {li('삭제 시에는 마지막 반응 시간을 유지하고, 추가/변경 시에만 `lastReactionAt`을 갱신합니다.')}
-              </ul>
-            </Card>
-
-            <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                댓글 작성/삭제/복구와 이메일 인증
-              </h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                댓글과 게시글의 수정/삭제는 모두 이메일 인증 여부를 확인합니다. 인증이 안 된 사용자는
-                `EmailVerificationRequiredException`으로 막고, 목적 코드로 `BOARD_EDIT` 또는 `COMMENT_EDIT`를 전달합니다.
-              </p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                {li('게시글 수정/삭제: `EmailVerificationPurpose.BOARD_EDIT`')}
-                {li('댓글 수정/삭제: `EmailVerificationPurpose.COMMENT_EDIT`')}
-                {li('댓글 삭제/복구 시 `commentCount`도 함께 증감해 목록/상세 조회 비용을 줄입니다.')}
-              </ul>
-            </Card>
-
-            <Card>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                검색 타입 분기
-              </h3>
               <CodeBlock>{`switch (searchType != null ? searchType.toUpperCase() : "TITLE_CONTENT") {
   case "NICKNAME":
-    boardPage = boardRepository.searchByNicknameWithPaging(trimmedKeyword, pageable);
+    boardPage = boardRepository.searchByNicknameWithPaging(keyword, pageable);
     break;
   case "TITLE_CONTENT":
   default:
-    boardPage = boardRepository.searchByKeywordWithPaging(trimmedKeyword, pageable);
+    boardPage = boardRepository.searchByKeywordWithPaging(keyword, pageable); // FULLTEXT
     break;
 }`}</CodeBlock>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginTop: '0.75rem', marginBottom: 0 }}>
-                이전처럼 제목/내용/제목+내용을 각자 나누기보다, 실제 운영 경로를 `TITLE_CONTENT`와 `NICKNAME` 두 종류로 단순화해
-                쿼리와 UX를 함께 정리한 구조입니다.
-              </p>
             </Card>
-          </section>
 
-          <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
-
+            {/* 반응 & 조회수 */}
             <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>도메인 구조</h3>
-              <CodeBlock>{`domain/board/
-  controller/
-    BoardController.java
-    MissingPetBoardController.java
-  service/
-    BoardService.java
-    CommentService.java
-    ReactionService.java
-    BoardPopularityService.java
-    BoardPopularityScheduler.java
-  repository/
-    BoardRepository.java
-    CommentRepository.java
-    BoardReactionRepository.java
-    CommentReactionRepository.java
-    BoardViewLogRepository.java
-    BoardPopularitySnapshotRepository.java
-  entity/
-    Board.java
-    Comment.java
-    BoardReaction.java
-    CommentReaction.java
-    BoardViewLog.java
-    BoardPopularitySnapshot.java`}</CodeBlock>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginTop: '0.75rem', marginBottom: 0 }}>
-                Missing Pet 게시판도 같은 도메인 아래에 있지만, 포트폴리오 페이지와 API는 별도 흐름으로 관리합니다.
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>반응 & 조회수</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                조회수는 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>BoardViewLog</code>로 중복을 막고,
+                반응은 LIKE/DISLIKE 테이블로 관리하되 조회 성능을 위해 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>likeCount</code> · <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>dislikeCount</code>를 실시간 동기화합니다.
               </p>
+              <CodeBlock>{`// 조회수 중복 방지
+boolean alreadyViewed = boardViewLogRepository.existsByBoardAndUser(board, viewer);
+if (!alreadyViewed) { boardViewLogRepository.save(log); board.setViewCount(...+1); }
+
+// 반응 토글 (board_idx + user_idx UNIQUE)
+if (existing.isPresent() && sameReaction) {
+  boardReactionRepository.delete(existing.get());        // 취소
+} else if (existing.isPresent()) {
+  existing.get().setReactionType(reactionType);          // LIKE ↔ DISLIKE
+} else {
+  boardReactionRepository.save(newReaction);             // 신규
+}`}</CodeBlock>
             </Card>
 
+            {/* 인기글 스냅샷 */}
             <Card style={{ marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 엔티티</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>엔티티</th>
-                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>역할</th>
-                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>핵심 필드</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ['Board', '게시글 본문과 실시간 집계 필드 보유', 'category, status, viewCount, likeCount, dislikeCount, commentCount, lastReactionAt'],
-                    ['Comment', '게시글 댓글과 상태 관리', 'content, status, isDeleted, deletedAt'],
-                    ['BoardReaction', '게시글 좋아요/싫어요 반응', 'board_idx, user_idx, reactionType'],
-                    ['BoardViewLog', '사용자별 조회 기록 저장', 'board_id, user_id, viewedAt'],
-                    ['BoardPopularitySnapshot', '주간/월간 인기글 스냅샷', 'periodType, periodStartDate, periodEndDate, ranking, popularityScore']
-                  ].map(([name, role, fields], index, arr) => (
-                    <tr key={name} style={{ borderBottom: index < arr.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
-                      <td style={{ padding: '0.65rem 0.75rem', color: 'var(--text-color)' }}>{name}</td>
-                      <td style={{ padding: '0.65rem 0.75rem' }}>{role}</td>
-                      <td style={{ padding: '0.65rem 0.75rem' }}>{fields}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>인기글 스냅샷</h3>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li('실시간 집계 대신 스케줄러 기반: 매일 18:30 주간 스냅샷, 매주 월요일 18:30 월간 스냅샷.')}
+                {li('점수 = 좋아요 × 3 + 댓글 × 2 + 조회수. 기본 대상: "자랑" 카테고리.')}
+                {li('조회 fallback: 정확한 날짜 → 겹치는 기간 → 최근 스냅샷 → 새 생성.')}
+              </ul>
             </Card>
 
+            {/* 목록 N+1 배치 조회 */}
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>목록 조회 — 배치 집계</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                반응 수·첨부파일을 게시글마다 개별 조회하면 N+1이 폭증합니다. 게시글 ID 목록을 먼저 모아 500개 단위 배치로 IN 집계합니다.
+              </p>
+              <CodeBlock>{`List<Long> boardIds = boards.stream().map(Board::getIdx).toList();
+
+Map<Long, Map<ReactionType, Long>> reactionCountsMap =
+    getReactionCountsBatch(boardIds);   // GROUP BY 집계, 500개 단위
+
+Map<Long, List<FileDTO>> attachmentsMap =
+    attachmentFileService.getAttachmentsBatch(FileTargetType.BOARD, boardIds);`}</CodeBlock>
+            </Card>
+
+            {/* 엔티티 관계도 */}
             <Card style={{ marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>엔티티 관계도</h3>
               <MermaidDiagram chart={entityDiagram} />
             </Card>
 
-            <Card style={{ marginBottom: '1rem' }}>
+            {/* 주요 API */}
+            <Card>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>주요 API</h3>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>엔드포인트</th>
-                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>Method</th>
-                    <th style={{ padding: '0.65rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>설명</th>
+                    <th style={{ padding: '0.55rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>엔드포인트</th>
+                    <th style={{ padding: '0.55rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>Method</th>
+                    <th style={{ padding: '0.55rem 0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>설명</th>
                   </tr>
                 </thead>
                 <tbody>
                   {[
-                    ['/api/boards', 'GET', '게시글 목록 조회 (category, page, size)'],
-                    ['/api/boards/{id}', 'GET', '게시글 상세 조회 (viewerId로 조회수 중복 방지)'],
-                    ['/api/boards', 'POST', '게시글 작성'],
-                    ['/api/boards/{id}', 'PUT', '게시글 수정'],
-                    ['/api/boards/{id}', 'DELETE', '게시글 삭제'],
-                    ['/api/boards/search', 'GET', '게시글 검색 (TITLE_CONTENT/NICKNAME)'],
-                    ['/api/boards/popular', 'GET', '주간/월간 인기글 스냅샷 조회'],
-                    ['/api/boards/{boardId}/comments', 'GET/POST', '댓글 목록 조회 / 댓글 작성'],
-                    ['/api/boards/{boardId}/reactions', 'POST', '게시글 반응 토글'],
-                    ['/api/boards/{boardId}/comments/{commentId}/reactions', 'POST', '댓글 반응 토글']
-                  ].map(([path, method, desc], index, arr) => (
-                    <tr key={path + method} style={{ borderBottom: index < arr.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
-                      <td style={{ padding: '0.65rem 0.75rem' }}><code style={{ backgroundColor: 'var(--bg-color)', padding: '0.15rem 0.35rem', borderRadius: '4px' }}>{path}</code></td>
-                      <td style={{ padding: '0.65rem 0.75rem' }}>{method}</td>
-                      <td style={{ padding: '0.65rem 0.75rem' }}>{desc}</td>
+                    ['/api/boards', 'GET/POST', '목록 조회 / 게시글 작성'],
+                    ['/api/boards/{id}', 'GET/PUT/DELETE', '상세 · 수정 · 삭제'],
+                    ['/api/boards/search', 'GET', '검색 (TITLE_CONTENT / NICKNAME)'],
+                    ['/api/boards/popular', 'GET', '주간·월간 인기글 스냅샷'],
+                    ['/api/boards/{id}/comments', 'GET/POST', '댓글 목록 / 작성'],
+                    ['/api/boards/{id}/reactions', 'POST', '게시글 반응 토글'],
+                    ['/api/boards/{id}/comments/{cid}/reactions', 'POST', '댓글 반응 토글'],
+                    ['/api/admin/boards/...', 'GET/POST', '관리자 블라인드 · 삭제 · 복구']
+                  ].map(([path, method, desc], i, arr) => (
+                    <tr key={path + method} style={{ borderBottom: i < arr.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>
+                        <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px', fontSize: '0.82rem' }}>{path}</code>
+                      </td>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>{method}</td>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>{desc}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginTop: '0.75rem', marginBottom: 0, fontSize: '0.9rem' }}>
-                보안 설정상 `/api/**`는 기본적으로 인증이 필요합니다. 따라서 일부 GET 메서드에 `permitAll()`이 있어도,
-                공개 예외 경로를 따로 두지 않으면 게시판 조회 역시 로그인 사용자 기준으로 동작합니다.
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.7', marginTop: '0.75rem', marginBottom: 0, fontSize: '0.88rem' }}>
+                SecurityConfig <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>/api/**</code> catch-all로 인해 GET에 <code style={{ backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>permitAll()</code>이 있어도 실제로는 인증이 필요합니다.
               </p>
-            </Card>
-
-            <Card>
-              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>다른 도메인과의 연관</h3>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
-                {li('User: 작성자, 반응 사용자, 조회 사용자, 이메일 인증 여부(`emailVerified`)')}
-                {li('File: 게시글/댓글 첨부 이미지 (`AttachmentFile`, BOARD / COMMENT)')}
-                {li('Notification: 댓글 작성 시 게시글 작성자에게 `BOARD_COMMENT` 알림')}
-                {li('Report: 신고 결과에 따라 게시글/댓글 상태가 `BLINDED`, `DELETED`로 변경될 수 있음')}
-                <li>
-                  • Missing Pet: 같은 게시판 계열이지만 별도 UX와 API를 사용합니다.{" "}
-                  <Link to="/domains/missing-pet" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
-                    Missing Pet 도메인 보기
-                  </Link>
-                </li>
-              </ul>
             </Card>
           </section>
 
           <section id="troubleshooting" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>트러블슈팅</h2>
 
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>목록 N+1 (301 queries → 3)</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.4rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>문제:</strong> 목록 조회 시 반응 수·첨부파일을 게시글마다 개별 쿼리로 가져와 301개 쿼리·745ms 발생.
+              </p>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>해결:</strong> ID 목록 선조회 후 500개 단위 IN + GROUP BY 배치 집계. 쿼리 3개·30ms로 단축.
+              </p>
+              <Link to="/domains/board/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 600 }}>
+                → 성능 최적화 상세
+              </Link>
+            </Card>
+
             {[
-              ['N+1 문제 해결', '게시글 목록에서 반응 수를 게시글마다 따로 세면 조회량이 폭증합니다.', '반응 수·첨부파일을 배치 조회하고 DTO 매핑 단계에서 합쳐 2001개 쿼리를 3개로 줄였습니다.'],
-              ['조회수 중복 방지', '같은 사용자의 새로고침이 조회수에 계속 반영될 수 있습니다.', 'BoardViewLog에 게시글-사용자 조합을 기록해 반복 증가를 막았습니다.'],
-              ['반응 중복 방지', '동일 사용자의 동시 클릭은 중복 반응 저장 위험이 있습니다.', '유니크 제약과 토글 로직으로 하나의 반응만 유지합니다.'],
-              ['인기글 스냅샷 조회 전략', '정확한 기간 스냅샷이 없으면 인기글 조회가 비게 될 수 있습니다.', '정확한 날짜 → 겹치는 기간 → 최근 스냅샷 → 새 생성 순으로 fallback 합니다.'],
-              ['스냅샷 생성 시 동시성', '실시간 집계는 좋아요/댓글/조회수 카운트가 섞일 위험이 있습니다.', '배치 조회로 점수를 계산하고 상위 30개만 저장해 안정성을 확보했습니다.'],
-              ['인기글 대상 카테고리', '모든 카테고리를 다 집계하면 비용이 커지고 의미도 흐려집니다.', '기본 대상은 "자랑"이며, 레거시 호환을 위해 실패 시 `PRIDE` 카테고리 재조회도 고려합니다.']
+              [
+                '인기글 스냅샷 조회 공백',
+                '요청 시점에 해당 기간 스냅샷이 없으면 인기글 목록이 비어 사용자에게 빈 화면이 표시됩니다.',
+                '정확한 날짜 → 겹치는 기간 → 최근 스냅샷 → 즉시 생성 순으로 fallback 처리해 항상 결과를 반환합니다.'
+              ],
+              [
+                '스냅샷 생성 중 집계 경합',
+                '실시간 좋아요/댓글/조회수 업데이트 중에 스냅샷을 생성하면 카운트가 섞일 수 있습니다.',
+                '스케줄러 실행 시점에 배치 조회로 일관된 상태를 읽고 상위 30개만 저장해 안정성을 확보했습니다.'
+              ],
+              [
+                'SecurityConfig catch-all 충돌',
+                'GET /api/boards에 @PreAuthorize("permitAll()")을 붙였지만 /api/** catch-all로 인해 실제로는 인증이 필요했습니다.',
+                '공개 접근이 필요한 경로는 SecurityConfig의 requestMatchers 예외 목록에 명시적으로 추가해야 합니다.'
+              ]
             ].map(([title, problem, solution]) => (
               <Card key={title} style={{ marginBottom: '1rem' }}>
                 <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>{title}</h3>
