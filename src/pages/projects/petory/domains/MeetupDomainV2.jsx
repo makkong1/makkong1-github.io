@@ -1,0 +1,595 @@
+import { Link } from 'react-router-dom';
+import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
+import TableOfContents from '../../../../components/Common/TableOfContents';
+import MeetupDomainVersionNav from './MeetupDomainVersionNav';
+
+function Card({ children, style }) {
+  return (
+    <div
+      className="section-card"
+      style={{
+        padding: '1.5rem',
+        backgroundColor: 'var(--card-bg)',
+        borderRadius: '8px',
+        border: '1px solid var(--nav-border)',
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+function CodeBlock({ children }) {
+  return (
+    <pre
+      style={{
+        padding: '0.95rem 1rem',
+        backgroundColor: 'var(--bg-color)',
+        borderRadius: '6px',
+        overflowX: 'auto',
+        fontSize: '0.84rem',
+        color: 'var(--text-secondary)',
+        fontFamily: 'monospace',
+        lineHeight: '1.65',
+        margin: '0.75rem 0 0',
+      }}
+    >
+      {children}
+    </pre>
+  );
+}
+
+const PETORY_MEETUP_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/service/MeetupService.java';
+const PETORY_MEETUP_REPO =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/repository/SpringDataJpaMeetupRepository.java';
+
+function MeetupDomainV2() {
+  const sections = [
+    { id: 'pillars', title: '핵심 기능' },
+    { id: 'intro', title: '도메인 개요' },
+    { id: 'design', title: '기술 결정' },
+    { id: 'limits', title: '한계 & 개선' },
+    { id: 'docs', title: '관련 페이지' },
+  ];
+
+  const corePillars = [
+    '참가 동시성 제어',
+    '이벤트 기반 채팅방 분리',
+    '근처 모임 2단계 조회',
+    '히스토리 N+1 제거',
+    '참여 가능 목록 단순화',
+  ];
+
+  const flowDiagram = `flowchart TD
+    U["사용자"]
+
+    subgraph Create["생성 흐름"]
+        CM["createMeetup\\n핵심 트랜잭션"]
+        TS["afterCommit\\nTransactionSynchronization"]
+        EV["MeetupCreatedEvent"]
+        CR["@Async @EventListener\\nMeetupChatRoomEventListener"]
+        CH["그룹 채팅방"]
+    end
+
+    subgraph Join["참가 흐름"]
+        PL["findByIdWithLock\\nPESSIMISTIC\\_WRITE"]
+        AU["incrementParticipantsIfAvailable\\n원자적 UPDATE"]
+        REC["DataIntegrityViolationException\\ndecrement + alreadyJoined"]
+    end
+
+    subgraph Sched["스케줄러 (매시 정각)"]
+        SC["closeFullRecruitingMeetups\\ncompletePastMeetups"]
+    end
+
+    U -->|모임 생성| CM
+    CM --> TS
+    TS --> EV
+    EV --> CR
+    CR --> CH
+    U -->|참가 요청| PL
+    PL --> AU
+    AU -->|PK 충돌| REC
+    CM -.->|상태 전이| SC`;
+
+  const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
+
+  return (
+    <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
+      <div
+        className="domain-page-container"
+        style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
+      >
+        <div className="domain-page-content" style={{ flex: 1 }}>
+          <MeetupDomainVersionNav current="v2" />
+
+          <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
+            모임 도메인
+          </h1>
+          <p
+            style={{
+              color: 'var(--text-secondary)',
+              lineHeight: '1.8',
+              marginBottom: '0.85rem',
+              fontSize: '0.95rem',
+            }}
+          >
+            Meetup 도메인은 반려동물 산책이나 오프라인 모임을 생성하고 참여를
+            관리하는 기능입니다. 단순 모임 등록보다, 동시 참가 상황에서도 최대
+            인원을 정확하게 지키는 구조를 만드는 데 집중했습니다. 모임 생성
+            직후 필요한 채팅방은 트랜잭션 커밋 이후 이벤트로 분리해 핵심
+            도메인과 파생 도메인의 실패 전파를 줄였고, 근처 모임 검색은 ID만
+            먼저 뽑는 2단계 전략으로 메모리 부담을 낮췄습니다.
+          </p>
+
+          <section
+            id="pillars"
+            style={{ marginBottom: '2rem', scrollMarginTop: '2rem' }}
+          >
+            <h2
+              style={{
+                marginBottom: '0.75rem',
+                color: 'var(--text-color)',
+                fontSize: '1.1rem',
+              }}
+            >
+              핵심 기능
+            </h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              {corePillars.map((label) => (
+                <span
+                  key={label}
+                  style={{
+                    padding: '0.35rem 0.75rem',
+                    borderRadius: '999px',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    color: 'var(--text-color)',
+                    backgroundColor: 'var(--bg-color)',
+                    border: '1px solid var(--nav-border)',
+                  }}
+                >
+                  {label}
+                </span>
+              ))}
+            </div>
+          </section>
+
+          <section
+            id="intro"
+            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
+          >
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
+              도메인 개요
+            </h2>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <p
+                style={{
+                  lineHeight: '1.8',
+                  color: 'var(--text-secondary)',
+                  margin: 0,
+                }}
+              >
+                오프라인 모임은 인원 수가 곧 사용자 경험과 직결됩니다. 동시에
+                여러 사람이 참가 버튼을 눌러도 최대 인원을 넘기지 않도록
+                비관적 락 + 원자적 UPDATE + PK 충돌 복구 흐름을 조합했습니다.
+                채팅방은 모임 생성 트랜잭션 커밋 이후{' '}
+                <code
+                  style={{
+                    backgroundColor: 'var(--bg-color)',
+                    padding: '0.1rem 0.3rem',
+                    borderRadius: '4px',
+                  }}
+                >
+                  MeetupCreatedEvent
+                </code>
+                로 비동기 생성해, 채팅방 장애가 모임 생성을 롤백하지 않도록
+                분리했습니다. 상태 전이는 스케줄러가 매시 정각 일괄 처리하며,
+                참여 가능 목록은 복잡한 서브쿼리 없이{' '}
+                <code
+                  style={{
+                    backgroundColor: 'var(--bg-color)',
+                    padding: '0.1rem 0.3rem',
+                    borderRadius: '4px',
+                  }}
+                >
+                  currentParticipants &lt; maxParticipants
+                </code>{' '}
+                직접 비교로 단순화했습니다.
+              </p>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.9rem',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    {['지표', 'Before', 'After'].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: '0.55rem 0.75rem',
+                          textAlign: 'left',
+                          color: 'var(--text-color)',
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['근처 모임 전체 실행 시간', '486ms', '273ms'],
+                    ['근처 모임 DB 쿼리 시간', '241ms', '143ms'],
+                    ['근처 모임 메모리 사용량', '1.48MB', '0.21MB'],
+                    ['히스토리 PrepareStatement 수', '102개', '2개'],
+                  ].map(([label, before, after], i, arr) => (
+                    <tr
+                      key={label}
+                      style={{
+                        borderBottom:
+                          i < arr.length - 1
+                            ? '1px solid var(--nav-border)'
+                            : 'none',
+                      }}
+                    >
+                      <td
+                        style={{
+                          padding: '0.55rem 0.75rem',
+                          color: 'var(--text-color)',
+                        }}
+                      >
+                        {label}
+                      </td>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>{before}</td>
+                      <td
+                        style={{
+                          padding: '0.55rem 0.75rem',
+                          color: 'var(--text-color)',
+                          fontWeight: 600,
+                        }}
+                      >
+                        {after}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.88rem',
+                  marginTop: '0.75rem',
+                  marginBottom: 0,
+                  lineHeight: '1.7',
+                }}
+              >
+                테스트 데이터 1,000건 기준 · 인메모리 필터링 → DB 필터링 →
+                Bounding Box 적용 3단계 비교 · 현재 운영 경로 절대 성능과
+                동일시하면 안 됨.
+              </p>
+            </Card>
+
+            <Card>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                데이터 흐름
+              </h3>
+              <MermaidDiagram chart={flowDiagram} />
+            </Card>
+          </section>
+
+          <section
+            id="design"
+            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
+          >
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
+              기술 결정
+            </h2>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                A. 참가 동시성 제어
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('findByIdWithLock — PESSIMISTIC_WRITE로 동시 참가 요청 직렬화')}
+                {li('incrementParticipantsIfAvailable — RECRUITING 상태 + 인원 미달 조건을 UPDATE 한 번에 체크')}
+                {li('DataIntegrityViolationException(PK 충돌) → decrementParticipantsIfPositive + alreadyJoined 복구')}
+                {li('취소 시 decrementParticipantsIfPositive — read-modify-write 제거, 음수 방지 조건 포함')}
+              </ul>
+              <CodeBlock>{`// 비관적 락으로 직렬화
+Meetup meetup = meetupRepository.findByIdWithLock(meetupIdx)
+    .orElseThrow(MeetupNotFoundException::new);
+
+// 원자적 조건부 증가 (RECRUITING + 인원 미달 동시 체크)
+int updated = meetupRepository
+    .incrementParticipantsIfAvailable(meetupIdx, MeetupStatus.RECRUITING);
+if (updated == 0) throw MeetupConflictException.fullCapacity();
+
+// PK 충돌 → 증가 롤백 후 중복 예외
+} catch (DataIntegrityViolationException e) {
+    meetupRepository.decrementParticipantsIfPositive(meetupIdx);
+    throw MeetupConflictException.alreadyJoined();
+}`}</CodeBlock>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                B. 이벤트 기반 채팅방 분리
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('모임 생성 트랜잭션 내 TransactionSynchronization.afterCommit() 등록')}
+                {li('커밋 성공 후에만 MeetupCreatedEvent 발행 — 롤백 시 이벤트 미발행')}
+                {li('@Async @EventListener — 채팅방 생성 실패가 모임 생성을 롤백하지 않음')}
+              </ul>
+              <CodeBlock>{`// 커밋 후 이벤트 발행 (트랜잭션 분리)
+TransactionSynchronizationManager.registerSynchronization(
+    new TransactionSynchronization() {
+        @Override
+        public void afterCommit() {
+            eventPublisher.publishEvent(
+                new MeetupCreatedEvent(this, savedMeetup.getIdx(),
+                    organizer.getIdx(), savedMeetup.getTitle()));
+        }
+    });
+
+// 이벤트 리스너 — 별도 트랜잭션, 비동기
+@EventListener
+@Async
+public void handleMeetupCreated(MeetupCreatedEvent event) {
+    meetupChatRoomCreationService.createChatRoom(...);
+}`}</CodeBlock>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                C. 근처 모임 2단계 조회
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('1단계: findNearbyMeetupIds — 네이티브 쿼리로 ID + 거리 정렬 + LIMIT만 조회')}
+                {li('2단계: findByIdxInWithOrganizer — IN + JOIN FETCH로 organizer N+1 방지')}
+                {li('전체 데이터 메모리 로드 없이 필요한 항목만 DTO 변환')}
+              </ul>
+              <CodeBlock>{`// 1단계: ID·정렬·LIMIT만 네이티브 쿼리로
+List<Long> ids = meetupRepository.findNearbyMeetupIds(
+    lat, lng, radiusKm, now, limit);   // Haversine + Bounding Box
+
+// 2단계: organizer JOIN FETCH로 N+1 방지
+List<Meetup> loaded = meetupRepository.findByIdxInWithOrganizer(ids);
+
+// 정렬 순서 보존 (ID 기준 Map → ids 순 재정렬)
+Map<Long, Meetup> byId = loaded.stream()
+    .collect(Collectors.toMap(Meetup::getIdx, m -> m));
+return ids.stream().map(byId::get).filter(Objects::nonNull)
+    .map(converter::toDTO).collect(Collectors.toList());`}</CodeBlock>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                D. 히스토리 N+1 제거
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('MeetupParticipants → Meetup → organizer + user: 3단계 연관 탐색')}
+                {li('JOIN FETCH mp.meetup m JOIN FETCH m.organizer JOIN FETCH mp.user — 1회 쿼리로 해결')}
+                {li('PrepareStatement 수: 102개 → 2개 (히스토리 목록 + 카운트)')}
+              </ul>
+              <CodeBlock>{`-- 히스토리 Fetch Join (participants→meetup→organizer→user 1회)
+SELECT mp FROM MeetupParticipants mp
+JOIN FETCH mp.meetup m
+JOIN FETCH m.organizer o
+JOIN FETCH mp.user u
+WHERE mp.user.idx = :userIdx
+ORDER BY mp.joinedAt DESC`}</CodeBlock>
+            </Card>
+
+            <Card>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                E. 참여 가능 목록 단순화
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('이전: 서브쿼리 또는 LEFT JOIN + GROUP BY + HAVING 구조')}
+                {li('현재: currentParticipants < maxParticipants 직접 비교 — 상태·인원 조건 단순 WHERE절')}
+                {li('Pageable로 DB LIMIT/OFFSET 처리 — 메모리 페이징 위험 해소')}
+              </ul>
+              <CodeBlock>{`-- 참여 가능 모임 (currentParticipants 직접 비교)
+SELECT m FROM Meetup m JOIN FETCH m.organizer
+WHERE m.date > :currentDate
+  AND m.currentParticipants < m.maxParticipants
+  AND m.status = :recruiting
+  AND (m.isDeleted = false OR m.isDeleted IS NULL)
+ORDER BY m.date ASC
+-- Pageable → DB LIMIT/OFFSET 자동 적용`}</CodeBlock>
+            </Card>
+          </section>
+
+          <section
+            id="limits"
+            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
+          >
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
+              한계 &amp; 다음 개선
+            </h2>
+            <Card>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li(
+                  '상태 전이는 스케줄러 주기 기반 — 정원이 찬 직후 즉시 CLOSED가 되지 않을 수 있음'
+                )}
+                {li(
+                  'CLOSED → RECRUITING 자동 복구 경로 없음 — 참가 취소로 자리가 생겨도 재오픈 안 됨'
+                )}
+                {li(
+                  'Meetup API 전체 로그인 사용자 전용 — SecurityConfig /api/** authenticated() 적용'
+                )}
+                {li(
+                  '성능 수치는 테스트 데이터 1,000건 기준 문서 측정 — 현재 운영 경로 절대 성능과 다를 수 있음'
+                )}
+                {li(
+                  '홈 모임 추천 score 계산(distScore·urgencyScore·capacityScore)은 메모리 정렬 — 후보 증가 시 비용 증가'
+                )}
+              </ul>
+            </Card>
+          </section>
+
+          <section
+            id="docs"
+            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
+          >
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
+              관련 페이지
+            </h2>
+            <Card>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '2',
+                }}
+              >
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/meetup/optimization"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Meetup 성능 최적화
+                  </Link>
+                  {' — 근처 모임 Before/After, N+1 상세'}
+                </li>
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/meetup/refactoring"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Meetup 리팩토링
+                  </Link>
+                  {' — 2단계 조회 구조, 목록 쿼리 변경 근거'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MEETUP_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    MeetupService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MEETUP_REPO}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    SpringDataJpaMeetupRepository.java
+                  </a>
+                </li>
+              </ul>
+            </Card>
+          </section>
+        </div>
+
+        <TableOfContents sections={sections} />
+      </div>
+    </div>
+  );
+}
+
+export default MeetupDomainV2;

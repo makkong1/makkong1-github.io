@@ -51,7 +51,6 @@ function UserDomain() {
     { id: "intro", title: "도메인 개요" },
     { id: "design", title: "기능 & 아키텍처" },
     { id: "troubleshooting", title: "트러블슈팅" },
-    { id: "summary", title: "핵심 포인트" },
     { id: "docs", title: "관련 페이지" },
   ];
 
@@ -406,60 +405,6 @@ function UserDomain() {
               기능 & 아키텍처
             </h2>
 
-            <p
-              style={{
-                color: "var(--text-secondary)",
-                lineHeight: "1.8",
-                marginBottom: "1rem",
-                fontSize: "0.92rem",
-              }}
-            >
-              <strong style={{ color: "var(--text-color)" }}>
-                domain/user
-              </strong>{" "}
-              패키지를 시스템 안에서 먼저{" "}
-              <strong style={{ color: "var(--text-color)" }}>한 장</strong>으로
-              잡고, 그 안에서 인증·반려·제재 축을 펼친다. Petory 전체 층위는{" "}
-              <a
-                href={PETORY_SYSTEM_ARCH_DOC}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  color: "var(--link-color)",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                시스템 아키텍처 다이어그램
-              </a>
-              과 같이 읽는다. 본 절은 레포{" "}
-              <a
-                href={PETORY_USER_ARCH_DOC}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  color: "var(--link-color)",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                user-domain-architecture.md
-              </a>
-              와 동일한 절 번호를 따른다. 코드 정리·DTO record화 같은 작업
-              요약은{" "}
-              <Link
-                to="/domains/user/refactoring"
-                style={{
-                  color: "var(--link-color)",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                }}
-              >
-                User 도메인 리팩토링
-              </Link>
-              에서 다룬다.
-            </p>
-
             {/* §1 */}
             <Card style={{ marginBottom: "1rem" }}>
               <h3
@@ -605,6 +550,51 @@ function UserDomain() {
               >
                 2. 도메인 경계 (책임)
               </h3>
+              <p
+                style={{
+                  color: "var(--text-secondary)",
+                  lineHeight: "1.75",
+                  margin: "0 0 0.65rem",
+                  fontSize: "0.88rem",
+                }}
+              >
+                <strong style={{ color: "var(--text-color)" }}>
+                  도메인 경계
+                </strong>
+                는 한 영역이{" "}
+                <strong style={{ color: "var(--text-color)" }}>
+                  무엇까지 책임지는지
+                </strong>
+                (데이터·규칙의 진짜 주인, 보통 말하는 source of truth)와{" "}
+                <strong style={{ color: "var(--text-color)" }}>
+                  무엇부터는 다른 패키지·전역 설정·인프라가 맡는지
+                </strong>
+                를 나누는 선이다. 아래 표는 그 선을{" "}
+                <code style={{ fontSize: "0.82em" }}>domain/user</code>{" "}
+                기준으로만 적어 둔 것이다.
+              </p>
+              <p
+                style={{
+                  color: "var(--text-secondary)",
+                  lineHeight: "1.75",
+                  margin: "0 0 0.85rem",
+                  fontSize: "0.88rem",
+                }}
+              >
+                처음 읽을 때는 열 이름보다 이렇게 매핑하면 된다.{" "}
+                <strong style={{ color: "var(--text-color)" }}>
+                  User가 소유
+                </strong>
+                는 “User 코드·테이블 안에서 끝내는 게 맞는 일”,{" "}
+                <strong style={{ color: "var(--text-color)" }}>바깥</strong>은
+                “여기서 시작하면{" "}
+                <code style={{ fontSize: "0.82em" }}>global</code>·
+                <code style={{ fontSize: "0.82em" }}>report</code> 같은 다른
+                축과 합의·연동이 필요한 일”이다. 예를 들어 비밀번호 해시와
+                Refresh 저장은 User 소유가 자연스럽고, 게시판 한 건 안에서 이
+                사용자를 어떻게 쓸지 같은 규칙은 해당 기능 도메인 쪽 책임에
+                가깝다.
+              </p>
               <table
                 style={{
                   width: "100%",
@@ -1018,14 +1008,7 @@ function UserDomain() {
                   "이미지: `AttachmentFileService` · `FileTargetType.PET` — file 도메인과 동기화."
                 )}
                 {li(
-                  <>
-                    알려진 갭: 단건 조회·수정 등에서 소유자 검증이 빠진
-                    경로(IDOR 위험) — 레포{" "}
-                    <strong style={{ color: "var(--text-color)" }}>
-                      §8 항 2
-                    </strong>
-                    .
-                  </>
+                  "단건 조회·수정·삭제·복구: JWT 로그인 ID와 Pet 소유 Users.id 일치 시에만 허용, 불일치 시 403 (`UserForbiddenException`)."
                 )}
               </ul>
             </Card>
@@ -1176,7 +1159,7 @@ UPDATE Users u SET u.warningCount = u.warningCount + 1 WHERE u.idx = :userId`}</
                   fontSize: "0.84rem",
                 }}
               >
-                전체 9항은 레포 본문(
+                전체 8항은 레포 본문(
                 <a
                   href={PETORY_USER_ARCH_DOC}
                   target="_blank"
@@ -1203,9 +1186,6 @@ UPDATE Users u SET u.warningCount = u.warningCount + 1 WHERE u.idx = :userId`}</
                 <li style={{ marginBottom: "0.35rem" }}>
                   JWT 유효 동안 `UserStatus` 재평가 없음 — 제재 즉시성은 Access
                   TTL 의존.
-                </li>
-                <li style={{ marginBottom: "0.35rem" }}>
-                  펫 단건 API 소유 검증 갭(IDOR).
                 </li>
                 <li style={{ marginBottom: "0.35rem" }}>
                   permitAll vs HTTP authenticated 불일치.

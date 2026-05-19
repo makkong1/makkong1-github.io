@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
+import BoardDomainVersionNav from './BoardDomainVersionNav';
 
 function BoardDomainOptimization() {
   const sections = [
@@ -67,18 +68,17 @@ function BoardDomainOptimization() {
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
       <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         <div className="domain-page-content" style={{ flex: 1 }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <Link 
-              to="/domains/board" 
-              style={{ 
-                color: 'var(--link-color)', 
-                textDecoration: 'none',
-                fontSize: '0.9rem'
-              }}
-            >
-              ← Board 도메인으로 돌아가기
+          <BoardDomainVersionNav />
+          <p style={{ margin: '0 0 1rem', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            상세·트러블슈팅:{' '}
+            <Link to="/domains/board/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 600 }}>
+              성능 최적화 (현재)
             </Link>
-          </div>
+            {' · '}
+            <Link to="/domains/board/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+              리팩토링
+            </Link>
+          </p>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Board 도메인 - 성능 최적화 상세</h1>
           
           {/* 1. 개요 */}

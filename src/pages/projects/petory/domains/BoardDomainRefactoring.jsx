@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import TableOfContents from '../../../../components/Common/TableOfContents';
+import BoardDomainVersionNav from './BoardDomainVersionNav';
 
 function BoardDomainRefactoring() {
   const sections = [
@@ -16,18 +17,17 @@ function BoardDomainRefactoring() {
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
       <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         <div className="domain-page-content" style={{ flex: 1 }}>
-          <div style={{ marginBottom: '1rem' }}>
-            <Link 
-              to="/domains/board" 
-              style={{ 
-                color: 'var(--link-color)', 
-                textDecoration: 'none',
-                fontSize: '0.9rem'
-              }}
-            >
-              ← Board 도메인으로 돌아가기
+          <BoardDomainVersionNav />
+          <p style={{ margin: '0 0 1rem', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
+            상세·트러블슈팅:{' '}
+            <Link to="/domains/board/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+              성능 최적화
             </Link>
-          </div>
+            {' · '}
+            <Link to="/domains/board/refactoring" style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 600 }}>
+              리팩토링 (현재)
+            </Link>
+          </p>
           <h1 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Board 도메인 리팩토링</h1>
           
           {/* 1. 리팩토링 개요 */}
@@ -372,7 +372,8 @@ List<Object[]> countByCommentsGroupByReactionType(
                 color: 'var(--text-secondary)',
                 lineHeight: '1.8'
               }}>
-                <li>• <Link to="/domains/board" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>Board 도메인 상세 페이지</Link></li>
+                <li>• <Link to="/domains/board" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>Board 도메인 (이전 버전)</Link></li>
+                <li>• <Link to="/domains/board/v2" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>Board 도메인 (새 구성 v2)</Link></li>
                 <li>• <Link to="/domains/board/optimization" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>Board 도메인 성능 최적화 페이지</Link></li>
               </ul>
             </div>
