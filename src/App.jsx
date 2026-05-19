@@ -29,6 +29,7 @@ import LocationDomainV2 from './pages/projects/petory/domains/LocationDomainV2';
 import LocationDomainOptimization from './pages/projects/petory/domains/LocationDomainOptimization';
 import LocationDomainRefactoring from './pages/projects/petory/domains/LocationDomainRefactoring';
 // import RecommendationDomain from './pages/projects/petory/domains/RecommendationDomain';
+import RecommendationDomainV2 from './pages/projects/petory/domains/RecommendationDomainV2';
 // import MeetupDomain from './pages/projects/petory/domains/MeetupDomain';
 import MeetupDomainV2 from './pages/projects/petory/domains/MeetupDomainV2';
 import MeetupDomainOptimization from './pages/projects/petory/domains/MeetupDomainOptimization';
@@ -78,7 +79,7 @@ function App() {
             {/* <Route path="/domains/location/v2" element={<LocationDomainV2 />} /> */}
             <Route path="/domains/location/optimization" element={<LocationDomainOptimization />} />
             <Route path="/domains/location/refactoring" element={<LocationDomainRefactoring />} />
-            {/* <Route path="/domains/recommendation" element={<RecommendationDomain />} /> */}
+            <Route path="/domains/recommendation" element={<RecommendationDomainV2 />} />
             <Route path="/domains/meetup" element={<MeetupDomainV2 />} />
             {/* <Route path="/domains/meetup/v2" element={<MeetupDomainV2 />} /> */}
             <Route path="/domains/meetup/optimization" element={<MeetupDomainOptimization />} />
