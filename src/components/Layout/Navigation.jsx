@@ -9,7 +9,6 @@ function Navigation() {
   // 경로별 네비게이션 결정
   const isHome = path === '/';
   const isPetoryProject = path === '/portfolio/petory';
-  const isLinkupProject = path === '/portfolio/linkup';
   const isDomainPage = path.startsWith('/domains/');
   const isDemoPage = path === '/demo';
   const isDocsPage = path === '/docs';
@@ -81,13 +80,6 @@ function Navigation() {
     </>
   );
 
-  // 링크업 프로젝트 네비게이션
-  const renderLinkupNav = () => (
-    <>
-      <span className="nav-link brand">LinkUp</span>
-    </>
-  );
-
   // 도메인 페이지 네비게이션
   const renderDomainNav = () => (
     <>
@@ -133,12 +125,6 @@ function Navigation() {
             <>
               <span className="nav-separator">|</span>
               {renderPetoryNav()}
-            </>
-          )}
-          {isLinkupProject && (
-            <>
-              <span className="nav-separator">|</span>
-              {renderLinkupNav()}
             </>
           )}
           {isDomainPage && (

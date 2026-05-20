@@ -4,7 +4,6 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout/Layout';
 import HomePage from './pages/HomePage';
 import PetoryProjectPage from './pages/projects/petory/PetoryProjectPage';
-import LinkupProjectPage from './pages/projects/linkup/LinkupProjectPage';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
 // 도메인 페이지들 (V2 — 현재 기본)
@@ -53,8 +52,6 @@ function App() {
             
             {/* 포트폴리오 페이지 */}
             <Route path="/portfolio/petory" element={<PetoryProjectPage />} />
-            <Route path="/portfolio/linkup" element={<LinkupProjectPage />} />
-            
             {/* 라이브 데모 페이지 */}
             <Route path="/demo" element={<DemoPage />} />
             

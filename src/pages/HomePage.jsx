@@ -59,21 +59,6 @@ function HomePage() {
               <span className="tech-badge">Redis</span>
             </div>
           </Link>
-          <Link
-            to="/portfolio/linkup"
-            className="project-card"
-          >
-            <h3>LinkUp</h3>
-            <p className="project-description">
-              게시판 + 노션 스타일 콘텐츠 + 실시간 알림 + 소셜 로그인을 지원하는 커뮤니티 플랫폼
-            </p>
-            <div className="tech-stack-wrapper">
-              <span className="tech-badge">Spring Boot</span>
-              <span className="tech-badge">Java 17</span>
-              <span className="tech-badge">MySQL</span>
-              <span className="tech-badge">Redis</span>
-            </div>
-          </Link>
           </div>
       </section>
 
