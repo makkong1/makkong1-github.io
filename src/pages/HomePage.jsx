@@ -74,15 +74,20 @@ function HomePage() {
               <span className="tech-badge">Redis</span>
             </div>
           </Link>
-          <Link to="/infra" className="project-card">
-            <h3>배포 &amp; 인프라</h3>
+          <Link to="/pet-data-api" className="project-card">
+            <h3>pet-data-api</h3>
             <p className="project-description">
-              Docker Compose 개발 환경 구성 및 GitHub Actions CI/CD 파이프라인
+              Petory 데이터 파이프라인 검증
+              <br />
+              <span className="project-sub">
+                공공데이터·트렌드·LLM을 조합한 수집·추천 서버 설계 및 구현
+              </span>
             </p>
             <div className="tech-stack-wrapper">
-              <span className="tech-badge">Docker</span>
-              <span className="tech-badge">GitHub Actions</span>
-              <span className="tech-badge">CI/CD</span>
+              <span className="tech-badge">Python</span>
+              <span className="tech-badge">FastAPI</span>
+              <span className="tech-badge">PostgreSQL</span>
+              <span className="tech-badge">Ollama</span>
             </div>
           </Link>
         </div>

@@ -7,6 +7,7 @@ import PetoryProjectPage from './pages/projects/petory/PetoryProjectPage';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
 import InfraPage from './pages/InfraPage';
+import PetDataApiPage from './pages/PetDataApiPage';
 // 도메인 페이지들 (V2 — 현재 기본)
 // import UserDomain from './pages/projects/petory/domains/UserDomain';
 import UserDomainV2 from './pages/projects/petory/domains/UserDomainV2';
@@ -89,6 +90,9 @@ function App() {
             
             {/* 배포 & 인프라 페이지 */}
             <Route path="/infra" element={<InfraPage />} />
+
+            {/* pet-data-api 페이지 */}
+            <Route path="/pet-data-api" element={<PetDataApiPage />} />
 
             {/* MCP 파일 링크 페이지 */}
             <Route path="/docs" element={<MCPFilesPage />} />
