@@ -74,23 +74,24 @@ function HomePage() {
               <span className="tech-badge">Redis</span>
             </div>
           </Link>
-          <Link to="/pet-data-api" className="project-card">
-            <h3>pet-data-api</h3>
-            <p className="project-description">
-              Petory 데이터 파이프라인 검증
-              <br />
-              <span className="project-sub">
-                공공데이터·트렌드·LLM을 조합한 수집·추천 서버 설계 및 구현
-              </span>
-            </p>
-            <div className="tech-stack-wrapper">
-              <span className="tech-badge">Python</span>
-              <span className="tech-badge">FastAPI</span>
-              <span className="tech-badge">PostgreSQL</span>
-              <span className="tech-badge">Ollama</span>
-            </div>
-          </Link>
         </div>
+        <p
+          style={{
+            marginTop: '1rem',
+            fontSize: '0.92rem',
+            color: 'var(--text-secondary)',
+            lineHeight: '1.7',
+          }}
+        >
+          Petory 확장:{' '}
+          <Link
+            to="/domains/recommendation/pet-data-api"
+            style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 600 }}
+          >
+            추천·외부 데이터 파이프 요약(pet-data-api 연동)
+          </Link>
+          은 Recommendation 도메인 하위 페이지로 정리해 두었습니다.
+        </p>
       </section>
 
       {/* Education 섹션 */}

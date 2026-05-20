@@ -529,6 +529,15 @@ function PetoryProjectPage() {
                 <h3>문서 모음</h3>
                 <p style={{ fontSize: '0.9rem' }}>아키텍처 및 도메인 문서</p>
               </Link>
+              <Link
+                to="/domains/recommendation/pet-data-api"
+                className="project-card"
+              >
+                <h3>추천·데이터 파이프(pet-data-api)</h3>
+                <p style={{ fontSize: '0.9rem' }}>
+                  Petory 분리 저장소 연동 및 수집·추천 경계 요약
+                </p>
+              </Link>
               <Link to="/demo" className="project-card">
                 <h3>라이브 데모</h3>
                 <p style={{ fontSize: '0.9rem' }}>인터랙티브 데모 체험</p>

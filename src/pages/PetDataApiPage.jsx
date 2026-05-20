@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import MermaidDiagram from '../components/Common/MermaidDiagram';
 import TableOfContents from '../components/Common/TableOfContents';
 
@@ -89,6 +90,28 @@ function PetDataApiPage() {
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             pet-data-api
           </h1>
+          <p
+            style={{
+              color: 'var(--text-muted)',
+              fontSize: '0.86rem',
+              marginBottom: '0.6rem',
+            }}
+          >
+            <Link
+              to="/portfolio/petory"
+              style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+            >
+              Petory
+            </Link>
+            {' › '}
+            <Link
+              to="/domains/recommendation"
+              style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+            >
+              Recommendation
+            </Link>
+            {' › '}데이터·추천 파이프 요약 페이지
+          </p>
           <p
             style={{
               color: 'var(--text-secondary)',

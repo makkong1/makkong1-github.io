@@ -606,6 +606,16 @@ async def recommend(req: RecommendRequest):
                 <li>
                   •{' '}
                   <Link
+                    to="/domains/recommendation/pet-data-api"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    pet-data-api 연동 요약 페이지
+                  </Link>
+                  {' — 수집·서빙 흐름, Petory BFF 역할 포트폴리오 정리'}
+                </li>
+                <li>
+                  •{' '}
+                  <Link
                     to="/domains/location"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
