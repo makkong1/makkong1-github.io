@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
-import CareDomainVersionNav from './CareDomainVersionNav';
 
 function Card({ children, style }) {
   return (
@@ -104,8 +103,6 @@ function CareDomainV2() {
         style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
-          <CareDomainVersionNav current="v2" />
-
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             Care 도메인
           </h1>

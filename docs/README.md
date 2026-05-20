@@ -46,7 +46,7 @@
 | **Board** | 커뮤니티 게시판, 댓글, 반응, 인기글 | [상세보기](./domains/board.md) |
 | **Care** | 펫케어 요청, 지원, 댓글, 리뷰 | [상세보기](./domains/care.md) |
 | **Payment** | 펫코인 결제, 에스크로, Care/Chat 연동 | [상세보기](./domains/payment.md) |
-| **Missing Pet** | 실종 동물 신고 및 관리 | [상세보기](./domains/missing-pet.md) |
+| **Missing Pet** | 실종 동물 신고 및 관리 | [상세보기](./domains/missingpet.md) |
 | **Location** | 위치 기반 서비스, 리뷰 | [상세보기](./domains/location.md) |
 | **Meetup** | 오프라인 모임 | [상세보기](./domains/meetup.md) |
 | **Report** | 신고 및 제재 시스템 | [상세보기](./domains/report.md) |
@@ -141,4 +141,3 @@
 
 - [도메인 간 연관관계](./architecture/domain-relationships.md)
 - [데이터베이스 ERD](./architecture/erd.md)
-

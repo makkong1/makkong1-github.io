@@ -1,210 +1,168 @@
-# 🐾 Petory Portfolio
+# 박영범 포트폴리오 · Petory 아키텍처/데모
 
-반려동물 통합 플랫폼 **Petory** 프로젝트의 포트폴리오 사이트입니다.
+이 저장소는 박영범의 포트폴리오 사이트이자, 반려동물 통합 플랫폼 **Petory**의 아키텍처 문서, 도메인 분석, 트러블슈팅 기록, 프론트 데모를 함께 정리한 저장소입니다.
 
-> **Petory**는 게시판, 펫케어 요청, 실종 동물 찾기, 위치 기반 서비스, 오프라인 모임 등 다양한 기능을 제공하는 반려동물 커뮤니티 플랫폼입니다.
+- 이력서형 홈 페이지
+- Petory 프로젝트 소개 페이지
+- 도메인별 상세 페이지
+- 더미 데이터 기반 라이브 데모
+- 백엔드 아키텍처/성능/동시성 문서 허브
 
-🌐 **Live Demo**: [https://makkong1.github.io/makkong1-github.io](https://makkong1.github.io/makkong1-github.io)
+## Live
 
----
+- Portfolio: [https://makkong1.github.io/makkong1-github.io](https://makkong1.github.io/makkong1-github.io)
+- Petory backend repo: [https://github.com/makkong1/Petory](https://github.com/makkong1/Petory)
 
-## 🛠 기술 스택
+## What This Repo Contains
 
-### Frontend
-- **Framework**: React 19.2.0
-- **Build Tool**: Vite 7.2.4
-- **Styling**: Styled Components 6.1.19
-- **Routing**: React Router DOM 6.28.0
-- **Charts**: Recharts 3.6.0
-- **Diagram**: Mermaid 10.6.1
+이 저장소에는 **실행 가능한 포트폴리오 프론트엔드**와 **Petory 백엔드 문서 자산**이 함께 들어 있습니다.
 
-### Backend (참고)
-- **Framework**: Spring Boot 3.x
-- **Language**: Java 17+
-- **ORM**: Spring Data JPA (Hibernate)
-- **Database**: MySQL
-- **Security**: Spring Security + JWT
-- **Cache**: Spring Cache, Redis
-- **Real-time**: WebSocket (STOMP), SSE
+1. `src/`
+   React + Vite 기반 포트폴리오 사이트 본체입니다.
+2. `src/demo/`
+   Petory 주요 기능을 브라우저에서 볼 수 있도록 만든 데모 앱입니다.
+3. `src/mockData/`, `src/api/mockInterceptor.js`
+   백엔드 없이도 데모를 동작시키는 mock 계층입니다.
+4. `docs/`
+   아키텍처, 도메인 설명, 성능 최적화, 동시성, 리팩토링, SQL 문서를 모아둔 폴더입니다.
 
----
+## Site Routes
 
-## 🎯 주요 기능
+- `/` : 이력서형 홈
+- `/portfolio/petory` : Petory 프로젝트 소개
+- `/demo` : mock 기반 라이브 데모
+- `/domains/*` : User, Board, Care, Location, Recommendation, Meetup, Chat 등 도메인 상세
+- `/docs` : 문서 링크 허브
 
-### 핵심 도메인
+## Tech Stack
 
-| 도메인 | 주요 기능 | 성능 최적화 |
-|--------|----------|------------|
-| **Board** | 커뮤니티 게시판, 댓글, 반응, 인기글 | N+1 문제 해결 (301→3 쿼리), 인기글 스냅샷 |
-| **Location** | 위치 기반 서비스, 리뷰, 네이버맵 연동 | 위치 기반 초기 로드 (95.5% 데이터 감소) |
-| **Care** | 펫케어 요청/지원, 매칭, 리뷰 | 트랜잭션 관리, 동시성 제어 |
-| **Chat** | 실시간 채팅 (WebSocket/SSE) | 읽음 상태 최적화, 메시지 배치 처리 |
-| **Meetup** | 오프라인 모임, 참여자 관리 | 동시성 제어 (Race Condition 해결) |
-| **Missing Pet** | 실종 동물 신고 및 찾기 | 이미지 최적화, 검색 성능 향상 |
-| **User** | 사용자 관리, 소셜 로그인, 제재 시스템 | JWT 인증, 소프트 삭제 |
-| **Notification** | 실시간 알림 시스템 | Redis 기반 알림 큐, SSE 스트리밍 |
+### Frontend in this repo
 
-### 지원 기능
-- **Report**: 신고 및 제재 시스템
-- **Statistics**: 일별 통계 수집 및 대시보드
-- **File**: 파일 업로드/다운로드 관리
-- **Activity**: 사용자 활동 로그
+- React 19
+- Vite 7
+- React Router DOM
+- Styled Components
+- Recharts
+- Mermaid
+- Axios
 
----
+### Backend stack referenced by docs
 
-## 🚀 시작하기
+- Spring Boot
+- Spring Data JPA
+- MySQL
+- Redis
+- JWT / Spring Security
+- WebSocket / SSE
 
-### 사전 요구사항
-- Node.js 18+ 
-- npm 또는 yarn
+> 이 저장소는 백엔드 구현 저장소 자체라기보다, Petory 백엔드 설계와 문제 해결 과정을 포트폴리오 형식으로 보여주는 용도에 가깝습니다.
 
-### 설치 및 실행
+## Local Development
+
+### Requirements
+
+- Node.js `^20.19.0` or `>=22.12.0`
+- npm
+
+### Install
 
 ```bash
-# 의존성 설치
 npm install
-
-# 개발 서버 실행
-npm run dev
-
-# 프로덕션 빌드
-npm run build
-
-# 빌드 미리보기
-npm run preview
-
-# GitHub Pages 배포
-npm run deploy
 ```
 
-### 프로젝트 구조
-
-```
-Petory-Portfolio/
-├── src/
-│   ├── pages/              # 페이지 컴포넌트
-│   │   ├── HomePage.jsx    # 메인 페이지
-│   │   └── domains/        # 도메인별 상세 페이지
-│   │       ├── BoardDomain.jsx
-│   │       ├── LocationDomain.jsx
-│   │       ├── ChatDomain.jsx
-│   │       └── ...
-│   ├── components/         # 공통 컴포넌트
-│   │   └── Common/         # MermaidDiagram, TableOfContents 등
-│   ├── api/                # API 클라이언트
-│   └── utils/              # 유틸리티 함수
-├── docs/                   # 상세 문서
-│   ├── architecture/       # 아키텍처 문서
-│   ├── domains/            # 도메인별 상세 문서
-│   ├── troubleshooting/    # 문제 해결 사례
-│   └── performance/        # 성능 최적화 문서
-└── public/                 # 정적 파일
-```
-
----
-
-## 📈 성능 최적화 사례
-
-상세한 문제 해결 사례는 아래 문서에서 확인할 수 있습니다:
-
-- [Board 도메인: N+1 문제 해결](./docs/troubleshooting/board/performance-optimization.md)
-- [Location 도메인: 초기 로드 성능 개선](./docs/troubleshooting/location/initial-load-performance.md)
-- [Chat 도메인: 읽음 상태 성능 최적화](./docs/troubleshooting/chat/read-status-performance.md)
-- [Meetup 도메인: 동시성 제어](./docs/troubleshooting/meetup/race-condition-participants.md)
-- [Care 도메인: 펫케어 요청 목록 조회 최적화](./docs/troubleshooting/care/care-request-n-plus-one-analysis.md)
-- [User 도메인: 로그인 쿼리 최적화](./docs/troubleshooting/users/login-n-plus-one-issue.md)
-- [Missing Pet 도메인: 성능 측정 결과](./docs/troubleshooting/missing-pet/n-plus-one-query-issue.md)
-
----
-
-## 🏗 아키텍처
-
-### 레이어드 아키텍처
-- **Controller Layer**: REST API, WebSocket, SSE 엔드포인트
-- **Service Layer**: 비즈니스 로직 처리
-- **Repository Layer**: 데이터 액세스 (JPA)
-- **Entity Layer**: 도메인 모델
-
-### 도메인 주도 설계 (DDD)
-- 도메인별 패키지 구조로 응집도 향상
-- 명확한 도메인 경계와 책임 분리
-
-### 실시간 통신
-- **WebSocket (STOMP)**: 실시간 채팅
-- **Server-Sent Events (SSE)**: 실시간 알림
-
----
-
-## 📚 문서
-
-### 아키텍처 문서
-- [전체 아키텍처 개요](./docs/architecture/overview.md)
-- [도메인 간 연관관계](./docs/architecture/domain-relationships.md)
-- [데이터베이스 ERD](./docs/architecture/erd.md)
-
-### 도메인별 상세 문서
-- [Board 도메인](./docs/domains/board.md)
-- [Location 도메인](./docs/domains/location.md)
-- [Chat 도메인](./docs/domains/chat.md)
-- [Care 도메인](./docs/domains/care.md)
-- [User 도메인](./docs/domains/user.md)
-- [전체 도메인 목록](./docs/README.md)
-
----
-
-## 🎨 주요 특징
-
-### UX 설계 원칙
-- **"지도는 상태를 바꾸지 않는다"**: 지도 이동 시 자동 API 호출 제거
-- **InitialLoadSearch vs UserTriggeredSearch 분리**: 시스템 주도 vs 사용자 주도 검색 구분
-- **빈 상태 UX 처리**: 검색 결과 0개, 위치 권한 거부 시 명확한 안내
-
-### 성능 최적화 전략
-- **Fetch Join**: N+1 문제 해결
-- **배치 조회**: IN 절을 활용한 집계 쿼리
-- **캐싱**: Spring Cache, Redis 활용
-- **스냅샷**: 복잡한 계산 결과 미리 생성
-- **인덱싱**: 복합 인덱스로 쿼리 성능 향상
-
-### 동시성 제어
-- **Unique 제약**: 중복 데이터 방지
-- **트랜잭션 관리**: 원자적 연산 보장
-- **락 전략**: 낙관적/비관적 락 적용
-
----
-
-## 📦 배포
-
-### GitHub Pages
-이 프로젝트는 GitHub Pages를 통해 배포됩니다.
+### Run
 
 ```bash
-# 빌드 및 배포
+npm run dev
+```
+
+### Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Environment Variables
+
+필수는 아니지만 아래 값들을 상황에 따라 설정할 수 있습니다.
+
+```env
+VITE_USE_MOCK=true
+VITE_API_BASE_URL=http://localhost:8080/api
+VITE_NAVER_MAPS_KEY_ID=
+```
+
+- `VITE_USE_MOCK`
+  - 기본 동작은 mock 사용입니다.
+  - GitHub Pages 배포 환경에서는 mock 데이터로 동작합니다.
+  - 실제 백엔드 연동 테스트를 하려면 `false`로 내려야 합니다.
+- `VITE_API_BASE_URL`
+  - 데모 일부 API 모듈에서 실제 백엔드 주소를 바라볼 때 사용합니다.
+- `VITE_NAVER_MAPS_KEY_ID`
+  - 지도 기능을 로컬에서 정상 확인하려면 필요합니다.
+
+## Project Structure
+
+```text
+src/
+├── components/                 # 공통 레이아웃, 네비게이션, Mermaid, TOC
+├── contexts/                   # 포트폴리오 사이트 테마 상태
+├── pages/
+│   ├── HomePage.jsx
+│   ├── DemoPage.jsx
+│   ├── MCPFilesPage.jsx
+│   └── projects/petory/domains/
+├── demo/                       # 데모 앱 본체
+├── mockData/                   # 데모용 더미 데이터
+├── api/                        # axios mock interceptor
+├── assets/                     # ERD 이미지 등
+└── styles/
+
+docs/
+├── architecture/               # 전체 구조, ERD, 캐싱, 알림, 이메일 인증 등
+├── domains/                    # 도메인별 상세 문서
+├── troubleshooting/            # 성능/버그 분석
+├── refactoring/                # 리팩토링 기록
+├── concurrency/                # 동시성 제어 문서
+├── migration/                  # SQL 마이그레이션
+└── pet-data-api-docs/          # 추천/트렌드용 별도 API 문서
+```
+
+## Documentation Entry Points
+
+- [docs/README.md](./docs/README.md) : 문서 인덱스
+- [docs/architecture/overview.md](./docs/architecture/overview.md) : 전체 아키텍처 개요
+- [docs/domains/location.md](./docs/domains/location.md) : 위치 서비스 설계와 UX 원칙
+- [docs/troubleshooting/location/initial-load-performance.md](./docs/troubleshooting/location/initial-load-performance.md) : 대표 성능 개선 사례
+- [docs/refactoring/fetch-optimization/README.md](./docs/refactoring/fetch-optimization/README.md) : Fetch 전략 기준 문서
+
+## Notable Topics
+
+- Board: 배치 조회 기반 N+1 문제 해결
+- Location: 초기 로드 전략, 지역 탐색 UX, 네이버맵 연동
+- Care/Meetup/Payment: 동시성 제어와 트랜잭션 설계
+- Chat/Notification: 실시간 통신과 읽음 상태/알림 처리
+- Recommendation: 별도 pet-data-api와 연결되는 추천 흐름
+
+## Deployment
+
+이 프로젝트는 GitHub Pages 기준으로 배포됩니다.
+
+```bash
 npm run build
 npm run deploy
 ```
 
-**배포 주소**: [https://makkong1.github.io/makkong1-github.io](https://makkong1.github.io/makkong1-github.io)
+- `build` 시 `dist/index.html`을 `dist/404.html`로 복사해 SPA 라우팅 fallback을 맞춥니다.
+- `main` 브랜치 푸시 시 GitHub Actions로도 자동 배포됩니다.
 
----
+## Notes
 
-## 🔗 관련 링크
+- 데모는 mock 중심으로 설계되어 있어 실제 백엔드 저장소 없이도 주요 흐름을 확인할 수 있습니다.
+- 문서 일부는 Petory 본 저장소 링크와 현재 포트폴리오 저장소 링크가 함께 섞여 있습니다.
+- 추천 기능 관련 세부 문서는 `docs/pet-data-api-docs/`에 별도로 정리되어 있습니다.
 
-- **포트폴리오 사이트**: [https://makkong1.github.io/makkong1-github.io](https://makkong1.github.io/makkong1-github.io)
-- **상세 문서**: [docs/README.md](./docs/README.md)
-- **아키텍처 문서**: [docs/architecture/](./docs/architecture/)
+## License
 
----
-
-## 📝 라이선스
-
-이 프로젝트는 포트폴리오 목적으로 제작되었습니다.
-
----
-
-## 👨‍💻 작성자
-
-**makkong1**
-
-반려동물 커뮤니티 플랫폼 Petory 프로젝트의 포트폴리오 사이트입니다.
-
+포트폴리오 용도로 작성된 저장소입니다.

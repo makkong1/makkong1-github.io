@@ -22,7 +22,7 @@ function MCPFilesPage() {
         { name: 'User 도메인', file: 'user.md' },
         { name: 'Board 도메인', file: 'board.md' },
         { name: 'Care 도메인', file: 'care.md' },
-        { name: 'Missing Pet 도메인', file: 'missing-pet.md' },
+        { name: 'Missing Pet 도메인', file: 'missingpet.md' },
         { name: 'Location 도메인', file: 'location.md' },
         { name: 'Meetup 도메인', file: 'meetup.md' },
         { name: 'Chat 도메인', file: 'chat.md' },
@@ -161,4 +161,3 @@ function MCPFilesPage() {
 }
 
 export default MCPFilesPage;
-
