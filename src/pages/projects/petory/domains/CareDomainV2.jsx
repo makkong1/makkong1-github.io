@@ -557,7 +557,10 @@ if (!isRequester && !isAcceptedProvider)
                   '리뷰 시점: COMPLETED가 아닌 CareApplicationStatus.ACCEPTED 기준으로 리뷰 작성 가능'
                 )}
                 {li(
-                  '권한 검증: createCareRequest·댓글·리뷰 작성은 요청 바디 userId를 신뢰하고, 댓글 삭제는 작성자·관리자 확인 없음'
+                  '[개선 완료] 댓글 삭제: Authentication으로 요청자 신원 확인, 작성자·관리자 여부 검증 추가 (기존: 검증 없음)'
+                )}
+                {li(
+                  '권한 검증: createCareRequest·댓글·리뷰 작성은 요청 바디 userId를 신뢰 — JWT 기반 검증으로 개선 여지 있음'
                 )}
                 {li(
                   'API 인증: 컨트롤러상 공개 GET처럼 보이는 목록·상세·검색도 실제로는 SecurityConfig /api/** 때문에 인증 전제'

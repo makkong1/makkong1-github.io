@@ -496,7 +496,7 @@ if (readFrom != null) {
                   'Care 거래 확정: CARE_APPLICATION 관련 confirmCareDeal()은 현재 로그 기록 중심 — 상태 전이 완전 미구현'
                 )}
                 {li(
-                  'Meetup 채팅 참여: joinMeetupChat()은 실제 모임 참여자 검증 없이 채팅 참여 허용'
+                  '[개선 완료] Meetup 채팅 참여: meetupParticipantsRepository.existsByMeetupIdxAndUserIdx()로 모임 참여자 여부 검증 추가'
                 )}
                 {li(
                   '재참여 메시지 제한: 기본 조회는 joinedAt 이후지만 커서 기반 과거 조회(getMessagesBefore)는 별도 보완 필요'
