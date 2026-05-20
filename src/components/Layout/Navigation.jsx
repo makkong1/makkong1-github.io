@@ -9,6 +9,7 @@ function Navigation() {
   // 경로별 네비게이션 결정
   const isHome = path === '/';
   const isPetoryProject = path === '/portfolio/petory';
+  const isInfraPage = path === '/infra';
   const isDomainPage = path.startsWith('/domains/');
   const isDemoPage = path === '/demo';
   const isDocsPage = path === '/docs';
@@ -75,6 +76,9 @@ function Navigation() {
       <Link to="/domains/chat" className="nav-link">
         Chat
       </Link>
+      <Link to="/infra" className="nav-link">
+        Infra
+      </Link>
       <span className="nav-separator">|</span>
       {renderDefaultNav()}
     </>
@@ -111,6 +115,9 @@ function Navigation() {
       <Link to="/domains/chat" className={`nav-link ${path === '/domains/chat' ? 'active' : ''}`}>
         Chat
       </Link>
+      <Link to="/infra" className={`nav-link ${isInfraPage ? 'active' : ''}`}>
+        Infra
+      </Link>
       <span className="nav-separator">|</span>
       {renderDefaultNav()}
     </>
@@ -131,6 +138,16 @@ function Navigation() {
             <>
               <span className="nav-separator">|</span>
               {renderDomainNav()}
+            </>
+          )}
+          {isInfraPage && (
+            <>
+              <span className="nav-separator">|</span>
+              <Link to="/portfolio/petory" className="nav-link brand">
+                ← Petory
+              </Link>
+              <span className="nav-separator">|</span>
+              {renderDefaultNav()}
             </>
           )}
           {(isDemoPage || isDocsPage) && (

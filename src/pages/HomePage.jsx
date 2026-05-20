@@ -59,6 +59,20 @@ function HomePage() {
               <span className="tech-badge">Redis</span>
             </div>
           </Link>
+          <Link
+            to="/infra"
+            className="project-card"
+          >
+            <h3>배포 &amp; 인프라</h3>
+            <p className="project-description">
+              Docker Compose 개발 환경 구성 및 GitHub Actions CI/CD 파이프라인
+            </p>
+            <div className="tech-stack-wrapper">
+              <span className="tech-badge">Docker</span>
+              <span className="tech-badge">GitHub Actions</span>
+              <span className="tech-badge">CI/CD</span>
+            </div>
+          </Link>
           </div>
       </section>
 

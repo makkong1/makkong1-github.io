@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import PetoryProjectPage from './pages/projects/petory/PetoryProjectPage';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
+import InfraPage from './pages/InfraPage';
 // 도메인 페이지들 (V2 — 현재 기본)
 // import UserDomain from './pages/projects/petory/domains/UserDomain';
 import UserDomainV2 from './pages/projects/petory/domains/UserDomainV2';
@@ -86,6 +87,9 @@ function App() {
             <Route path="/domains/chat/optimization" element={<ChatDomainOptimization />} />
             <Route path="/domains/chat/refactoring" element={<ChatDomainRefactoring />} />
             
+            {/* 배포 & 인프라 페이지 */}
+            <Route path="/infra" element={<InfraPage />} />
+
             {/* MCP 파일 링크 페이지 */}
             <Route path="/docs" element={<MCPFilesPage />} />
           </Routes>
