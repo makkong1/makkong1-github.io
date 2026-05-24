@@ -43,8 +43,10 @@ const PETORY_RECOMMEND_SERVICE =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/recommendation/service/RecommendService.java';
 const PETORY_RECOMMEND_CLIENT =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/recommendation/client/PetDataApiClient.java';
-const PET_DATA_API_RECOMMEND =
-  'https://github.com/makkong1/pet-data-api/blob/main/app/serving/api/recommend.py';
+const PET_DATA_API_POPULAR =
+  'https://github.com/makkong1/pet-data-api/blob/main/app/serving/api/popular.py';
+const PET_DATA_API_TRENDS =
+  'https://github.com/makkong1/pet-data-api/blob/main/app/serving/api/trends.py';
 
 function RecommendationDomainV2() {
   const sections = [
@@ -60,24 +62,19 @@ function RecommendationDomainV2() {
     '이중 타임아웃 설계',
     'request_id 세션 추적',
     'user_ref 익명화',
-    'pet-data-api 이중 파이프',
+    'pet-data-api 인기도 집계 API',
   ];
 
   const flowDiagram = `flowchart TD
     FE["Petory Frontend"]
-    RC["RecommendController\\nGET /api/recommend\\nPOST /api/recommend/copy\\nPOST /api/recommend/events\\nGET /api/recommend/trends/..."]
+    RC["RecommendController\\nGET /api/recommend\\nPOST /api/recommend/events"]
     RS["RecommendService\\nJWT userId 확보\\n첫 번째 펫 조회\\nradiusKm=10.0 · topN=5 조립"]
     PR["PetRepository\\nfindByUserIdAndNotDeleted\\n(없으면 pet 생략)"]
-    PC["PetDataApiClient\\nX-API-Key · X-Request-Id(UUID 16자)"]
+    PC["PetDataApiClient\\nX-API-Key · X-Request-Id(UUID 16자)\\n3s timeout"]
 
-    subgraph Clients["RestClient 분리"]
-        RC1["recommendClient\\n3s timeout"]
-        RC2["copyClient\\n35s timeout"]
-    end
-
-    subgraph PDA["pet-data-api"]
-        CP["Context pipe\\nENRICHED_CONTEXTS 9개\\nNaver blog + Kakao POI\\n5-signal ranking\\nversion={ctx}-mvp-v1"]
-        LP["Legacy pipe\\n공공DB top_n만\\nrule/LLM copy\\nversion=legacy"]
+    subgraph PDA["pet-data-api (인기도 집계 API)"]
+        POPULAR["GET /popular/:context\\nRedis 인기 상호\\nfreshness 스코어"]
+        TRENDS["GET /trends/:category\\nRedis 키워드 빈도"]
     end
 
     EV["POST /events\\n202 Accepted\\nfire-and-forget\\nuser_ref=petory-SHA256(12자)"]
@@ -86,10 +83,8 @@ function RecommendationDomainV2() {
     RC --> RS
     RS --> PR
     RS --> PC
-    PC --> RC1
-    PC --> RC2
-    RC1 -->|POST /recommend| CP & LP
-    RC2 -->|POST /recommend/copy| PDA
+    PC -->|GET /popular/:context| POPULAR
+    PC -->|GET /trends/:category| TRENDS
     RS -->|recordEvents| EV`;
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
@@ -207,10 +202,9 @@ function RecommendationDomainV2() {
                   {[
                     ['인증 · 사용자 식별', 'JWT → userId', 'API Key (X-API-Key)'],
                     ['반려 프로필 출처', 'MySQL Pet 테이블', '요청 JSON의 pet 필드'],
-                    ['시설 검색 · 랭킹', '❌', 'PostgreSQL + 5-signal 가중합'],
-                    ['트렌드', '❌', 'Redis Naver 집계'],
-                    ['추천 문구 생성', '❌', 'LLM → 규칙 기반 폴백'],
-                    ['추천 결과 영속', '❌ (프록시만)', 'persist_log async 기록'],
+                    ['트렌드 키워드', '❌', 'GET /trends — Redis Naver 블로그 집계'],
+                    ['인기 상호 랭킹', '❌', 'GET /popular — freshness 스코어 정규화'],
+                    ['추천 조립 · 응답', 'Petory BFF가 직접 담당', '데이터 제공만'],
                   ].map(([label, petory, api], i, arr) => (
                     <tr
                       key={label}
@@ -324,7 +318,7 @@ private RecommendRequest.PetInfo findPetInfo(String userId) {
                   fontSize: '1rem',
                 }}
               >
-                B. 이중 타임아웃 — UX와 장애 반경 분리
+                B. 타임아웃 설계 — 외부 API 장애 반경 제한
               </h3>
               <ul
                 style={{
@@ -335,27 +329,26 @@ private RecommendRequest.PetInfo findPetInfo(String userId) {
                   lineHeight: '1.8',
                 }}
               >
-                {li('recommendClient (3s) — 본 추천: 시설·트렌드 응답, UX 블로킹 최소화')}
-                {li('copyClient (35s) — LLM 추천 문구: 동기 대기를 분리해 본 추천 장애 전파 차단')}
-                {li('/recommend/copy 호출 시 서버가 DB에서 펫 정보를 다시 조회 — 클라이언트 조작 방지')}
-                {li('두 경로 타임아웃이 달라 LLM 지연이 시설 조회 응답에 영향을 주지 않음')}
+                {li('signalClient (3s) — pet-data-api 데이터 읽기(GET /popular, GET /trends)는 Redis 조회이므로 짧은 타임아웃으로 충분')}
+                {li('타임아웃 초과 시 사용자에게 5xx가 바로 전달됨 — Resilience4j 폴백 도입 여지')}
+                {li('pet-data-api가 Redis 미연결로 503을 반환하면 Petory도 5xx — readyz 체크 선행 필요')}
               </ul>
-              <CodeBlock>{`// PetDataApiClient — 이중 RestClient 초기화
+              <CodeBlock>{`// PetDataApiClient — 단일 RestClient (인기도 집계 API는 Redis 조회로 빠름)
 public PetDataApiClient(
         @Value("\${app.pet-data-api.base-url}") String baseUrl,
         @Value("\${app.pet-data-api.api-key}") String apiKey,
-        @Value("\${app.pet-data-api.timeout-ms:3000}") long timeoutMs,
-        @Value("\${app.pet-data-api.copy-timeout-ms:35000}") long copyTimeoutMs) {
+        @Value("\${app.pet-data-api.timeout-ms:3000}") long timeoutMs) {
 
-    this.recommendClient = buildClient(baseUrl, apiKey, timeoutMs);   // 3s
-    this.copyClient      = buildClient(baseUrl, apiKey, copyTimeoutMs); // 35s
+    this.signalClient = buildClient(baseUrl, apiKey, timeoutMs); // 3s
 }
 
-// /recommend/copy: 서버가 DB에서 펫 컨텍스트를 직접 재조립
-public RecommendCopyResponse recommendCopy(String userId, RecommendCopyRequest body) {
-    RecommendRequest.PetInfo petInfo = findPetInfo(userId); // 클라이언트 값 불신
-    RecommendCopyRequest enriched = body.toBuilder().pet(petInfo).build();
-    return copyClient.post().uri("/recommend/copy").body(enriched)...;
+public PopularResponse getPopular(String context, int limit) {
+    return signalClient.get()
+        .uri("/popular/{context}?limit={limit}", context, limit)
+        .header("X-API-Key", apiKey)
+        .header("X-Request-Id", newRequestId())
+        .retrieve()
+        .body(PopularResponse.class);
 }`}</CodeBlock>
             </Card>
 
@@ -461,7 +454,7 @@ public void recordEvents(String userId, RecommendEventRequest body) {
                   fontSize: '1rem',
                 }}
               >
-                E. pet-data-api 이중 파이프라인
+                E. pet-data-api — 인기도 집계 API 설계
               </h3>
               <ul
                 style={{
@@ -472,48 +465,38 @@ public void recordEvents(String userId, RecommendEventRequest body) {
                   lineHeight: '1.8',
                 }}
               >
-                {li('Context pipe: GROOMING_MVP_ENABLED + ENRICHED_CONTEXTS 9개 — grooming·hospital·supplies 등')}
-                {li('  공공DB 4배 여유 조회 → Naver 블로그 멘션 추출 → Kakao POI 보강 → 5-signal 2단계 랭킹')}
-                {li('  5 signals: distance · mention_count · pet_match · trend_match · interaction_history 가중합')}
-                {li('  version = "{context}-mvp-v1" (예: grooming-mvp-v1)')}
-                {li('Legacy pipe: 공공DB top_n만 조회, rule/LLM 카피, version = "legacy"')}
-                {li('/recommend/copy: LLM 생성 실패 시 규칙 기반 폴백, source 필드("llm"/"rule")로 구분')}
-                {li('persist_recommendation_log: async 기록 — 실패해도 응답에 영향 없음')}
+                {li('PostgreSQL·LLM·Kakao를 제거하고 Redis 단일 저장소로 재설계. 추천 엔진이 아닌 인기도 집계 API.')}
+                {li('GET /trends/{category}: 네이버 블로그 포스트를 kiwipiepy 형태소 분석 후 키워드 빈도를 Redis에 집계.')}
+                {li('GET /popular/{context}: 블로그 언급 상호명에 freshness 스코어(mention_count × max(0, 1 − age_days/180))를 적용해 정규화 후 Redis 적재.')}
+                {li('컨텍스트 9개: grooming · hospital · supplies · pharmacy · cafe · pension · restaurant · boarding · hotel')}
+                {li('APScheduler 18:00 트렌드 / 18:10 인기 배치. max_instances=1로 동시 실행 방지.')}
+                {li('키 누락(배치 미실행) 시 503 반환 — "데이터 없음"을 명확히 표현.')}
               </ul>
-              <CodeBlock>{`# pet-data-api serving/api/recommend.py (요약)
+              <CodeBlock>{`# pet-data-api serving/api/popular.py (요약)
 
-ENRICHED_CONTEXTS = {
+VALID_CONTEXTS = {
     "grooming","hospital","supplies","pharmacy",
     "cafe","pension","restaurant","boarding","hotel"
 }
 
-@router.post("/recommend")
-async def recommend(req: RecommendRequest):
-    if GROOMING_MVP_ENABLED and req.context in ENRICHED_CONTEXTS:
-        # Context pipe — 5-signal ranking
-        facilities = await get_nearby_facilities(req, top_n * 4)  # 4배 여유
+@router.get("/popular/{context}")
+async def get_popular(context: str, limit: int = 10, redis=Depends(get_redis)):
+    # 별칭 매핑: snack/food/clothes → supplies
+    resolved = ALIAS_MAP.get(context, context)
+    if resolved not in VALID_CONTEXTS:
+        raise HTTPException(status_code=422)
 
-        mentions  = await extract_context_mentions(...)   # Naver blog, 실패 시 []
-        kakao_map = await search_kakao_places(...)        # Kakao POI, 실패 시 {}
+    raw = await redis.get(f"popular:{resolved}")
+    if raw is None:
+        raise HTTPException(status_code=503, detail="batch not run yet")
 
-        ranked = rank_grooming_facilities(facilities, mentions, kakao_map) # 1차
-        ranked = rank_facilities(ranked, SignalContext(req, mentions, trends)) # 2차 (5-signal)
+    items = json.loads(raw)
+    return items[:limit]
 
-        copy    = build_context_copy(req.context, ranked, trends)
-        version = f"{req.context}-mvp-v1"
-    else:
-        # Legacy pipe
-        facilities = await get_nearby_facilities(req, req.top_n)
-        copy    = build_copy_llm_or_rule(...)  # LLM → rule fallback
-        version = "legacy"
-
-    asyncio.create_task(persist_recommendation_log(...))  # 비동기, 실패 무관
-
-    return RecommendResponse(
-        request_id=req.request_id, recommend_version=version,
-        facilities=ranked, trends=trends,
-        recommendation=copy, generated_at=now()
-    )`}</CodeBlock>
+# freshness 스코어 (ingestion/blog.py)
+freshness_weight = max(0, 1 - age_days / 180)
+raw_score = mention_count * avg_freshness
+score = raw_score / max(raw_scores)  # 최댓값 정규화`}</CodeBlock>
             </Card>
           </section>
 
@@ -538,13 +521,13 @@ async def recommend(req: RecommendRequest):
                   '단일 펫만 매핑: 다반려 가구는 항상 첫 번째 펫만 반영 — 선택 UI + 백엔드 계약 확장 여지'
                 )}
                 {li(
-                  '외부 장애 = 사용자 5xx: 본 추천·카피 실패 시 Resilience4j 폴백 없음 — 서킷 브레이커 도입 여지'
+                  '외부 장애 = 사용자 5xx: pet-data-api 호출 실패 시 Resilience4j 폴백 없음 — 서킷 브레이커 도입 여지'
                 )}
                 {li(
-                  'context 문자열 계약: 프론트·pet-data-api·기획 간 ENRICHED_CONTEXTS 동기화 필요 — 타입 안전 계약 관리 필요'
+                  'context 문자열 계약: 프론트·pet-data-api의 VALID_CONTEXTS 9개를 동기화해야 함 — 타입 안전 계약 관리 필요'
                 )}
                 {li(
-                  'Location 도메인 중복: "주변 서비스 추천" 목적이 겹침 — pet-data-api 안정화 후 Location 경로 통합 또는 제거 예정'
+                  'pet-data-api는 집계 데이터만 제공: 추천 조립(시설 선택, 메시지 생성)은 Petory BFF가 직접 담당해야 함'
                 )}
               </ul>
             </Card>
@@ -594,14 +577,26 @@ async def recommend(req: RecommendRequest):
                 <li>
                   •{' '}
                   <a
-                    href={PET_DATA_API_RECOMMEND}
+                    href={PET_DATA_API_POPULAR}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    pet-data-api recommend.py
+                    pet-data-api popular.py
                   </a>
-                  {' — Context pipe / Legacy pipe 이중 파이프라인'}
+                  {' — GET /popular/{context} freshness 스코어링'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PET_DATA_API_TRENDS}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    pet-data-api trends.py
+                  </a>
+                  {' — GET /trends/{category} Redis 키워드 조회'}
                 </li>
                 <li>
                   •{' '}
@@ -609,9 +604,9 @@ async def recommend(req: RecommendRequest):
                     to="/domains/recommendation/pet-data-api"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    pet-data-api 연동 요약 페이지
+                    pet-data-api 포트폴리오 페이지
                   </Link>
-                  {' — 수집·서빙 흐름, Petory BFF 역할 포트폴리오 정리'}
+                  {' — 수집 파이프라인·아키텍처·기술 판단 상세'}
                 </li>
                 <li>
                   •{' '}

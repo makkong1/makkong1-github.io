@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import MermaidDiagram from '../components/Common/MermaidDiagram';
 import TableOfContents from '../components/Common/TableOfContents';
 
@@ -20,63 +19,43 @@ function Card({ children, style }) {
 }
 
 const PET_DATA_API_GITHUB = 'https://github.com/makkong1/pet-data-api';
-const PETORY_RECOMMEND_CLIENT =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/recommendation/client/PetDataApiClient.java';
 
 function PetDataApiPage() {
   const sections = [
     { id: 'pillars', title: '핵심 기능' },
     { id: 'why', title: '왜 분리했는가' },
-    { id: 'data', title: '어떤 데이터를' },
+    { id: 'signals', title: '두 가지 신호' },
     { id: 'architecture', title: '아키텍처 흐름' },
     { id: 'tech', title: '기술 판단' },
-    { id: 'integration', title: 'Petory 연동' },
+    { id: 'api', title: 'API 엔드포인트' },
     { id: 'scope', title: '현재 범위' },
-    { id: 'learned', title: '얻은 점' },
+    // { id: 'learned', title: '얻은 점' }, // TODO: 직접 작성 후 활성화
   ];
 
   const corePillars = [
-    '공공데이터 수집 파이프라인',
-    '네이버 블로그 트렌드 집계',
-    'LLM 추천 문구 생성',
-    'Petory BFF 연동',
-    '지오코딩 보강',
-    'Redis 트렌드 캐시',
+    '네이버 블로그 배치 수집',
+    '형태소 분석 (kiwipiepy)',
+    'freshness 스코어링',
+    'Naver 로컬 위치 보강',
+    'Redis 단일 저장소',
+    'APScheduler 배치',
   ];
 
   const pipelineDiagram = `flowchart TD
-    OPEN["행안부 공공 API\\n반려동물 시설 데이터"] -->|수집| COL1["수집기\\nFastAPI background task"]
-    COL1 -->|좌표 없는 시설 지오코딩| POSTGRES[(PostgreSQL\\n시설 테이블)]
+    NAVER_BLOG["네이버 블로그 API\\n카테고리별 포스트 수집"]
+    NAVER_LOCAL["네이버 로컬 API\\n상호 위치 보강"]
+    SCHED["APScheduler\\n18:00 트렌드 / 18:10 인기"]
+    ADMIN["POST /collect/trigger\\n관리자 X-API-Key"]
 
-    NAVER["네이버 블로그 API\\n카테고리별 포스트"] -->|수집| COL2["수집기 + 형태소 분석"]
-    COL2 -->|키워드 빈도 적재| REDIS[(Redis\\nSorted Set)]
+    SCHED -->|스케줄 실행| NAVER_BLOG
+    ADMIN -->|수동 트리거| NAVER_BLOG
 
-    subgraph Serving["API 서빙"]
-        API["POST /recommend"]
-        API --> Q1["시설 조회\\nHaversine 반경 검색"]
-        API --> Q2["트렌드 조회\\nSorted Set top-k"]
-        Q1 & Q2 --> GUARD{"주변 시설\\n있음?"}
-        GUARD -->|없음| SKIP["LLM 생략\\n빈 추천 반환"]
-        GUARD -->|있음| LLM["Ollama\\n추천 문구 생성"]
-        LLM --> RESP["추천 JSON 응답"]
-    end
+    NAVER_BLOG -->|"형태소 분석 · 빈도 집계"| REDIS_T[("Redis\\ntrends:{category}\\nTTL 25h")]
+    NAVER_BLOG -->|"상호명 추출 · freshness 스코어"| REDIS_P[("Redis\\npopular:{context}\\nTTL 25h")]
+    NAVER_LOCAL -->|위치 정보 보강| REDIS_P
 
-    POSTGRES --> Q1
-    REDIS --> Q2
-    PETORY["Petory Backend\\nRecommendService"] -->|"위치 · 펫 정보 · context"| API
-    RESP --> PETORY`;
-
-  const integrationDiagram = `sequenceDiagram
-    participant FE as Petory Frontend
-    participant BE as Petory Backend
-    participant PDA as pet-data-api
-
-    FE->>BE: GET /api/recommend (lat, lng, context)
-    BE->>BE: JWT에서 userId 확보, 첫 번째 펫 조회
-    BE->>PDA: POST /recommend (위치·펫·context 조립)
-    PDA->>PDA: 시설 조회 + 트렌드 + LLM
-    PDA-->>BE: 추천 JSON (시설 후보, 트렌드, 문구)
-    BE-->>FE: 추천 응답 전달`;
+    REDIS_T --> T_API["GET /trends/{category}\\n키워드 빈도 순위"]
+    REDIS_P --> P_API["GET /popular/{context}\\n인기 상호 JSON 배열"]`;
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
@@ -97,20 +76,7 @@ function PetDataApiPage() {
               marginBottom: '0.6rem',
             }}
           >
-            <Link
-              to="/portfolio/petory"
-              style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-            >
-              Petory
-            </Link>
-            {' › '}
-            <Link
-              to="/domains/recommendation"
-              style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-            >
-              Recommendation
-            </Link>
-            {' › '}데이터·추천 파이프 요약 페이지
+            반려동물 인기도 인텔리전스 API — Python / FastAPI · Redis · APScheduler
           </p>
           <p
             style={{
@@ -120,12 +86,12 @@ function PetDataApiPage() {
               fontSize: '0.95rem',
             }}
           >
-            Petory의 위치·콘텐츠 데이터를 보강하기 위해 분리한 Python 기반
-            수집·추천 서버입니다. Java 서비스 서버와 Python 데이터 파이프라인을
-            같은 리포에서 관리하기 어렵다는 현실적인 이유로 분리했고, 수집
-            실패나 외부 API 지연이 Petory 응답에 영향을 주지 않는 구조를
-            목표로 했습니다. 현재는 공공데이터 수집·조회·추천 파이프라인의
-            가능성을 검증한 단계입니다.
+            네이버 블로그 언급을 주기적으로 수집해 형태소 분석과 freshness
+            스코어링으로 정제한 뒤 Redis에 집계하고, <strong>트렌드 키워드</strong>와{' '}
+            <strong>인기 상호</strong> 두 가지 신호를 REST API로 제공하는 서비스입니다.
+            PostgreSQL 없이 Redis 단일 저장소만으로 배치 집계와 빠른 읽기 API를
+            분리한 구조로, Petory 등 외부 서비스가 소비 가능한 블로그 기반 신호
+            원천 API 역할을 합니다.
           </p>
 
           {/* 핵심 기능 */}
@@ -170,24 +136,37 @@ function PetDataApiPage() {
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
               왜 분리했는가
             </h2>
+            <p
+              style={{
+                color: 'var(--text-secondary)',
+                fontSize: '0.92rem',
+                lineHeight: '1.75',
+                marginTop: '-0.35rem',
+                marginBottom: '1rem',
+              }}
+            >
+              수집·집계 파이프라인과 사용자 응답 경로를 같은 서버에 두면 외부 API
+              지연이 직접 사용자에게 번집니다. 세 축으로 분리했습니다.
+            </p>
             <div
-              style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '1rem',
+              }}
             >
               {[
                 {
-                  title: '언어 분리',
-                  desc:
-                    'Java Spring Boot 서버에 Python 코드를 함께 두면 빌드·의존성·IDE 설정이 복잡해집니다. 언어별로 리포를 나눠 각자의 생태계에서 관리하는 방향을 선택했습니다.',
+                  title: '배치와 서빙 분리',
+                  desc: '네이버 블로그 수집과 형태소 집계는 배치 전용 경로에서만 실행됩니다. API 읽기 경로는 Redis 조회만 하므로 수집 실패나 네이버 API 지연이 읽기 응답에 영향을 주지 않습니다.',
                 },
                 {
-                  title: '수집 파이프라인 격리',
-                  desc:
-                    '배치 수집 작업이 실패하거나 외부 API(공공데이터, 네이버)가 느려져도 Petory 서비스 응답에 영향이 없어야 합니다. 수집 책임을 별도 서버로 격리했습니다.',
+                  title: '스택·생태계 분리',
+                  desc: 'Petory(Spring/Java)와 배포·의존성 주기가 달라 한 레포에 묶기 어렵습니다. Python 파이프라인 생태계(kiwipiepy, httpx, APScheduler)를 그대로 활용합니다.',
                 },
                 {
-                  title: '저장소 분리',
-                  desc:
-                    '수집 데이터는 PostgreSQL에 적재하고 Petory MySQL과 분리합니다. 데이터 정제 후 읽기 API에서만 활용해 서비스 DB에 직접 쓰는 부담을 없앴습니다.',
+                  title: '저장소 단순화',
+                  desc: 'PostgreSQL 없이 Redis 단일 저장소만 사용합니다. 배치가 TTL 25h Redis 키를 갱신하고, API는 이를 읽기만 합니다. 키 누락 시 503을 반환해 "데이터 없음"을 명확히 표현합니다.',
                 },
               ].map((item) => (
                 <Card key={item.title}>
@@ -216,13 +195,13 @@ function PetDataApiPage() {
             </div>
           </section>
 
-          {/* 어떤 데이터를 묶었는가 */}
+          {/* 두 가지 신호 */}
           <section
-            id="data"
+            id="signals"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              어떤 데이터를 묶었는가
+              두 가지 신호
             </h2>
             <Card>
               <table
@@ -235,7 +214,7 @@ function PetDataApiPage() {
               >
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                    {['데이터 원천', '처리 방식', '역할'].map((h) => (
+                    {['신호', '수집 방식', '정제', 'API'].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -252,30 +231,43 @@ function PetDataApiPage() {
                 <tbody>
                   {[
                     [
-                      '행안부 공공 API',
-                      '수집 → 지오코딩 → PostgreSQL 적재',
-                      '전국 반려동물 관련 시설 정보',
+                      '트렌드 키워드',
+                      '네이버 블로그 카테고리별 포스트',
+                      'kiwipiepy 형태소 분석 · 빈도 집계 · stopwords 제거',
+                      'GET /trends/{category}',
                     ],
                     [
-                      '네이버 블로그 API',
-                      '수집 → 형태소 분석 → Redis Sorted Set',
-                      '카테고리별 트렌드 키워드 집계',
+                      '인기 상호',
+                      '네이버 블로그 언급 + 로컬 검색 위치 보강',
+                      'PREFIX 노이즈 제거 · blocklist · freshness 스코어 정규화',
+                      'GET /popular/{context}',
                     ],
-                    [
-                      'Ollama (로컬 LLM)',
-                      '시설 후보 + 트렌드 + 위치 조합 → 문구 생성',
-                      '사용자 맞춤 추천 문구',
-                    ],
-                  ].map(([src, proc, role]) => (
+                  ].map(([signal, collect, refine, api]) => (
                     <tr
-                      key={src}
+                      key={signal}
                       style={{ borderBottom: '1px solid var(--nav-border)' }}
                     >
-                      <td style={{ padding: '0.55rem 0.75rem', fontWeight: 500, color: 'var(--text-color)' }}>
-                        {src}
+                      <td
+                        style={{
+                          padding: '0.55rem 0.75rem',
+                          fontWeight: 500,
+                          color: 'var(--text-color)',
+                        }}
+                      >
+                        {signal}
                       </td>
-                      <td style={{ padding: '0.55rem 0.75rem' }}>{proc}</td>
-                      <td style={{ padding: '0.55rem 0.75rem' }}>{role}</td>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>{collect}</td>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>{refine}</td>
+                      <td
+                        style={{
+                          padding: '0.55rem 0.75rem',
+                          fontFamily: 'monospace',
+                          fontSize: '0.82rem',
+                          color: 'var(--text-color)',
+                        }}
+                      >
+                        {api}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -307,24 +299,20 @@ function PetDataApiPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
               {[
                 {
-                  title: 'Redis Sorted Set — 트렌드 캐시',
-                  desc:
-                    '네이버 블로그 키워드 빈도를 매번 집계하지 않고, 수집 시 Sorted Set에 score로 적재합니다. ZREVRANGE로 top-k를 O(log n)에 꺼낼 수 있어 API 응답 지연을 줄였습니다.',
+                  title: 'freshness 스코어링',
+                  desc: '게시물 작성 시점 기반으로 freshness_weight = max(0, 1 − age_days/180)를 mention_count에 곱해 raw_score를 산출하고 최댓값으로 정규화합니다. 오래된 언급이 많아도 최신 상호보다 높게 랭킹되지 않습니다.',
                 },
                 {
-                  title: 'Haversine 반경 검색',
-                  desc:
-                    '사용자 위치에서 반경 N km 내 시설을 필터링할 때 지구 곡률을 반영한 Haversine 공식을 사용합니다. PostgreSQL 쿼리 레벨에서 계산해 앱 레이어 필터링을 없앴습니다.',
+                  title: 'Redis TTL 25h — 배치 전용 쓰기',
+                  desc: 'API 읽기 경로는 Redis 조회만 합니다. 배치가 TTL 25h로 키를 갱신하므로 하루 배치가 다소 늦어도 이전 데이터를 유지합니다. 키 자체가 없으면 503을 반환해 배치 미실행 상태를 명확히 드러냅니다.',
                 },
                 {
-                  title: 'LLM 호출 가드',
-                  desc:
-                    '주변 시설이 하나도 없으면 LLM을 호출하지 않고 빈 추천을 바로 반환합니다. 의미 없는 LLM 호출 비용을 줄이고 응답 시간을 단축합니다.',
+                  title: 'APScheduler max_instances=1',
+                  desc: '18:00 트렌드, 18:10 인기 배치를 각각 실행합니다. max_instances=1로 이전 실행이 끝나기 전에 다음 실행이 겹치지 않도록 막아 Redis 쓰기 충돌을 예방합니다.',
                 },
                 {
-                  title: '지오코딩 보강',
-                  desc:
-                    '공공데이터 중 좌표 정보가 없는 시설은 수집 시점에 지오코딩 API를 통해 좌표를 보강합니다. 조회 시점이 아닌 적재 시점에 처리해 서빙 레이턴시를 고정합니다.',
+                  title: '형태소 분석 노이즈 제거',
+                  desc: 'kiwipiepy로 명사만 추출 후 stopwords 필터와 PREFIX 패턴 blocklist를 적용합니다. 블로그 특성상 광고성 단어나 업체명 패턴이 많아 쿼리 확장과 stopwords 강화를 반복 개선했습니다.',
                 },
               ].map((item) => (
                 <Card key={item.title}>
@@ -352,33 +340,89 @@ function PetDataApiPage() {
             </div>
           </section>
 
-          {/* Petory 연동 방식 */}
+          {/* API 엔드포인트 */}
           <section
-            id="integration"
+            id="api"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              Petory 연동 방식
+              API 엔드포인트
             </h2>
-            <Card style={{ marginBottom: '1rem' }}>
-              <MermaidDiagram chart={integrationDiagram} />
-            </Card>
             <Card>
-              <ul style={{ margin: 0, paddingLeft: '0.5rem', listStyle: 'none' }}>
-                {li('Petory Frontend에서 현재 위치(lat/lng)와 화면 context를 Backend로 전달합니다.')}
-                {li('Petory Backend의 RecommendService가 JWT에서 userId를 확보하고 첫 번째 펫 정보를 조회한 뒤, pet-data-api에 추천 요청을 조립합니다.')}
-                {li('pet-data-api는 시설 후보, 트렌드 키워드, 추천 문구를 JSON으로 반환합니다.')}
-                {li('Petory Backend는 이 응답을 그대로 클라이언트에 전달합니다 (BFF 패턴).')}
-              </ul>
-              <p style={{ marginTop: '0.75rem', marginBottom: 0 }}>
-                <a
-                  href={PETORY_RECOMMEND_CLIENT}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  style={{ color: 'var(--link-color)', fontSize: '0.88rem' }}
-                >
-                  → PetDataApiClient.java 코드 보기
-                </a>
+              <table
+                style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.9rem',
+                  color: 'var(--text-secondary)',
+                }}
+              >
+                <thead>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    {['메서드', '경로', '인증', '설명'].map((h) => (
+                      <th
+                        key={h}
+                        style={{
+                          padding: '0.55rem 0.75rem',
+                          textAlign: 'left',
+                          color: 'var(--text-color)',
+                        }}
+                      >
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    ['GET', '/healthz', '없음', 'Liveness'],
+                    ['GET', '/readyz', '없음', 'Redis ping readiness'],
+                    ['GET', '/trends/{category}', 'X-API-Key', '카테고리별 키워드 빈도 순위'],
+                    ['GET', '/popular/{context}', 'X-API-Key', '컨텍스트별 인기 상호 JSON'],
+                    ['POST', '/collect/trigger', '관리자 X-API-Key', '{"targets":["trends","popular"]} 수동 수집'],
+                  ].map(([method, path, auth, desc]) => (
+                    <tr
+                      key={path}
+                      style={{ borderBottom: '1px solid var(--nav-border)' }}
+                    >
+                      <td
+                        style={{
+                          padding: '0.55rem 0.75rem',
+                          fontWeight: 600,
+                          color: 'var(--text-color)',
+                          fontFamily: 'monospace',
+                          fontSize: '0.82rem',
+                        }}
+                      >
+                        {method}
+                      </td>
+                      <td
+                        style={{
+                          padding: '0.55rem 0.75rem',
+                          fontFamily: 'monospace',
+                          fontSize: '0.82rem',
+                        }}
+                      >
+                        {path}
+                      </td>
+                      <td style={{ padding: '0.55rem 0.75rem', fontSize: '0.85rem' }}>
+                        {auth}
+                      </td>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>{desc}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p
+                style={{
+                  marginTop: '1rem',
+                  marginBottom: 0,
+                  fontSize: '0.85rem',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                인기 컨텍스트 9개: grooming · hospital · supplies · pharmacy · cafe ·
+                pension · restaurant · boarding · hotel
               </p>
             </Card>
           </section>
@@ -393,15 +437,15 @@ function PetDataApiPage() {
             </h2>
             <Card>
               <ul style={{ margin: 0, paddingLeft: '0.5rem', listStyle: 'none' }}>
-                {li('운영 서버 완전 연동보다는 데이터 적재·조회·추천 파이프라인의 가능성을 검증하는 단계입니다.')}
-                {li('공공데이터 소스 특성상 일부 카테고리는 좌표 누락이 많아 지오코딩 보강 커버리지에 한계가 있습니다.')}
-                {li('LLM 추천 품질은 Ollama 모델 성능 외에도 입력 신호(시설 후보 수, 트렌드 키워드 질)의 영향을 크게 받습니다.')}
-                {li('현재 트렌드 데이터는 네이버 블로그만 사용하며, 추가 소스 연동은 검토 단계입니다.')}
+                {li('추천 엔진이 아닙니다. 트렌드 키워드와 인기 상호 데이터를 제공하며, 이를 어떻게 활용할지는 Petory 등 이 API를 호출하는 쪽에서 결정합니다.')}
+                {li('수집 주기는 하루 1회 배치입니다. 실시간 트렌드 변화는 반영되지 않습니다.')}
+                {li('데이터 원천은 네이버 블로그 한정입니다. 블로그 특성상 광고성 포스트가 집계 결과를 왜곡할 수 있습니다.')}
+                {li('배치 미실행 상태(Redis 키 없음)면 503을 반환합니다. 최초 API 호출 전에 수집이 먼저 필요합니다.')}
               </ul>
             </Card>
           </section>
 
-          {/* 얻은 점 */}
+          {/* 얻은 점 — TODO: 직접 작성 필요 (본인이 느낀 점으로 채울 것)
           <section
             id="learned"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
@@ -411,13 +455,14 @@ function PetDataApiPage() {
             </h2>
             <Card>
               <ul style={{ margin: 0, paddingLeft: '0.5rem', listStyle: 'none' }}>
-                {li('서비스 언어(Java)와 데이터 파이프라인 언어(Python)를 분리할 때 각자의 생태계를 살릴 수 있다는 점을 실감했습니다.')}
-                {li('배치 수집과 API 서빙은 실패 양상과 응답 시간 특성이 달라, 같은 서버에 두면 서로의 부하가 영향을 줍니다.')}
-                {li('추천 품질은 모델 자체보다 입력 신호 설계와 폴백 전략(시설 없을 때 LLM 생략)이 실용적으로 더 중요했습니다.')}
-                {li('데이터를 수집 즉시 서빙에 쓰기보다 적재 후 정제해서 읽기 API에서만 활용하면 서빙 레이턴시가 일정하게 유지됩니다.')}
+                {li('배치 전용 쓰기와 Redis 전용 읽기를 분리하면 수집 지연이 API 응답에 영향을 주지 않음을 실감했습니다.')}
+                {li('형태소 분석 결과의 노이즈(광고성 단어, 업체명 패턴)는 단순 stopwords로 부족하고, 쿼리 확장과 blocklist 반복 개선이 필요했습니다.')}
+                {li('freshness 스코어를 최댓값으로 정규화하지 않으면 컨텍스트마다 절대값이 달라 랭킹 비교가 무의미해집니다.')}
+                {li('Redis TTL을 배치 주기보다 조금 길게 설정하면 배치가 늦어도 이전 데이터로 응답을 유지할 수 있습니다.')}
               </ul>
             </Card>
           </section>
+          */}
 
           {/* 관련 링크 */}
           <section
@@ -428,7 +473,14 @@ function PetDataApiPage() {
               관련 링크
             </h2>
             <Card>
-              <ul style={{ margin: 0, paddingLeft: '0.5rem', listStyle: 'none', lineHeight: '2' }}>
+              <ul
+                style={{
+                  margin: 0,
+                  paddingLeft: '0.5rem',
+                  listStyle: 'none',
+                  lineHeight: '2',
+                }}
+              >
                 <li>
                   <a
                     href={PET_DATA_API_GITHUB}
@@ -437,16 +489,6 @@ function PetDataApiPage() {
                     style={{ color: 'var(--link-color)' }}
                   >
                     → pet-data-api GitHub
-                  </a>
-                </li>
-                <li>
-                  <a
-                    href={PETORY_RECOMMEND_CLIENT}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)' }}
-                  >
-                    → Petory PetDataApiClient.java
                   </a>
                 </li>
               </ul>
