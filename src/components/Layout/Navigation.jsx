@@ -76,6 +76,9 @@ function Navigation() {
       <Link to="/domains/chat" className="nav-link">
         Chat
       </Link>
+      <Link to="/domains/flows" className="nav-link">
+        Flows
+      </Link>
       <Link to="/infra" className="nav-link">
         Infra
       </Link>
@@ -114,6 +117,12 @@ function Navigation() {
       </Link>
       <Link to="/domains/chat" className={`nav-link ${path === '/domains/chat' ? 'active' : ''}`}>
         Chat
+      </Link>
+      <Link
+        to="/domains/flows"
+        className={`nav-link ${path === '/domains/flows' ? 'active' : ''}`}
+      >
+        Flows
       </Link>
       <Link to="/infra" className={`nav-link ${isInfraPage ? 'active' : ''}`}>
         Infra

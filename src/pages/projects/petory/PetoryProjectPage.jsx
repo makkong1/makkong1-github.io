@@ -9,6 +9,7 @@ function PetoryProjectPage() {
     { id: 'achievements', title: '핵심 성과' },
     { id: 'why', title: '왜 이걸 했는가' },
     { id: 'architecture', title: '아키텍처' },
+    { id: 'sequence-flows', title: '데이터 흐름 시퀀스' },
     { id: 'problem-solving', title: '문제 해결 사례' },
     { id: 'features', title: '주요 기능' },
     { id: 'tech-stack', title: '기술 스택' },
@@ -323,6 +324,27 @@ function PetoryProjectPage() {
             />
           </div>
         </div>
+            </div>
+          </section>
+
+          <section
+            id="sequence-flows"
+            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
+          >
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
+              데이터 흐름 시퀀스
+            </h2>
+            <div className="content-card">
+              <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                도메인 V2 페이지의 시퀀스 다이어그램은 한 페이지에 모아 중복을 없앴습니다. Chat 연계
+                흐름은 Care·Missing Pet·Meetup 축별로 같은 파일에서 나란히 비교할 수 있습니다.
+              </p>
+              <Link
+                to="/domains/flows"
+                style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}
+              >
+                통합 시퀀스 보기 →
+              </Link>
             </div>
           </section>
 

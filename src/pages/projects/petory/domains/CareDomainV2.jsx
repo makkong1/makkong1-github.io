@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function Card({ children, style }) {
@@ -62,37 +61,6 @@ function CareDomainV2() {
     '처리 경로 일원화',
     '위치 기반 조회',
   ];
-
-  const flowDiagram = `flowchart LR
-    U1["요청자"]
-    U2["제공자"]
-
-    subgraph Care["Care 도메인"]
-        CR["CareRequest\n케어 요청"]
-        CA["CareApplication\n지원 승인 또는 생성"]
-        CP["COMPLETED·CANCELLED\n완료·취소 상태"]
-        RV["CareReview\n리뷰 (ACCEPTED 기준)"]
-    end
-
-    subgraph Chat["Chat 도메인"]
-        CH["Conversation\n채팅방"]
-        DC["거래 확정\n비관적 락"]
-    end
-
-    subgraph Payment["Payment 도메인"]
-        ES["PetCoinEscrow\n에스크로 생성 시도"]
-        PAY["지급·환불\n코인 이동"]
-    end
-
-    U1 --> CR
-    U2 --> CH
-    CR --> CH
-    CH --> DC
-    DC --> CA
-    DC --> ES
-    CA --> RV
-    ES --> CP
-    CP --> PAY`;
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
@@ -312,14 +280,46 @@ function CareDomainV2() {
             <Card>
               <h3
                 style={{
-                  marginBottom: '0.75rem',
+                  marginBottom: '0.65rem',
                   color: 'var(--text-color)',
                   fontSize: '1rem',
                 }}
               >
                 데이터 흐름
               </h3>
-              <MermaidDiagram chart={flowDiagram} />
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.75',
+                  margin: '0 0 0.65rem',
+                }}
+              >
+                시퀀스 다이어그램은 도메인별로 두지 않고 통합 페이지에만 있습니다. Care 비즈 플로우와
+                Chat 인프라(방 생성 후 메시지)는 각각 다른 절에 있습니다.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-start' }}>
+                <Link
+                  to="/domains/flows?tab=care"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Care · 요청·채팅·결제 시퀀스 →
+                </Link>
+                <Link
+                  to="/domains/flows?tab=care&seq=chat"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Chat ↔ Care (방·메시지·읽음) 시퀀스 →
+                </Link>
+              </div>
             </Card>
           </section>
 

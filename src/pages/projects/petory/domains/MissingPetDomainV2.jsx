@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function Card({ children, style }) {
@@ -60,35 +59,6 @@ function MissingPetDomainV2() {
     '관리자 DB 필터링',
     '서비스 레이어 권한 검증',
   ];
-
-  const flowDiagram = `flowchart LR
-    RP["제보자"]
-    WI["목격자"]
-
-    subgraph MP["MissingPet 도메인 (domain/board)"]
-        MB["MissingPetBoard\\n실종 제보"]
-        MC["MissingPetComment\\n목격 댓글"]
-    end
-
-    subgraph Chat["Chat 도메인"]
-        CH["Conversation\\n채팅방"]
-    end
-
-    subgraph Notif["Notification 도메인"]
-        N["Notification\\n알림"]
-    end
-
-    subgraph File["File 도메인"]
-        F["AttachmentFile\\n첨부파일"]
-    end
-
-    RP --> MB
-    WI --> MC
-    MC --> N
-    MB --> F
-    MC --> F
-    WI -->|목격했어요| CH
-    MB -->|작성자 ID 조회| CH`;
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
@@ -259,14 +229,46 @@ function MissingPetDomainV2() {
             <Card>
               <h3
                 style={{
-                  marginBottom: '0.75rem',
+                  marginBottom: '0.65rem',
                   color: 'var(--text-color)',
                   fontSize: '1rem',
                 }}
               >
                 데이터 흐름
               </h3>
-              <MermaidDiagram chart={flowDiagram} />
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.75',
+                  margin: '0 0 0.65rem',
+                }}
+              >
+                시퀀스 다이어그램은 도메인별로 두지 않고 통합 페이지에만 있습니다. 제보·채팅 연결과 Chat
+                인프라는 각각 다른 절에 있습니다.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-start' }}>
+                <Link
+                  to="/domains/flows?tab=missing-pet"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Missing Pet · 제보·댓글·채팅 시퀀스 →
+                </Link>
+                <Link
+                  to="/domains/flows?tab=missing-pet&seq=chat"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Chat ↔ Missing Pet (방·메시지·읽음) 시퀀스 →
+                </Link>
+              </div>
             </Card>
           </section>
 

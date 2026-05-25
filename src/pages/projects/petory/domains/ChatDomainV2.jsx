@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function Card({ children, style }) {
@@ -53,6 +52,8 @@ function ChatDomainV2() {
     { id: 'docs', title: '관련 페이지' },
   ];
 
+  const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
+
   const corePillars = [
     '채팅 생성 규칙 중앙화',
     'unread count 원자적 갱신',
@@ -60,32 +61,6 @@ function ChatDomainV2() {
     '재참여 메시지 제한',
     '참여자 N+1 개선',
   ];
-
-  const flowDiagram = `flowchart TD
-    subgraph Domains["타 도메인에서 채팅 생성"]
-        CR["Care\\nCARE\\_REQUEST 채팅"]
-        MP["Missing Pet\\n목격자-제보자 채팅"]
-        MT["Meetup\\n그룹 채팅"]
-    end
-
-    CC["ConversationCreatorService\\nREQUIRES\\_NEW\\n생성 · DIRECT 재사용 · 참여자 검증"]
-    CP["ConversationParticipant\\nunreadCount · joinedAt · lastReadMessage"]
-
-    subgraph Msg["메시지 흐름"]
-        SM["sendMessage"]
-        IU["incrementUnreadCount\\nUPDATE count+1\\nWHERE idx != sender AND ACTIVE"]
-        GM["getMessages\\n재참여 시 joinedAt 이후만"]
-        MR["markAsRead\\nunreadCount=0 · lastReadMessage 갱신"]
-    end
-
-    CR & MP & MT -->|relatedType + relatedIdx| CC
-    CC --> CP
-    SM --> IU
-    IU --> CP
-    GM -->|joinedAt 기준 분기| CP
-    MR --> CP`;
-
-  const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
@@ -251,14 +226,66 @@ function ChatDomainV2() {
             <Card>
               <h3
                 style={{
-                  marginBottom: '0.75rem',
+                  marginBottom: '0.65rem',
                   color: 'var(--text-color)',
                   fontSize: '1rem',
                 }}
               >
                 데이터 흐름
               </h3>
-              <MermaidDiagram chart={flowDiagram} />
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.75',
+                  margin: '0 0 0.65rem',
+                }}
+              >
+                Care·Missing Pet·Meetup 연계 플로우는 통합 페이지에 모아 두었습니다. 같은
+                패턴(unread·읽음·재참여)을 세 축에서 나란히 볼 수 있습니다.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-start' }}>
+                <Link
+                  to="/domains/flows?tab=chat&seq=care"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Chat ↔ Care 시퀀스 →
+                </Link>
+                <Link
+                  to="/domains/flows?tab=chat&seq=missingpet"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Chat ↔ Missing Pet 시퀀스 →
+                </Link>
+                <Link
+                  to="/domains/flows?tab=chat&seq=meetup"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Chat ↔ Meetup 시퀀스 →
+                </Link>
+                <Link
+                  to="/domains/flows"
+                  style={{
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.82rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  전체 플로우 목록 보기 →
+                </Link>
+              </div>
             </Card>
           </section>
 

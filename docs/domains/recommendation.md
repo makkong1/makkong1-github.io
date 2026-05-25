@@ -4,15 +4,24 @@
 
 ### 1.1 역할
 
-Petory 백엔드는 **추천 점수·트렌드·시설 후보**를 직접 계산하지 않고, 별도 서비스인 **Pet Data API**에 위치·맥락·(선택) 반려동물 프로필을 전달한 뒤, 그 JSON 응답을 그대로 클라이언트에 전달하는 **BFF(프록시) 역할**을 합니다.
+Petory 백엔드는 이제 모든 컨텍스트를 외부 추천 서버에 그대로 프록시하지 않습니다.
+
+- **Track A (`grooming`, `hospital`, `pharmacy`, `cafe`, `restaurant`, `pension`, `boarding`, `hotel`)**
+  - Petory가 `LocationService` 구조화 저장소에서 **nearby 후보를 직접 조회**
+  - `pet-data-api`에서는 **`popular` / `trends` 시그널만 조회**
+  - 최종 조합과 정렬, 응답 DTO 조립은 **Petory 서비스 레이어**가 담당
+  - 시설 데이터는 Python batch CLI → JSON → `LocationImportService`를 통해 `locationservice` DB에 적재
+- **Track B (비-시설 카테고리: `supplies`, `snack`, `food`, `clothes`)**
+  - 기존 `PetDataApiClient.recommend()` 경로를 유지
+  - 구조화 시설 마스터가 없는 트렌드 중심 카테고리라서 Petory owner 전환 대상이 아님
 
 ### 1.2 Location 추천과의 구분
 
-| 구분        | Recommendation 도메인                                | Location (별도)                                                           |
-| ----------- | ---------------------------------------------------- | ------------------------------------------------------------------------- |
-| 경로        | `GET /api/recommend`                                 | `GET /api/location-services/recommend` 등                                 |
-| 데이터 소스 | 외부 `app.pet-data-api` (`POST {baseUrl}/recommend`) | `LocationService` + `LocationRecommendAgentService` 등 Petory DB/에이전트 |
-| 용도        | Pet Data API 기반 시설·트렌드·문구                   | 주변 위치 서비스 목록 + AI 이유 enrich                                    |
+| 구분        | Recommendation 도메인                                           | Location (별도)                                                           |
+| ----------- | --------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 경로        | `GET /api/recommend`                                            | `GET /api/location-services/recommend` 등                                 |
+| 데이터 소스 | Petory `LocationService` + 외부 `pet-data-api` popularity/trend | `LocationService` + `LocationRecommendAgentService` 등 Petory DB/에이전트 |
+| 용도        | nearby 후보 + popularity/trend 조합 추천                        | 주변 위치 서비스 목록 + AI 이유 enrich                                    |
 
 ### 1.3 핵심 원칙
 
@@ -20,35 +29,70 @@ Petory 백엔드는 **추천 점수·트렌드·시설 후보**를 직접 계산
 - **전용 JPA 엔티티 없음**: 추천 결과를 Petory MySQL에 영속하지 않음
 - **반려동물은 User 도메인 `Pet`에서 조회**: `findByUserIdAndNotDeleted` 첫 항목만 사용
 
-### 1.4 로드맵 — Location AI 추천과의 통합·폐기 예정
+### 1.4 Location AI 추천 통합 — 완료
 
-사용자 경험상 **“주변 서비스 추천”**은 Location 도메인의 `GET /api/location-services/recommend`(MySQL 검색 후 `LocationRecommendAgentService`/`Ollama`로 재순위·이유)과 **동일 목적 영역에서 겹친다.**
-
-- **현재**: 두 경로 모두 유지(회귀·프론트 의존성 방지).
-- **향후**: **Pet Data API(Python)가 `GET /api/recommend` 기준으로 기대 동작까지 안정 검증된 뒤**, Location **`/api/location-services/recommend`(및 해당 에이전트)·통합 지도 AI 모드**를 Pet Data 계약 한쪽으로 합치고 **코드/API 제거**할 예정이다. 시행 시점 확정 후 `docs/domains/location.md`·본 문서에 상태를 업데이트한다.
+`GET /api/location-services/recommend` 및 `LocationRecommendAgentService`는 코드베이스에서 **제거 완료**. 해당 컨트롤러·서비스 클래스 파일이 존재하지 않으며, “주변 서비스 추천” 목적은 `GET /api/recommend`(본 도메인)로 단일화되었다. `docs/domains/location.md` §4.4 참고.
 
 ---
 
 ## 2. API
 
-### 2.1 `GET /api/recommend`
+모든 경로는 `/api/recommend/**` 이며 **인증 필요**. (위 **1.3 핵심 원칙** 참고.)
 
-| 항목                                     | 내용                                                                                 |
-| ---------------------------------------- | ------------------------------------------------------------------------------------ |
-| 메서드                                   | `GET`                                                                                |
-| 쿼리                                     | `lat` (필수, `double`), `lng` (필수, `double`), `context` (필수, `String`)           |
-| 인증                                     | Spring Security — `Authentication`에서 `userId` = `auth.getName()`                   |
-| 성공                                     | `200` + `RecommendResponse` JSON                                                     |
-| 응답 없음(현행 서비스는 거의 사용 안 함) | 서비스가 `null`이면 `503` (바디 없음)                                                |
-| 외부 API 실패                            | `PetDataApiClient`가 예외 throw → 애플리케이션 전역 예외 처리에 따름(일반적으로 5xx) |
+### 2.1 엔드포인트 요약
 
-### 2.2 응답 DTO (`RecommendResponse`)
+- **`GET`** `/api/recommend` — `lat`, `lng`, `context` 로 추천, 응답은 `RecommendResponse`.
+- **`POST`** `/api/recommend/copy` — 시설·트렌드 payload 로 LLM 카피 생성.
+- **`POST`** `/api/recommend/events` — 요청별 행동 이벤트 기록(`userId` 해시 후 pet-data-api 전달).
+- **`GET`** `/api/recommend/trends/{category}/timeseries` — 트렌드 시계열.
 
-- `context`: 맥락 문자열(외부 API가 echo할 수 있음)
+### 2.2 `GET /api/recommend`
+
+| 구분          | 내용                                                          |
+| ------------- | ------------------------------------------------------------- |
+| 쿼리          | `lat`, `lng`, `context` 필수 (`double`, `double`, `String`)   |
+| 인증          | `Authentication#getName()` → `userId`                         |
+| 성공          | `200` + `RecommendResponse`                                   |
+| 본문 없음     | 서비스가 `null`이면 `503`(바디 없음; 현 코드 경로에서는 드묾) |
+| 외부 I/O 실패 | `PetDataApiClient` 예외 → 전역 핸들러(대개 5xx)               |
+
+### 2.3 부가 엔드포인트
+
+**`POST` `/api/recommend/copy`**
+
+- 본문: `RecommendCopyRequest`(context, request_id, facilities, trends, pet) → `RecommendCopyResponse`
+- `pet` 는 백엔드에서 보강 가능
+
+**`POST` `/api/recommend/events`**
+
+- 본문: `RecommendEventRequest`(request_id, events[]) → 응답 `202`
+- `userId` 는 해시(`userRef`) 후 pet-data-api 로 전달
+
+**`GET` `/api/recommend/trends/{category}/timeseries`**
+
+- 쿼리: `days`(기본 14), `top_keywords`(기본 10)
+- 응답: `TrendTimeseriesResponse`(category, points: date, keyword, score)
+
+### 2.4 응답 DTO (`RecommendResponse`)
+
+```java
+public record RecommendResponse(
+    String context,
+    @JsonProperty("recommend_version") String recommendVersion,
+    @JsonProperty("request_id")        String requestId,
+    List<FacilityItem>                 facilities,
+    List<TrendItem>                    trends,
+    String                             recommendation,
+    @JsonProperty("generated_at")      String generatedAt)
+```
+
+- `context`: 요청한 context 문자열 그대로 echo
+- `recommend_version`: 응답 생성 경로 식별자 (`"petory-nearby-v1"` / `"popular-intelligence-v1"`)
+- `request_id`: 요청 추적용 UUID (Petory 내부 생성)
 - `facilities`: 시설 후보 — `name`, `distance_m`, `address`, `lat`, `lng`
 - `trends`: 트렌드 — `keyword`, `score`
-- `recommendation`: 자연어 한 덩어리 추천 문구
-- `generated_at`: 생성 시각(문자열)
+- `recommendation`: rule-based 또는 자연어 추천 문구
+- `generated_at`: 응답 생성 시각 (ISO 8601)
 
 ---
 
@@ -60,13 +104,32 @@ Petory 백엔드는 **추천 점수·트렌드·시설 후보**를 직접 계산
    - `type`: `petType.name().toLowerCase()`
    - `breed`: 품종
    - `age_months`: `birthDate`가 있을 때만 `ChronoUnit.MONTHS`로 계산, 없으면 `null`
-4. `RecommendRequest` 빌드: `lat`, `lng`, `context`, **고정** `radius_km=10.0`, `top_n=5`, `pet`(또는 `null`)
-5. `PetDataApiClient.recommend(request)` → `POST {base}/recommend`, JSON body, 헤더 `X-API-Key`
+4. **Track A면**
+   - `LocationServiceService.searchLocationServicesByLocation(...)`로 반경 10km 후보 조회
+   - `PetDataApiClient.fetchPopular(context, ...)`
+   - `PetDataApiClient.fetchTrends(context, ...)`
+   - 이름 normalize 기반으로 popularity 시그널 조인 후 Petory가 최종 정렬
+5. **Track B면**
+   - `RecommendRequest` 빌드: `lat`, `lng`, `context`, **고정** `radius_km=10.0`, `top_n=5`, `pet`(또는 `null`)
+   - `PetDataApiClient.recommend(request)` 호출
+     - **내부에서** `GET /popular/{context}` + `GET /trends/{category}` 를 각각 직접 호출
+     - `lat`/`lng`/`radius_km`은 실제 사용되지 않음 (`topN`, `context`만 사용)
+     - `RecommendResponse`를 rule-based 추천 문구와 함께 로컬 조립 (POST /recommend 없음)
 
-### 3.1 외부 요청 DTO (`RecommendRequest`)
+### 3.1 `RecommendRequest` DTO
 
-- JSON 직렬화 시 스네이크 케이스: `radius_km`, `top_n`, `pet` 내부 `age_months`
-- `pet`이 `null`이면 `@JsonInclude(NON_NULL)`로 생략 가능
+```java
+public record RecommendRequest(
+    double lat, double lng, String context,
+    @JsonProperty("radius_km") double radiusKm,
+    @JsonProperty("top_n")     int topN,
+    PetInfo pet)
+```
+
+- **Track A**: 이 DTO는 사용하지 않음 (Petory가 직접 popular/trends 호출)
+- **Track B**: `PetDataApiClient.recommend(request)` 인자로 전달되지만,  
+  내부에서 `context`와 `topN`만 사용. `lat`/`lng`/`radiusKm`은 무시됨.  
+  pet-data-api에 직접 직렬화 전송되지 않음.
 
 ---
 
@@ -77,7 +140,10 @@ Petory 백엔드는 **추천 점수·트렌드·시설 후보**를 직접 계산
 - **설정**
   - `app.pet-data-api.base-url` — Pet Data API 베이스 URL (필수)
   - `app.pet-data-api.api-key` — `X-API-Key` (빈 문자열 가능하나, 운영 시 필수)
-- **호출**: `POST /recommend`, `Content-Type: application/json`, body는 `RecommendRequest`
+- **주 역할**
+  - `fetchPopular(context, limit, correlationId)` → `GET /popular/{context}`
+  - `fetchTrends(context, limit, correlationId)` → `GET /trends/{category}`
+  - `recommend(request)`는 Track B/레거시 호환용 조합 메서드로만 유지
 - **실패**: 예외는 래핑하여 `RuntimeException`으로 throw — 상위에서 `null`이 반환되는 경로는 현재 `RecommendService`에 없음
 
 ---
@@ -99,12 +165,11 @@ Recommendation 도메인 **전용 테이블은 없습니다.**
 
 ## 7. 관련 코드
 
-| 역할                | 클래스                                  |
-| ------------------- | --------------------------------------- |
-| REST                | `RecommendController`                   |
-| 애플리케이션 서비스 | `RecommendService`                      |
-| HTTP 클라이언트     | `PetDataApiClient`                      |
-| DTO                 | `RecommendRequest`, `RecommendResponse` |
+- **REST** — `RecommendController`
+- **애플리케이션 서비스** — `RecommendService`
+- **nearby 후보 조회** — `LocationServiceService`
+- **HTTP 클라이언트** — `PetDataApiClient`
+- **DTO** — `RecommendRequest`, `RecommendResponse`, `RecommendCopyRequest`, `RecommendCopyResponse`, `RecommendEventRequest`, `TrendTimeseriesResponse`
 
 ## 8. 관련 아키텍처 문서
 

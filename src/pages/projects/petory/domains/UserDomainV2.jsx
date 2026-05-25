@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function Card({ children, style }) {
@@ -58,52 +57,6 @@ function UserDomainV2() {
     '제재 상태 동기화',
     '보안 트레이드오프',
   ];
-
-  const flowDiagram = `flowchart TB
-    FE["React SPA\n프론트엔드"]
-
-    subgraph Sec["Spring Security"]
-        JF["JwtAuthenticationFilter\n인증 필터"]
-    end
-
-    subgraph UserDom["User 도메인"]
-        direction TB
-        subgraph Svc["서비스"]
-            direction LR
-            AUTH["AuthService\n로그인·토큰"]
-            OAUTH["OAuth2Service\n소셜 연결"]
-            PET["PetService\n반려 정보"]
-            SAN["UserSanctionService\n제재"]
-        end
-        subgraph Store["엔티티"]
-            direction LR
-            U["Users\n사용자"]
-            SU["SocialUser\n소셜 계정"]
-            P["Pet · PetVaccination\n반려 정보"]
-            S["UserSanction\n제재 이력"]
-        end
-        AUTH --> U
-        OAUTH --> U
-        OAUTH --> SU
-        PET --> U
-        PET --> P
-        SAN --> U
-        SAN --> S
-    end
-
-    subgraph Ext["외부 도메인"]
-        direction LR
-        FILE["File 도메인\n첨부파일"]
-        REP["Report 도메인\n신고 처리"]
-    end
-
-    FE -->|Bearer JWT| JF
-    FE --> AUTH
-    FE --> OAUTH
-    JF --> PET
-    JF --> SAN
-    PET --> FILE
-    REP --> SAN`;
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
@@ -349,14 +302,33 @@ function UserDomainV2() {
             <Card>
               <h3
                 style={{
-                  marginBottom: '0.75rem',
+                  marginBottom: '0.65rem',
                   color: 'var(--text-color)',
                   fontSize: '1rem',
                 }}
               >
                 데이터 흐름
               </h3>
-              <MermaidDiagram chart={flowDiagram} />
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.75',
+                  margin: '0 0 0.65rem',
+                }}
+              >
+                시퀀스 다이어그램은 도메인별로 두지 않고 통합 페이지에만 있습니다.
+              </p>
+              <Link
+                to="/domains/flows?tab=user"
+                style={{
+                  color: 'var(--link-color)',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                User 시퀀스 보기 →
+              </Link>
             </Card>
           </section>
 

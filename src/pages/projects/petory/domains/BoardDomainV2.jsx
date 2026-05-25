@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function Card({ children, style }) {
@@ -60,34 +59,6 @@ function BoardDomainV2() {
     '인기글 스냅샷',
     'FULLTEXT 검색',
   ];
-
-  const flowDiagram = `flowchart LR
-    U["User\n사용자"]
-
-    subgraph Board["Board 도메인 (domain/board)"]
-        B["Board\n게시글"]
-        C["Comment\n댓글"]
-        R["Reaction\n게시글·댓글 반응"]
-        V["BoardViewLog\n조회 로그"]
-        P["BoardPopularitySnapshot\n인기글 스냅샷"]
-    end
-
-    subgraph Notif["Notification 도메인"]
-        N["Notification\n알림"]
-    end
-
-    subgraph File["File 도메인"]
-        F["AttachmentFile\n첨부파일"]
-    end
-
-    U --> B
-    U --> C
-    U --> R
-    U --> V
-    B --> P
-    C --> N
-    B --> F
-    C --> F`;
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
@@ -290,14 +261,33 @@ function BoardDomainV2() {
             <Card>
               <h3
                 style={{
-                  marginBottom: '0.75rem',
+                  marginBottom: '0.65rem',
                   color: 'var(--text-color)',
                   fontSize: '1rem',
                 }}
               >
                 데이터 흐름
               </h3>
-              <MermaidDiagram chart={flowDiagram} />
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.75',
+                  margin: '0 0 0.65rem',
+                }}
+              >
+                시퀀스 다이어그램은 도메인별로 두지 않고 통합 페이지에만 있습니다.
+              </p>
+              <Link
+                to="/domains/flows?tab=board"
+                style={{
+                  color: 'var(--link-color)',
+                  fontWeight: 600,
+                  textDecoration: 'none',
+                }}
+              >
+                Board 시퀀스 보기 →
+              </Link>
             </Card>
           </section>
 

@@ -1,5 +1,4 @@
 import { Link } from 'react-router-dom';
-import MermaidDiagram from '../../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../../components/Common/TableOfContents';
 
 function Card({ children, style }) {
@@ -60,37 +59,6 @@ function MeetupDomainV2() {
     '히스토리 N+1 제거',
     '참여 가능 목록 단순화',
   ];
-
-  const flowDiagram = `flowchart TD
-    U["사용자"]
-
-    subgraph Create["생성 흐름"]
-        CM["createMeetup\\n핵심 트랜잭션"]
-        TS["afterCommit\\nTransactionSynchronization"]
-        EV["MeetupCreatedEvent"]
-        CR["@Async @EventListener\\nMeetupChatRoomEventListener"]
-        CH["그룹 채팅방"]
-    end
-
-    subgraph Join["참가 흐름"]
-        PL["findByIdWithLock\\nPESSIMISTIC\\_WRITE"]
-        AU["incrementParticipantsIfAvailable\\n원자적 UPDATE"]
-        REC["DataIntegrityViolationException\\ndecrement + alreadyJoined"]
-    end
-
-    subgraph Sched["스케줄러 (매시 정각)"]
-        SC["closeFullRecruitingMeetups\\ncompletePastMeetups"]
-    end
-
-    U -->|모임 생성| CM
-    CM --> TS
-    TS --> EV
-    EV --> CR
-    CR --> CH
-    U -->|참가 요청| PL
-    PL --> AU
-    AU -->|PK 충돌| REC
-    CM -.->|상태 전이| SC`;
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
@@ -279,14 +247,46 @@ function MeetupDomainV2() {
             <Card>
               <h3
                 style={{
-                  marginBottom: '0.75rem',
+                  marginBottom: '0.65rem',
                   color: 'var(--text-color)',
                   fontSize: '1rem',
                 }}
               >
                 데이터 흐름
               </h3>
-              <MermaidDiagram chart={flowDiagram} />
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.75',
+                  margin: '0 0 0.65rem',
+                }}
+              >
+                시퀀스 다이어그램은 도메인별로 두지 않고 통합 페이지에만 있습니다. 모임·참가와 Chat
+                인프라는 각각 다른 절에 있습니다.
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'flex-start' }}>
+                <Link
+                  to="/domains/flows?tab=meetup"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Meetup · 모임·그룹방·참가 시퀀스 →
+                </Link>
+                <Link
+                  to="/domains/flows?tab=meetup&seq=chat"
+                  style={{
+                    color: 'var(--link-color)',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Chat ↔ Meetup (그룹·메시지·읽음) 시퀀스 →
+                </Link>
+              </div>
             </Card>
           </section>
 

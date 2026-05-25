@@ -3,6 +3,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import Layout from './components/Layout/Layout';
 import HomePage from './pages/HomePage';
 import PetoryProjectPage from './pages/projects/petory/PetoryProjectPage';
+import PetoryFlowsPage from './pages/projects/petory/PetoryFlowsPage';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
 import InfraPage from './pages/InfraPage';
@@ -53,6 +54,7 @@ function App() {
             
             {/* 포트폴리오 페이지 */}
             <Route path="/portfolio/petory" element={<PetoryProjectPage />} />
+            <Route path="/domains/flows" element={<PetoryFlowsPage />} />
             {/* 라이브 데모 페이지 */}
             <Route path="/demo" element={<DemoPage />} />
             
