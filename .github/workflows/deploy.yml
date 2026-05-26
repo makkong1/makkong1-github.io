@@ -1,7 +1,6 @@
-# peaceiris가 GITHUB_TOKEN 으로 gh-pages 브랜치에 push 하려면 저장소 설정이 필요합니다:
-# Settings → Actions → General → Workflow permissions →
-#   「Read and write permissions」선택 후 Save
-# (기본이 Read-only 면 Deploy 단계에서 403 / permission 오류로 실패합니다.)
+# GitHub Pages 공식 배포 (브랜치 push 없음).
+# 반드시: Settings → Pages → Build and deployment → Source →「GitHub Actions」
+# (이전에「Deploy from a branch / gh-pages」였다면 여기를 바꿔야 이 워크플로가 사이트를 갱신합니다.)
 
 name: Deploy to GitHub Pages
 
@@ -10,13 +9,18 @@ on:
     branches: ["main"]
   workflow_dispatch:
 
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -34,9 +38,18 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
         run: npm run build
 
-      - name: Deploy to gh-pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist
-          publish_branch: gh-pages
+          path: ./dist
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
