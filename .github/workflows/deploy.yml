@@ -1,11 +1,7 @@
-# GitHub Pages 공식 배포 (gh-pages 브랜치 직접 push 없음).
-#
-# Pages 설정: Settings → Pages → Source →「GitHub Actions」 (브랜치/gh-pages 전용이면 이 워크플로와 별개입니다)
-# PR에서 배포 대신 빌드만: .github/workflows/build.yml
-#
-# main 푸시 후 여기 run이 전혀 안 생기면 저장소 쪽을 먼저 본다:
-#   Settings → Actions → General → Actions permissions (Disable 아님 · 외부 액션 허용 등)
-# 복구 시 수동: Actions → Deploy to GitHub Pages → Run workflow
+# GitHub Pages branch deployment.
+# Repository setting:
+# Settings -> Pages -> Build and deployment -> Source -> Deploy from a branch
+# Branch: gh-pages / root
 
 name: Deploy to GitHub Pages
 
@@ -15,14 +11,8 @@ on:
       - main
   workflow_dispatch:
 
-concurrency:
-  group: pages
-  cancel-in-progress: false
-
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: write
 
 jobs:
   build:
@@ -44,18 +34,9 @@ jobs:
           NODE_OPTIONS: --max-old-space-size=4096
         run: npm run build
 
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
+      - name: Deploy to gh-pages
+        uses: peaceiris/actions-gh-pages@v4
         with:
-          path: ./dist
-
-  deploy:
-    runs-on: ubuntu-latest
-    needs: build
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
