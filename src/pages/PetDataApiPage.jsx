@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
+import { useMemo, useState } from 'react';
 import MermaidDiagram from '../components/Common/MermaidDiagram';
 import TableOfContents from '../components/Common/TableOfContents';
+import { getPetoryFlowGroupByTab } from './projects/petory/petorySequenceDiagrams';
 
 function Card({ children, style }) {
   return (
@@ -43,9 +45,12 @@ const PET_DATA_API_GITHUB = 'https://github.com/makkong1/pet-data-api';
 const PET_DATA_ARCH_DOC =
   'https://github.com/makkong1/pet-data-api/blob/main/docs/분석/ARCHITECTURE.md';
 
+const PET_DATA_API_FLOW_GROUP = getPetoryFlowGroupByTab('pet-data-api');
+
 function PetDataApiPage() {
   const sections = [
     { id: 'pillars', title: '핵심 기능' },
+    { id: 'sequence-flow', title: '데이터 흐름 시퀀스' },
     { id: 'intro', title: '서비스 개요' },
     { id: 'design', title: '기술 결정' },
     { id: 'limits', title: '한계 & 개선' },
@@ -87,6 +92,21 @@ function PetDataApiPage() {
     end
 
     RP -.->|"같은 수집 로직 재사용"| CLI`;
+
+  const sequencesWithPills =
+    PET_DATA_API_FLOW_GROUP?.sequences.filter((s) => s.pillLabel) ?? [];
+
+  const [seq, setSeq] = useState(
+    PET_DATA_API_FLOW_GROUP?.defaultSeq ?? 'batch',
+  );
+
+  const variant = useMemo(() => {
+    if (!PET_DATA_API_FLOW_GROUP) return null;
+    return (
+      PET_DATA_API_FLOW_GROUP.sequences.find((s) => s.seq === seq) ??
+      PET_DATA_API_FLOW_GROUP.sequences[0]
+    );
+  }, [seq]);
 
   const li = (text) => (
     <li style={{ marginBottom: '0.35rem', listStyle: 'none' }}>• {text}</li>
@@ -167,6 +187,95 @@ function PetDataApiPage() {
                 </span>
               ))}
             </div>
+          </section>
+
+          <section
+            id="sequence-flow"
+            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
+          >
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
+              데이터 흐름 시퀀스
+            </h2>
+
+            <Card>
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.88rem',
+                  lineHeight: '1.75',
+                  margin: '0 0 0.85rem',
+                }}
+              >
+                아래 문자열 정본은 Petory 포트폴리오 통합 페이지(
+                <code style={{ fontSize: '0.82em' }}>petorySequenceDiagrams.js</code>)
+                과 같습니다. Petory 다른 도메인과 동일하게 pill로 경로만 갈립니다.
+              </p>
+
+              <div
+                role="tablist"
+                aria-label="pet-data-api 시퀀스 종류"
+                style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '0.45rem',
+                  marginBottom: '0.85rem',
+                }}
+              >
+                {sequencesWithPills.map(({ seq: sid, pillLabel }) => {
+                  const selected = seq === sid;
+                  return (
+                    <button
+                      key={sid}
+                      type="button"
+                      role="tab"
+                      aria-selected={selected}
+                      onClick={() => setSeq(sid)}
+                      style={{
+                        cursor: 'pointer',
+                        padding: '0.35rem 0.85rem',
+                        borderRadius: '999px',
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        border: selected
+                          ? '1px solid var(--link-color)'
+                          : '1px solid var(--nav-border)',
+                        backgroundColor: selected ? 'var(--bg-color)' : 'transparent',
+                        color: selected ? 'var(--link-color)' : 'var(--text-color)',
+                      }}
+                    >
+                      {pillLabel}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {variant ? (
+                <>
+                  <h3
+                    style={{
+                      margin: '0 0 0.65rem',
+                      color: 'var(--text-color)',
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                    }}
+                  >
+                    {variant.heading}
+                  </h3>
+                  <MermaidDiagram
+                    key={`pet-data-api-seq-${seq}`}
+                    chart={variant.chart}
+                  />
+                  <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
+                    <Link
+                      to={`/domains/flows?tab=pet-data-api&seq=${encodeURIComponent(seq)}`}
+                      style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}
+                    >
+                      Petory 통합 플로우에서 보기 →
+                    </Link>
+                  </p>
+                </>
+              ) : null}
+            </Card>
           </section>
 
           <section
@@ -281,7 +390,7 @@ function PetDataApiPage() {
                   fontSize: '1rem',
                 }}
               >
-                데이터 흐름
+                데이터 흐름 (블록 요약)
               </h3>
               <MermaidDiagram chart={dualPathDiagram} />
               <p
@@ -330,8 +439,19 @@ function PetDataApiPage() {
                   style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                 >
                   Recommendation 도메인 V2
+                </Link>{' '}
+                에서 Track A/B·merge 흐름을 같이 보고,
+                <Link
+                  to="/domains/flows?tab=pet-data-api"
+                  style={{
+                    marginLeft: '0.35rem',
+                    color: 'var(--link-color)',
+                    textDecoration: 'none',
+                  }}
+                >
+                  통합 플로우 Pet Data API 탭
                 </Link>
-                에서 Track A/B·merge 흐름을 같이 봅니다.
+                에서도 같은 시퀀스 묶음을 선택할 수 있습니다.
               </p>
             </Card>
           </section>

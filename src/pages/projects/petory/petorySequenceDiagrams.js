@@ -314,6 +314,80 @@ export const PETORY_FLOW_GROUPS = [
     ],
   },
   {
+    tab: 'pet-data-api',
+    tocLabel: 'Pet Data API',
+    defaultSeq: 'batch',
+    sequences: [
+      {
+        seq: 'batch',
+        pillLabel: '배치 → Redis',
+        heading: 'pet-data-api — 스케줄·Naver 수집 → Redis 적재',
+        chart: `sequenceDiagram
+    participant SCH as APScheduler
+    participant Run as ingestion runner
+    participant NV as Naver 검색 API
+    participant RZ as Redis
+
+    Note over SCH: 18:00 트렌드 · 18:10 인기
+    SCH->>Run: run_trend_collection
+    Run->>NV: 블로그·카페 검색
+    NV-->>Run: 검색 결과
+    Run->>Run: 키위 형태소 등 집계
+    Run->>RZ: trends:카테고리:keywords 등
+
+    SCH->>Run: run_popular_collection
+    Run->>NV: 블로그 기반 상호 수집 등
+    NV-->>Run: 결과
+    Run->>Run: 위치 보강·컨텍스트별 파이프라인
+    Run->>RZ: popular:컨텍스트 JSON`,
+      },
+      {
+        seq: 'http',
+        pillLabel: 'HTTP 읽기',
+        heading:
+          'pet-data-api — GET /popular·/trends (외부는 Redis 스냅샷만 조회)',
+        chart: `sequenceDiagram
+    participant FE as 프론트엔드
+    participant REC as Petory Recommendation
+    participant PDA as pet-data-api
+    participant RZ as Redis
+
+    FE->>REC: 추천·신호 요청
+    REC->>PDA: GET /popular 또는 /trends + X-API-Key
+    PDA->>PDA: API 키 SHA-256 검증
+    PDA->>RZ: popular:* 또는 trends:*
+    RZ-->>PDA: JSON 또는 ZSET 데이터
+    PDA-->>REC: 200 응답
+    REC->>REC: Location 후보병합 등
+    REC-->>FE: 합류 결과`,
+      },
+      {
+        seq: 'cli',
+        pillLabel: 'CLI → Spring',
+        heading:
+          'pet-data-api — cli.py popular → JSON · Spring locationservice 적재',
+        chart: `sequenceDiagram
+    participant Job as cron 또는 CI
+    participant CLI as cli.py
+    participant Run as ingestion
+    participant NV as Naver 검색 API
+    participant FS as JSON 출력
+    participant SPR as Spring LocationImport
+
+    Job->>CLI: popular --output 경로
+    CLI->>Run: collect_popular_for_cli
+    Run->>NV: HTTP 배치와 동일 수집 로직
+    NV-->>Run: 결과
+    Run-->>CLI: LocationImportDto 형태
+    CLI->>FS: 파일 기록
+    Note over CLI,RZ: 경로 B는 Redis에 쓰지 않음
+
+    SPR->>FS: 스케줄러 등으로 읽기 예시
+    SPR->>SPR: locationservice DB upsert`,
+      },
+    ],
+  },
+  {
     tab: 'chat',
     tocLabel: 'Chat',
     defaultSeq: 'care',
@@ -415,4 +489,9 @@ export function resolvePetoryFlowSelection(searchParams) {
     group.sequences.find((s) => s.seq === seq) ?? group.sequences[0];
 
   return { group, seq, variant };
+}
+
+/** @param {string} tab */
+export function getPetoryFlowGroupByTab(tab) {
+  return PETORY_FLOW_GROUPS.find((g) => g.tab === tab) ?? null;
 }
