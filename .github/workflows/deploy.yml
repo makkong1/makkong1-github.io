@@ -1,12 +1,18 @@
-# GitHub Pages 공식 배포 (브랜치 push 없음).
-# 반드시: Settings → Pages → Build and deployment → Source →「GitHub Actions」
-# (이전에「Deploy from a branch / gh-pages」였다면 여기를 바꿔야 이 워크플로가 사이트를 갱신합니다.)
+# GitHub Pages 공식 배포 (gh-pages 브랜치 직접 push 없음).
+#
+# Pages 설정: Settings → Pages → Source →「GitHub Actions」 (브랜치/gh-pages 전용이면 이 워크플로와 별개입니다)
+# PR에서 배포 대신 빌드만: .github/workflows/build.yml
+#
+# main 푸시 후 여기 run이 전혀 안 생기면 저장소 쪽을 먼저 본다:
+#   Settings → Actions → General → Actions permissions (Disable 아님 · 외부 액션 허용 등)
+# 복구 시 수동: Actions → Deploy to GitHub Pages → Run workflow
 
 name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main"]
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:

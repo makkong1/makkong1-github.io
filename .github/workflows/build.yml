@@ -1,0 +1,31 @@
+# main으로 열린 PR마다 Vite 빌드만 검증 (배포 없음).
+# 브랜치 보호 규칙에서 필수 체크로 쓰려면: Workflow "Build" · job "build" 선택.
+name: Build
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.19.0
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build
+        env:
+          NODE_OPTIONS: --max-old-space-size=4096
+        run: npm run build
