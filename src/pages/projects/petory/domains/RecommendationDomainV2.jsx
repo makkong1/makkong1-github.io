@@ -38,20 +38,16 @@ function CodeBlock({ children }) {
   );
 }
 
-const PETORY_RECOMMEND_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/recommendation/service/RecommendService.java';
-const PETORY_LOCATION_REPO =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/location/repository/SpringDataJpaLocationServiceRepository.java';
-const PETORY_LOCATION_IMPORT =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/location/service/LocationImportService.java';
+const PETORY_PET_RECOMMEND_CONTROLLER =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/controller/PetRecommendationController.java';
+const PETORY_PET_INTENT_CLIENT =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/client/PetIntentClient.java';
+const PETORY_INTENT_SIGNAL_ENTITY =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/entity/UserPetIntentSignal.java';
+const PETORY_NLP_INTENT_ROUTER =
+  'https://github.com/makkong1/Petory/blob/main/petory-nlp-server/app/api/pet_intent_router.py';
 const PETORY_RECOMMENDATION_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/recommendation.md';
-const PETORY_LOCATION_ARCH =
-  'https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%20%EA%B8%B0%EB%B0%98%20%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
-const PET_DATA_API_LOCAL_DISCOVERY =
-  'https://github.com/makkong1/pet-data-api/blob/main/app/ingestion/local_discovery.py';
-const PET_DATA_API_BLOG =
-  'https://github.com/makkong1/pet-data-api/blob/main/app/ingestion/blog.py';
 
 function RecommendationDomainV2() {
   const sections = [
@@ -63,12 +59,12 @@ function RecommendationDomainV2() {
   ];
 
   const corePillars = [
-    'GET /api/recommend 단일 진입',
-    'Track A — nearby + popular/trends',
-    'Track B — snack/food/clothes',
-    '가중 스코어 merge',
-    '통합 지도 RecommendCard',
-    'Location /recommend 제거',
+    '비동기 intent signal',
+    'Python NLP 분석',
+    '원문 텍스트 미저장',
+    '추천 카드 /signals',
+    'Location 카테고리 연결',
+    '본 기능 무영향 장애 처리',
   ];
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
@@ -91,15 +87,16 @@ function RecommendationDomainV2() {
               fontSize: '0.95rem',
             }}
           >
-            Recommendation 도메인은 <code>GET /api/recommend</code> 한 경로로 맞춤 추천을
-            제공합니다. 시설 9컨텍스트(Track A)는 Petory DB 반경 후보와 pet-data-api
-            인기·트렌드만 조합하고, 간식·사료·의류(Track B)는 레거시 프록시를 유지합니다.
-            통합 지도 <code>RecommendCard</code>가 소분류→context 매핑 후 호출하며,
-            추천 시설은 목록 <code>idx</code>와 매칭해 상단·골드 마커로 강조합니다.
-            과거 <code>/api/location-services/recommend</code>(Spring AI)는 제거했습니다.
+            Recommendation 도메인은 사용자의 최근 반려생활 입력을 보고 주변서비스
+            탭에 추천 카드를 띄우는 기능입니다. 처음에는 별도 추천 엔진이나
+            장소 목록 API가 필요하다고 보였지만, 실제로는 Location 검색에
+            카테고리만 넘겨 주면 되는 구조였고, 커뮤니티·케어·검색어에서 의도를
+            모으는 비동기 파이프라인, Python NLP 호출, 원문을 남기지 않는 signal
+            저장까지 함께 다뤄야 했습니다. 저는 글·요청·검색이 본 기능을 막지
+            않게 이벤트로 분석하고, 카드는 무엇을 볼지만 알려 주며 실제 장소
+            조회는 Location 도메인에 맡기는 방향으로 설계했습니다.
           </p>
 
-          {/* 핵심 기능 */}
           <section
             id="pillars"
             style={{ marginBottom: '2rem', scrollMarginTop: '2rem' }}
@@ -133,7 +130,6 @@ function RecommendationDomainV2() {
             </div>
           </section>
 
-          {/* 도메인 개요 */}
           <section
             id="intro"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
@@ -150,13 +146,17 @@ function RecommendationDomainV2() {
                   margin: 0,
                 }}
               >
-                Track A: <code>searchLocationServicesByLocation</code>(10km, 최대 20건) +
-                <code>fetchPopular</code> / <code>fetchTrends</code> → 이름 정규화·alias
-                조인 후 거리 55%·평점 20%·리뷰 15%·인기 10% 가중으로 상위 5건,
-                <code>recommend_version=petory-nearby-v1</code>. Track B는{' '}
-                <code>PetDataApiClient.recommend()</code>가 popular+trends를 로컬 조립(
-                <code>popular-intelligence-v1</code>). 부가 API: copy·events(전송 스킵)·
-                trends 시계열(스냅샷 합성) — recommendation.md §2.
+                새 장소 조회 시스템을 만들지 않고, 기존{' '}
+                <code>/api/location-services/search</code>에{' '}
+                <code>category</code> 필터를 넘기는 <strong>카테고리 진입점
+                추천</strong>입니다. 커뮤니티 글·케어 요청·주변서비스 검색어가
+                Spring 이벤트로 발행되면 <code>@Async</code> listener가 Python
+                NLP(<code>POST /api/pet-intent/analyze</code>)를 호출하고,
+                confidence 0.6 이상이면 <code>user_pet_intent_signal</code>에
+                저장합니다(원문 미저장, TTL 7일). 주변서비스 탭은{' '}
+                <code>GET /api/pet-recommend/signals</code>로 카드를 받고,
+                클릭 시 <code>targetCategory</code>로 Location 검색을 다시
+                실행합니다.
               </p>
             </Card>
 
@@ -171,7 +171,7 @@ function RecommendationDomainV2() {
               >
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                    {['책임', 'Petory', 'pet-data-api'].map((h) => (
+                    {['단계', '담당', '비고'].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -188,30 +188,33 @@ function RecommendationDomainV2() {
                 <tbody>
                   {[
                     [
-                      'nearby 후보 (Track A 9컨텍스트)',
-                      '✅ LocationService + findByRadius',
-                      '❌',
+                      '입력 수집',
+                      'Board / Care / LocationServiceService',
+                      'CommunityPostCreated · CareRequestCreated · LocationSearchPerformed 이벤트',
                     ],
                     [
-                      '인기 · 트렌드 신호',
-                      '❌',
-                      '✅ GET /popular · GET /trends',
+                      '의도 분석',
+                      'petory-nlp-server',
+                      'rule + embedding, recommendedCategories는 Location category와 정합',
                     ],
-                    ['최종 정렬 · 응답 조립', '✅ RecommendService', '❌'],
                     [
-                      '구조화 시설 적재(BATCH)',
-                      '✅ LocationImportService 등 (location.md)',
-                      '✅ cli.py popular 등 → JSON 원천',
+                      'signal 저장',
+                      'UserPetIntentSignalService',
+                      'confidence ≥ 0.6, source_type COMMUNITY | CARE | LOCATION_SEARCH',
                     ],
-                    ['Redis TTL 서빙', '❌', '✅ (pet-data-api)'],
                     [
-                      'Track B (snack/food/clothes)',
-                      '✅ recommend() · popular+trends 로컬 조립',
-                      '✅ GET /popular · GET /trends (supplies alias)',
+                      '카드 노출',
+                      'LocationControls + petRecommendationApi',
+                      'cardMessage / actionLabel / targetCategory',
                     ],
-                  ].map(([label, petory, api], i, arr) => (
+                    [
+                      '장소 조회',
+                      'LocationServiceService',
+                      '지도 중심·반경·정렬은 프론트 상태 유지',
+                    ],
+                  ].map(([step, owner, note], i, arr) => (
                     <tr
-                      key={label}
+                      key={step}
                       style={{
                         borderBottom:
                           i < arr.length - 1
@@ -225,18 +228,10 @@ function RecommendationDomainV2() {
                           color: 'var(--text-color)',
                         }}
                       >
-                        {label}
+                        {step}
                       </td>
-                      <td style={{ padding: '0.55rem 0.75rem' }}>{petory}</td>
-                      <td
-                        style={{
-                          padding: '0.55rem 0.75rem',
-                          color: 'var(--text-color)',
-                          fontWeight: 600,
-                        }}
-                      >
-                        {api}
-                      </td>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>{owner}</td>
+                      <td style={{ padding: '0.55rem 0.75rem' }}>{note}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -276,7 +271,6 @@ function RecommendationDomainV2() {
             </Card>
           </section>
 
-          {/* 기술 결정 */}
           <section
             id="design"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
@@ -293,7 +287,7 @@ function RecommendationDomainV2() {
                   fontSize: '1rem',
                 }}
               >
-                A. pet-data-api 역할 — 인기·트렌드 신호 (추천 서버 아님)
+                A. 이벤트 기반 수집 — 본 기능을 막지 않음
               </h3>
               <ul
                 style={{
@@ -304,24 +298,15 @@ function RecommendationDomainV2() {
                   lineHeight: '1.8',
                 }}
               >
+                {li('커뮤니티 게시글: 제목·본문 → CommunityPostCreatedEvent')}
+                {li('케어 요청: 요청 내용 → CareRequestCreatedEvent')}
                 {li(
-                  '추천 읽기 API는 단일 진입점 GET /api/recommend — Location 쪽 LocationRecommendAgentService·/location-services/recommend는 제거됨.'
+                  '주변서비스 검색어: LocationServiceService.publishSearchEvent → LocationSearchPerformedEvent (로그인만)',
                 )}
                 {li(
-                  'Track A에서 pet-data-api가 주는 것은 HTTP 기준으로 GET /popular·GET /trends(및 Redis 서빙)이며, 시설 DB 적재 원천은 문서상 CLI JSON → LocationImportService 경로가 기준입니다.'
-                )}
-                {li(
-                  '외부 POST /recommend 같은 “통합 추천 서버”에는 의존하지 않고, Track A는 Petory가 후보와 신호를 직접 조합합니다.'
+                  'Python 분석 실패·타임아웃이어도 글 작성·케어 요청·검색 응답은 그대로 성공',
                 )}
               </ul>
-              <CodeBlock>{`// RecommendService — 컨텍스트 분기 (요지)
-boolean petoryOwned = PETORY_OWNED_CONTEXTS.contains(normalizeContext(context));
-return petoryOwned
-    ? recommendWithPetoryCandidates(lat, lng, context, petInfo)  // Track A
-    : recommendWithLegacyProxy(lat, lng, context, petInfo);       // Track B → client.recommend()
-
-// pet-data-api (Track A 소비 — 읽기)
-// GET /popular/{context}, GET /trends/{category}`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -332,7 +317,7 @@ return petoryOwned
                   fontSize: '1rem',
                 }}
               >
-                B. Petory owner 전환 — findByRadius 재사용
+                B. Python NLP — PetIntentClient
               </h3>
               <ul
                 style={{
@@ -344,31 +329,21 @@ return petoryOwned
                 }}
               >
                 {li(
-                  'Petory에는 이미 MySQL ST_Within + ST_Distance_Sphere 기반 findByRadius가 구현되어 있었고 LocationServiceController 경로에서 실제 운영 중이었습니다.'
+                  'POST /api/pet-intent/analyze — intentDomain, intent, recommendedCategories, confidence, intentTags',
                 )}
                 {li(
-                  'RecommendService가 LocationServiceService를 주입해 searchLocationServicesByLocation(lat, lng, radius, … category, "distance", topN)를 호출합니다.'
+                  '명확한 키워드는 rule 우선, 애매한 입력은 intent example 유사도(embedding fallback 포함)',
                 )}
                 {li(
-                  'Track A에서는 반경 후보(NEARBY_CANDIDATE_LIMIT)·fetchPopular·fetchTrends를 이름 정규화로 join하고 recommend_version은 petory-nearby-v1.'
+                  '예: "강아지가 귀를 자꾸 긁어요" → MEDICAL · 동물병원 (confidence 0.88)',
                 )}
               </ul>
-              <CodeBlock>{`// SpringDataJpaLocationServiceRepository — 이미 운영 중 (공간 인덱스 정상 작동 확인)
-@Query(value = "SELECT * FROM locationservice ls WHERE " +
-    "ST_Within(ls.location, ST_GeomFromText(:polygon, 4326)) AND " +
-    "ST_Distance_Sphere(ls.location, ST_GeomFromText(:point, 4326)) <= :radiusInMeters AND " +
-    "ls.is_deleted = 0 " +
-    "ORDER BY ST_Distance_Sphere(...) ASC, ls.rating DESC")
-List<LocationService> findByRadius(
-    @Param("latitude") Double lat, @Param("longitude") Double lng,
-    @Param("radiusInMeters") Double radiusM, ...);
-
-// RecommendService 방향 (Track A 발췌)
-List<LocationServiceDTO> nearby =
-    locationServiceService.searchLocationServicesByLocation(...);
-var popular = petDataApiClient.fetchPopular(context, limit, requestId);
-var trends  = petDataApiClient.fetchTrends(context, limit, requestId);
-// → mergeNearbyCandidates(...) → RecommendResponse recommend_version petory-nearby-v1`}</CodeBlock>
+              <CodeBlock>{`// PetIntentClient — 실패 시 Optional.empty(), 본 요청 무영향
+POST http://localhost:8000/api/pet-intent/analyze
+{
+  "text": "강아지가 귀를 자꾸 긁어요",
+  "petType": null
+}`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -379,7 +354,7 @@ var trends  = petDataApiClient.fetchTrends(context, limit, requestId);
                   fontSize: '1rem',
                 }}
               >
-                C. Track A / Track B 분리 — 시설 소유 vs 레거시 프록시
+                C. Signal 저장 — 개인정보·TTL
               </h3>
               <ul
                 style={{
@@ -390,28 +365,11 @@ var trends  = petDataApiClient.fetchTrends(context, limit, requestId);
                   lineHeight: '1.8',
                 }}
               >
-                {li(
-                  'Track A(9): grooming · hospital · pharmacy · cafe · restaurant · pension · boarding · hotel · supplies — Petory DB 반경 후보 + pet-data popular/trends.'
-                )}
-                {li(
-                  '시설 행은 locationservice 마스터(BATCH_IMPORT JSON) 필요 — LocationImportService·FacilitySyncScheduler와 연동.'
-                )}
-                {li(
-                  'Track B: snack · food · clothes — PetDataApiClient.recommend(), popular 경로는 supplies alias, lat/lng는 미사용.'
-                )}
-                {li(
-                  'popular 수집 파이프라인은 컨텍스트별로 runner에서 갈림(local_discovery 등)일 수 있으나, Petory 입장에서는 “Track A면 nearby + 신호 조합”으로 동일하게 취급합니다.'
-                )}
+                {li('저장: intent_domain, intent, recommended_categories(JSON), confidence, tags')}
+                {li('미저장: 커뮤니티·케어·검색어 원문')}
+                {li('saveIfConfident: confidence ≥ 0.6, expires_at 7일')}
+                {li('LOCATION_SEARCH source_id는 null')}
               </ul>
-              <CodeBlock>{`// RecommendService.java (발췌)
-private static final Set<String> PETORY_OWNED_CONTEXTS = Set.of(
-    "grooming", "hospital", "pharmacy", "cafe", "restaurant", "pension",
-    "boarding", "hotel", "supplies");
-
-// Track A merge 가중치: 거리 55% · 평점 20% · 리뷰 15% · 인기 10%
-
-// Track B — snack | food | clothes
-return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -422,7 +380,7 @@ return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}
                   fontSize: '1rem',
                 }}
               >
-                D. 구조화 시설 적재 (Location 도메인과 연결)
+                D. 프론트 카드 → Location 검색
               </h3>
               <ul
                 style={{
@@ -434,15 +392,18 @@ return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}
                 }}
               >
                 {li(
-                  'recommendation.md 1.1·location.md 로직 요약과 같이 pet-data-api CLI 출력 JSON을 Spring LocationImportService가 upsert 하는 경로가 시설 적재 서사입니다.'
+                  '주변서비스 탭 활성 시 GET /api/pet-recommend/signals (비로그인·토큰 없으면 호출 안 함)',
                 )}
                 {li(
-                  '스케줄·파일 트리거(FacilitySyncScheduler 01:00·app.location.import.file-path) 또는 POST /api/admin/location/import 등은 location.md 참고.'
+                  'LocationControls: cardMessage(이유) + actionLabel(CTA), 클릭 시 targetCategory → locationCategory',
                 )}
                 {li(
-                  '레포에 FacilitySyncService·HTTP 시설 fetch가 따로 붙어 있더라도 RecommendService Track A 근처 후보 원천은 위 LocationService 레이어가 담당한다는 서술과 모순되지 않게 두었습니다.'
+                  '추천 API는 장소 목록을 내리지 않음 — 지도 중심·반경·sort는 프론트가 Location search에 전달',
                 )}
               </ul>
+              <CodeBlock>{`GET /api/location-services/search
+  ?latitude={lat}&longitude={lng}&radius={radius}
+  &category=동물병원   // 카드 클릭 후`}</CodeBlock>
             </Card>
 
             <Card>
@@ -453,7 +414,7 @@ return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}
                   fontSize: '1rem',
                 }}
               >
-                E. blog.py regex 시스템의 한계 인식
+                E. 점수 기반 장소 API (카드와 별도)
               </h3>
               <ul
                 style={{
@@ -465,19 +426,18 @@ return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}
                 }}
               >
                 {li(
-                  'blog.py의 blocklist/regex 기반 상호명 추출은 시설·인기 수집 컨텍스트마다 PREFIX 패턴, suffix 제거, stopword를 별도로 관리합니다.'
+                  'GET /api/pet-recommend?lat&lng&text&radius — PetRecommendScoreCalculator (거리·평점·리뷰·place score·tag match)',
                 )}
                 {li(
-                  '_BLOCKLIST_EXACT 100+개, _BLOCKLIST_CONTAINS 30+개, 지역명 80+개가 이미 누적되어 있습니다. "한계에 도달할 것"이 아니라 이미 도달한 상태입니다.'
+                  '주변서비스 탭 카드는 §D 카테고리 진입점 추천이 중심 — 점수 API는 텍스트+좌표 기반 장소 순위용',
                 )}
                 {li(
-                  '장기적으로 NER(개체명 인식) 또는 외부 카탈로그 매칭으로 교체해야 유지비가 낮아집니다. 당장은 유지하되 확장을 멈추는 방향을 결정했습니다.'
+                  'place_score·tag_match는 태그·score 데이터가 쌓인 뒤 효과가 커짐 — 초기에는 거리·평점·리뷰 검증 중심',
                 )}
               </ul>
             </Card>
           </section>
 
-          {/* 한계 & 다음 개선 */}
           <section
             id="limits"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
@@ -496,22 +456,19 @@ return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}
                 }}
               >
                 {li(
-                  'popularity 이름 매칭: Track A에서 findByRadius 후보와 GET /popular 명칭 정규화 불일치 시 신호가 빠질 수 있으며, 매칭률은 아직 계측하지 않았습니다.'
+                  'Python NLP 서버 미기동 시 signal이 쌓이지 않아 카드 없음 — 검색·게시·케어는 정상',
+                )}
+                {li('비로그인: signal 저장·/signals 조회 없음')}
+                {li(
+                  'confidence 0.6 미만·만료 signal — 카드 미표시, 기본 주변서비스만',
                 )}
                 {li(
-                  'pet-data-api 쪽 enrich·regex 유지비: 블록리스트 증식은 이미 한계에 도달한 상태이므로 장기적으로 NER·카탈로그 매칭 등 후속 과제입니다.'
-                )}
-                {li(
-                  'Track B(snack/food/clothes)는 Petory locationservice 없이 pet-data 신호만 사용 — 구조화 마스터 생기면 Track A 확장 검토.'
-                )}
-                {li(
-                  'POST /api/recommend/events — pet-data-api 미구현으로 실제 전송 스킵(debug 로그만).'
+                  'NLP recommendedCategories와 Location category 문자열 불일치 시 카드→검색 연결 품질 저하 가능',
                 )}
               </ul>
             </Card>
           </section>
 
-          {/* 관련 페이지 */}
           <section
             id="docs"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
@@ -532,50 +489,50 @@ return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}
                 <li>
                   •{' '}
                   <a
-                    href={PETORY_RECOMMEND_SERVICE}
+                    href={PETORY_PET_RECOMMEND_CONTROLLER}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    RecommendService.java
+                    PetRecommendationController.java
                   </a>
-                  {' — Track A nearby merge · Track B recommend()'}
+                  {' — /signals · /pet-recommend'}
                 </li>
                 <li>
                   •{' '}
                   <a
-                    href={PETORY_LOCATION_REPO}
+                    href={PETORY_PET_INTENT_CLIENT}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    SpringDataJpaLocationServiceRepository.java
+                    PetIntentClient.java
                   </a>
-                  {' — findByRadius (ST_Within · ST_Distance_Sphere)'}
+                  {' — NLP 호출·timeout'}
                 </li>
                 <li>
                   •{' '}
                   <a
-                    href={PETORY_LOCATION_IMPORT}
+                    href={PETORY_INTENT_SIGNAL_ENTITY}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    LocationImportService.java
+                    UserPetIntentSignal.java
                   </a>
-                  {' — Python 배치 JSON → DB 적재(location.md와 정합)'}
+                  {' — signal 엔티티'}
                 </li>
                 <li>
                   •{' '}
                   <a
-                    href={PETORY_LOCATION_ARCH}
+                    href={PETORY_NLP_INTENT_ROUTER}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    위치·추천 아키텍처 (Petory)
+                    pet_intent_router.py
                   </a>
-                  {' — 통합 지도·API 대조·CATEGORY_TO_CONTEXT'}
+                  {' — petory-nlp-server'}
                 </li>
                 <li>
                   •{' '}
@@ -587,41 +544,7 @@ return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}
                   >
                     recommendation.md (Petory)
                   </a>
-                  {' — API·Track A/B·가중 merge·DTO'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PET_DATA_API_LOCAL_DISCOVERY}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    local_discovery.py
-                  </a>
-                  {' — popular 수집(컨텍스트별)·참고'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PET_DATA_API_BLOG}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    blog.py
-                  </a>
-                  {' — Track A 인기 데이터 수집 · regex 시스템'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/recommendation/pet-data-api"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    pet-data-api 포트폴리오
-                  </Link>
-                  {' — 수집 파이프라인 · Redis 설계 · API 엔드포인트'}
+                  {' — 흐름·API·프론트·로컬 실행'}
                 </li>
                 <li>
                   •{' '}
@@ -631,7 +554,7 @@ return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}
                   >
                     Location 도메인
                   </Link>
-                  {' — LocationServiceService.findByRadius() 운영 경로'}
+                  {' — 카드 클릭 후 category 검색·통합 지도'}
                 </li>
               </ul>
             </Card>

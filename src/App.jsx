@@ -7,7 +7,6 @@ import PetoryFlowsPage from './pages/projects/petory/PetoryFlowsPage';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
 import InfraPage from './pages/InfraPage';
-import PetDataApiPage from './pages/PetDataApiPage';
 // 도메인 페이지들 (V2 — 현재 기본)
 // import UserDomain from './pages/projects/petory/domains/UserDomain';
 import UserDomainV2 from './pages/projects/petory/domains/UserDomainV2';
@@ -79,11 +78,7 @@ function App() {
             {/* <Route path="/domains/location/v2" element={<LocationDomainV2 />} /> */}
             <Route path="/domains/location/optimization" element={<LocationDomainOptimization />} />
             <Route path="/domains/location/refactoring" element={<LocationDomainRefactoring />} />
-            {/* <Route
-              path="/domains/recommendation/pet-data-api"
-              element={<PetDataApiPage />}
-            />
-            <Route path="/domains/recommendation" element={<RecommendationDomainV2 />} /> */}
+            <Route path="/domains/recommendation" element={<RecommendationDomainV2 />} />
             <Route path="/domains/meetup" element={<MeetupDomainV2 />} />
             {/* <Route path="/domains/meetup/v2" element={<MeetupDomainV2 />} /> */}
             <Route path="/domains/meetup/optimization" element={<MeetupDomainOptimization />} />
