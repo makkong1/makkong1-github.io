@@ -44,9 +44,11 @@ const PETORY_LOCATION_REPO =
   "https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/location/repository/SpringDataJpaLocationServiceRepository.java";
 const PETORY_LOCATION_DOC =
   "https://github.com/makkong1/Petory/blob/main/docs/domains/location.md";
+const PETORY_LOCATION_ARCH =
+  "https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%20%EA%B8%B0%EB%B0%98%20%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md";
 
 function LocationDomainV2() {
-  const PETORY_LOCATION_RECOMMEND_API =
+  const PETORY_RECOMMENDATION_DOC =
     "https://github.com/makkong1/Petory/blob/main/docs/domains/recommendation.md";
 
   const sections = [
@@ -58,11 +60,12 @@ function LocationDomainV2() {
   ];
 
   const corePillars = [
-    "검색 분기 설계",
-    "초기 로드 최적화",
-    "지도 이동·재조회 분리",
-    "서버 필터 통합",
-    "지역 계층 검색",
+    "위치 우선 검색 분기",
+    "sort=stable 추천순",
+    "반경·size=300",
+    "지도 「이 지역」",
+    "JSON·CSV 적재",
+    "목록/추천 API 분리",
   ];
 
   const li = (text) => <li style={{ marginBottom: "0.35rem" }}>• {text}</li>;
@@ -87,11 +90,14 @@ function LocationDomainV2() {
           >
             위치 서비스 도메인은 지도에서 반려 동반 시설을 찾고 리뷰까지 이어 주는
             Petory의 탐색·검색 기능입니다. 처음에는 지도와 검색만 맞물리면 된다고
-            보였지만, 실제 구현에서는 키워드·위치·지역이 겹칠 때 처리 순서, 통합
-            검색 분기, 지도를 옮길 때 결과가 매번 덮이는 재조회, 추천 읽기는
-            Recommendation 도메인으로 모으는 정리까지 함께 다뤄야 했습니다. 저는
-            검색 우선순위를 한곳에서 정하고, 지도만 움직였을 때 자동으로 조회되지
-            않게 해 결과가 통째로 사라지지 않도록 하는 방향으로 설계했습니다.
+            보였지만, 실제 구현에서는 키워드·위치·지역이 겹칠 때도 위치를 먼저
+            볼 검색 분기, 통합 지도에서 주변 목록 검색과 맞춤 추천 API를 나누는
+            정리, 지도를 옮길 때 결과가 매번 덮이는 재조회, pet-data-api JSON과
+            공공 CSV로 시설을 채우는 적재까지 함께 다뤄야 했습니다. 저는 검색
+            분기를 서비스 한곳에서 위치 → 지역 → FULLTEXT → 평점순으로 묶고,
+            주변 목록은 검색 API만 쓰며 추천 읽기는 Recommendation 도메인으로
+            모으며, 지도만 움직였을 때는 자동 조회 대신 「이 지역」으로 검색
+            시점을 사용자에게 맡기는 방향으로 설계했습니다.
           </p>
 
           <section
@@ -143,31 +149,25 @@ function LocationDomainV2() {
                   margin: 0,
                 }}
               >
-                검색 로직을 위치 우선, 지역 우선, 키워드 단독 FULLTEXT로 명확히
-                분기하고, 초기 로드에서는 사용자 주변 데이터를 줄여 가져오도록
-                구조를 바꿨습니다. 메인 지도에서는{" "}
-                <code
-                  style={{
-                    backgroundColor: "var(--bg-color)",
-                    padding: "0.1rem 0.3rem",
-                    borderRadius: "4px",
-                  }}
-                >
-                  mapViewportCenter
-                </code>
-                와{" "}
-                <code
-                  style={{
-                    backgroundColor: "var(--bg-color)",
-                    padding: "0.1rem 0.3rem",
-                    borderRadius: "4px",
-                  }}
-                >
-                  searchCenter
-                </code>
-                를 분리해, 지도를 움직여도 "이 지역 검색" 버튼을 누르기 전까지
-                결과가 바뀌지 않습니다. 각 검색 분기의 키워드·카테고리·정렬
-                필터는 클라이언트가 아닌 서버 SQL에서 처리합니다.
+                백엔드 검색은{" "}
+                <code>LocationServiceService.searchLocationServices</code> 한
+                곳에서만 갈립니다. 좌표가 있으면 반경 검색을 먼저 타고, 같은
+                요청에 키워드가 붙어 있어도 우선순위는 바뀌지 않습니다. 이
+                경로에서는 키워드를 <strong>시설명에 포함되는지</strong>로만
+                좁히며, 설명·카테고리까지 도는 전국 FULLTEXT 검색은 좌표·지역이
+                없을 때만 씁니다. 좌표가 없으면 지역 계층 → 키워드만 있을 때
+                FULLTEXT → 조건이 없으면 평점순입니다. 통합 지도 주변서비스
+                탭은 위치·반경(기본 5km), 카테고리, 추천순(
+                <code>sort=stable</code>)으로{" "}
+                <code>/api/location-services/search</code>를 호출하고, 응답은
+                최대 <code>size=300</code>건입니다. 지도에서는 뷰포트 중심(
+                <code>mapViewportCenter</code>)과 실제 검색 중심(
+                <code>searchCenter</code>)을 나눠, 드래그만으로는 목록이
+                갱신되지 않고 「이 지역」을 눌렀을 때만 다시 조회합니다.
+                맞춤 추천은 <code>RecommendCard</code>가{" "}
+                <code>/api/recommend</code>를 따로 부르고, 돌아온 시설을
+                목록의 <code>idx</code>와 맞춰 강조할 뿐입니다. 카테고리·키워드·
+                정렬은 프론트에서 걸러내지 않고 DB 쿼리에서 처리합니다.
               </p>
             </Card>
 
@@ -273,17 +273,10 @@ function LocationDomainV2() {
                 >
                   size=100
                 </code>
-                , 메인 지도 UI는 줌 레벨별{" "}
-                <code
-                  style={{
-                    backgroundColor: "var(--bg-color)",
-                    padding: "0.1rem 0.3rem",
-                    borderRadius: "4px",
-                  }}
-                >
-                  30~500
-                </code>
-                개 제한을 함께 전송.
+                . 통합 지도는 UI 반경 기본 <strong>5km</strong>(km→m 변환 후 전달),
+                요청 <code>size=300</code> 고정(
+                <code>LOCATION_RESULT_LIMIT</code>). 백엔드{" "}
+                <code>radius</code> 생략·0 이하 시 서비스 기본은 10km.
               </p>
             </Card>
 
@@ -347,12 +340,17 @@ function LocationDomainV2() {
                   lineHeight: "1.8",
                 }}
               >
-                {li("lat/lng 있으면 → 반경 검색 (현재 메인 UI 기본 경로)")}
-                {li("lat/lng 없고 지역 있으면 → 지역 계층 검색")}
                 {li(
-                  "위치 반경 분기에서는 이름 검색 조건이 LIKE이다. FULLTEXT는 위치·지역이 모두 없고 키워드만 있을 때(location.md 1.1·2.4).",
+                  "lat/lng 있으면 → 반경 검색 (통합 지도·초기 로드 기본). keyword·category는 동일 쿼리 WHERE",
                 )}
-                {li("아무 조건 없으면 → 전체 평점순")}
+                {li("lat/lng 없고 지역 있으면 → road > eup > sigungu > sido")}
+                {li(
+                  "위치·지역 없고 keyword만 → FULLTEXT(이름·설명·카테고리). 반경·지역에서는 시설명 포함 여부만",
+                )}
+                {li("조건 없음 → 전체 평점순")}
+                {li(
+                  "sort=stable: rating·review_count·거리 tie-break — LocationControls·초기 locationSort 기본값",
+                )}
               </ul>
               <CodeBlock>{`boolean hasLocation = latitude != null && longitude != null;
 boolean hasRegion   = hasText(sido) || hasText(sigungu) || ...;
@@ -388,17 +386,20 @@ else                  results = searchLocationServicesByRegion(
                   "이전: size 제한 없이 전체 22,699건 로드 → 전송량·메모리 병목",
                 )}
                 {li(
-                  "이후: 사용자 위치 기반 반경 검색 + 줌 레벨별 size 30~500 제한",
+                  "이후: 반경 검색 + 통합 지도 size=300 고정(meetup/care만 줌별 limit)",
                 )}
-                {li("컨트롤러 기본값 size=100, size=0이면 전체 조회(관리자용)")}
+                {li("컨트롤러 기본값 size=100, size≤0이면 상한 없음(관리자·배치용)")}
               </ul>
-              <CodeBlock>{`// unifiedMapApi.js — 줌 레벨별 반환 개수 상한
-const ZOOM_LIMIT_TABLE = {
-  location: { 4: 30, 5: 50, 6: 100, 7: 150, 8: 250, 9: 400, default: 500 },
-};
+              <CodeBlock>{`// unifiedMapApi.js (Petory) — location 탭만 고정 상한
+const LOCATION_RESULT_LIMIT = 300;
 
-// fetchActiveMapItems — 항상 size 파라미터 포함
-size: getLimitForLevel('location', mapLevel)`}</CodeBlock>
+locationServiceApi.searchPlaces({
+  latitude: lat,
+  longitude: lng,
+  radius: radiusKm * 1000,  // UI km → API m
+  sort,  // stable | distance | rating | reviews
+  size: LOCATION_RESULT_LIMIT,
+});`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: "1rem" }}>
@@ -423,10 +424,13 @@ size: getLimitForLevel('location', mapLevel)`}</CodeBlock>
                 {li("mapViewportCenter — 지도 뷰포트 이동 시 즉시 갱신")}
                 {li("searchCenter — 실제 API 호출 기준점, 버튼 클릭 시만 갱신")}
                 {li(
-                  '"이 지역 검색" 클릭 → commitLocationSearch(mapViewportCenter) → searchCenter 확정 → 반경 검색 재실행',
+                  "주변서비스 탭에서만 적용 — meetup/care는 mapViewportCenter 기준 nearby",
                 )}
                 {li(
-                  '두 값이 다르면 "이 지역 검색" 버튼 표시 → 사용자가 재조회 시점을 직접 선택',
+                  "「이 지역」 클릭 → searchCenter 확정 → fetchActiveMapItems 재호출",
+                )}
+                {li(
+                  "isSameCenter 기준으로 hasPendingAreaChange — 뷰포트가 검색 중심과 충분히 다를 때만 버튼 노출",
                 )}
               </ul>
               <CodeBlock>{`// mapViewportCenter vs searchCenter 분리
@@ -438,9 +442,8 @@ const commitLocationSearch = useCallback((center) => {
   setHasPendingAreaChange(false);       // 버튼 숨김
 }, []);
 
-// "이 지역 검색" 버튼 → 현재 뷰포트 중심으로 반경 검색 재실행
-const handleSearchThisArea = () =>
-  commitLocationSearch(mapViewportCenter);`}</CodeBlock>
+// LocationControls: hasPendingAreaChange → 「이 지역」 버튼
+onSearchThisArea={() => commitLocationSearch(mapViewportCenter)}`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: "1rem" }}>
@@ -490,10 +493,46 @@ WHERE ST_Within(
   AND (:keyword IS NULL
        OR ls.name LIKE CONCAT('%', :keyword, '%'))  -- ③ LIKE (SPATIAL 이후 적용)
 ORDER BY
+  CASE WHEN :sort = 'stable'   THEN ls.rating END DESC,
+  CASE WHEN :sort = 'stable'   THEN ls.review_count END DESC,
   CASE WHEN :sort = 'reviews'  THEN ls.review_count END DESC,
   CASE WHEN :sort = 'rating'   THEN ls.rating END DESC,
   ST_Distance_Sphere(...) ASC
 -- FULLTEXT(ft_search)는 keyword 단독 경로(위치·지역 없을 때)에서만 사용`}</CodeBlock>
+            </Card>
+
+            <Card style={{ marginBottom: "1rem" }}>
+              <h3
+                style={{
+                  marginBottom: "0.75rem",
+                  color: "var(--text-color)",
+                  fontSize: "1rem",
+                }}
+              >
+                E. 시설 적재 — JSON·CSV 이중 경로
+              </h3>
+              <ul
+                style={{
+                  listStyle: "none",
+                  padding: 0,
+                  margin: 0,
+                  color: "var(--text-secondary)",
+                  lineHeight: "1.8",
+                }}
+              >
+                {li(
+                  "JSON: pet-data-api CLI → pet-locations-*.json → LocationImportService (data_source=BATCH_IMPORT)",
+                )}
+                {li(
+                  "관리자 /api/admin/location — sync·import·collect·import-files (LocationServiceAdminController)",
+                )}
+                {li(
+                  "CSV: /api/admin/location-services/import-public-data (AdminLocationController, MASTER)",
+                )}
+                {li(
+                  "FacilitySyncScheduler 01:00 — app.location.import.file-path 설정 시 자동 import",
+                )}
+              </ul>
             </Card>
 
             <Card>
@@ -504,7 +543,7 @@ ORDER BY
                   fontSize: "1rem",
                 }}
               >
-                E. 지역 계층 검색 (백엔드 지원)
+                F. 지역 계층 검색 (백엔드 지원)
               </h3>
               <ul
                 style={{
@@ -553,7 +592,7 @@ else                            return findByOrderByRatingDesc(keyword, category
                   "메인 지도 기본 경로는 lat/lng 반경 검색 중심 — 백엔드 지역 계층 검색은 현재 주 사용자 경로에서 적극적으로 쓰이지 않음",
                 )}
                 {li(
-                  "초기 로드 성능 수치는 size 제한 없던 초기 구조 기준 — 현재 기본 UI는 줌 레벨별 30~500개 제한을 항상 전송",
+                  "초기 로드 성능 수치는 size 제한 없던 초기 구조 기준 — 현재 통합 지도는 size=300 고정",
                 )}
                 {li(
                   "/api/location-services와 리뷰 API는 로그인 사용자 전용 — SecurityConfig /api/** authenticated() 적용",
@@ -562,7 +601,10 @@ else                            return findByOrderByRatingDesc(keyword, category
                   "score 정렬은 DB 쿼리가 아닌 서비스 레이어 post-sort — 대용량 시 전체 정렬 비용 발생",
                 )}
                 {li(
-                  "반경 검색 결과는 size 상한이 있어 반경 내 일부만 반환 — 정확한 전체 목록이 필요한 경우 한계",
+                  "반경 내 전부가 아닌 최대 300건만 반환 — UI 반경(기본 5km)과 백엔드 radius 미전달 시 10km 기본은 별개",
+                )}
+                {li(
+                  "레거시 GET /api/location-services/recommend(Spring AI) 제거 — 맞춤 추천은 Recommendation 도메인만",
                 )}
               </ul>
             </Card>
@@ -588,6 +630,21 @@ else                            return findByOrderByRatingDesc(keyword, category
                 <li>
                   •{" "}
                   <a
+                    href={PETORY_LOCATION_ARCH}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: "var(--link-color)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    위치·추천 아키텍처 (Petory)
+                  </a>
+                  {" — 프론트·백엔드 API 대조·통합 지도"}
+                </li>
+                <li>
+                  •{" "}
+                  <a
                     href={PETORY_LOCATION_DOC}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -598,7 +655,7 @@ else                            return findByOrderByRatingDesc(keyword, category
                   >
                     location.md (Petory)
                   </a>
-                  {" — 통합 검색 1.1·API 4.4"}
+                  {" — 통합 검색 §1.1·리뷰·관리자 API"}
                 </li>
                 <li>
                   •{" "}

@@ -46,6 +46,8 @@ const PETORY_LOCATION_IMPORT =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/location/service/LocationImportService.java';
 const PETORY_RECOMMENDATION_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/recommendation.md';
+const PETORY_LOCATION_ARCH =
+  'https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%20%EA%B8%B0%EB%B0%98%20%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
 const PET_DATA_API_LOCAL_DISCOVERY =
   'https://github.com/makkong1/pet-data-api/blob/main/app/ingestion/local_discovery.py';
 const PET_DATA_API_BLOG =
@@ -62,11 +64,11 @@ function RecommendationDomainV2() {
 
   const corePillars = [
     'GET /api/recommend 단일 진입',
-    'Track A — Petory nearby + popular/trends',
-    'Track B — 레거시 recommend()',
-    '반경 검색 재사용 (LocationService)',
-    '시설 적재 — CLI JSON → LocationImportService',
-    'Location AI 추천 제거·통합',
+    'Track A — nearby + popular/trends',
+    'Track B — snack/food/clothes',
+    '가중 스코어 merge',
+    '통합 지도 RecommendCard',
+    'Location /recommend 제거',
   ];
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
@@ -89,14 +91,12 @@ function RecommendationDomainV2() {
               fontSize: '0.95rem',
             }}
           >
-            Recommendation 도메인은 근처 시설 정보와 인기·트렌드 신호를 한 응답으로
-            묶어 사용자에게 내려 주는 맞춤 추천 흐름을 Petory 안에서 책임지는 기능입니다.
-            처음에는 외부에서 받은 값만 이어 보여 주면 된다고 보았지만, 실제 구현에서는
-            DB 후보와 블로그 신호 이름이 조금만 달라져도 결과가 통째로 비는 순간, 로그인·
-            Pet 선택 등 조건이 섞였을 때 응답을 나누는 일, 화면에 줄 문구까지 한 덩어리로
-            묶는 일까지 함께 다뤄야 했습니다. 저는 합치는 규칙을 정하고, 추천 읽기
-            입구를 한 경로로만 두며, 근처 시설 검색은 위치 도메인과 역할을 나누는
-            방향으로 설계했습니다.
+            Recommendation 도메인은 <code>GET /api/recommend</code> 한 경로로 맞춤 추천을
+            제공합니다. 시설 9컨텍스트(Track A)는 Petory DB 반경 후보와 pet-data-api
+            인기·트렌드만 조합하고, 간식·사료·의류(Track B)는 레거시 프록시를 유지합니다.
+            통합 지도 <code>RecommendCard</code>가 소분류→context 매핑 후 호출하며,
+            추천 시설은 목록 <code>idx</code>와 매칭해 상단·골드 마커로 강조합니다.
+            과거 <code>/api/location-services/recommend</code>(Spring AI)는 제거했습니다.
           </p>
 
           {/* 핵심 기능 */}
@@ -150,14 +150,13 @@ function RecommendationDomainV2() {
                   margin: 0,
                 }}
               >
-                과거에는 <code>RecommendService</code>가 시설 검색까지 외부{' '}
-                <code>recommend()</code>에 몰아 넣었지만, 현재 Track A에서는{' '}
-                <code>searchLocationServicesByLocation</code>으로 반경 후보를 받고{' '}
-                <code>fetchPopular</code>·<code>fetchTrends</code>로 인기·트렌드 신호만
-                붙입니다. 최종 merge·정렬·<code>RecommendResponse</code> 조립은
-                모두 Petory입니다. 추가로 <code>/api/recommend/copy</code>·{' '}
-                <code>/events</code>·시계열 API 등 상세 계약은 recommendation.md 제2절과
-                같습니다.
+                Track A: <code>searchLocationServicesByLocation</code>(10km, 최대 20건) +
+                <code>fetchPopular</code> / <code>fetchTrends</code> → 이름 정규화·alias
+                조인 후 거리 55%·평점 20%·리뷰 15%·인기 10% 가중으로 상위 5건,
+                <code>recommend_version=petory-nearby-v1</code>. Track B는{' '}
+                <code>PetDataApiClient.recommend()</code>가 popular+trends를 로컬 조립(
+                <code>popular-intelligence-v1</code>). 부가 API: copy·events(전송 스킵)·
+                trends 시계열(스냅샷 합성) — recommendation.md §2.
               </p>
             </Card>
 
@@ -189,7 +188,7 @@ function RecommendationDomainV2() {
                 <tbody>
                   {[
                     [
-                      'nearby 후보 (Track A 8컨텍스트)',
+                      'nearby 후보 (Track A 9컨텍스트)',
                       '✅ LocationService + findByRadius',
                       '❌',
                     ],
@@ -206,9 +205,9 @@ function RecommendationDomainV2() {
                     ],
                     ['Redis TTL 서빙', '❌', '✅ (pet-data-api)'],
                     [
-                      'Track B (supplies 등)',
-                      '✅ recommend() 호출 · PetDataApiClient 내부 조합',
-                      '✅ GET /popular · GET /trends 서빙',
+                      'Track B (snack/food/clothes)',
+                      '✅ recommend() · popular+trends 로컬 조립',
+                      '✅ GET /popular · GET /trends (supplies alias)',
                     ],
                   ].map(([label, petory, api], i, arr) => (
                     <tr
@@ -392,13 +391,13 @@ var trends  = petDataApiClient.fetchTrends(context, limit, requestId);
                 }}
               >
                 {li(
-                  'Track A: grooming · hospital · pharmacy · cafe · restaurant · pension · boarding · hotel — Petory DB에서 반경 후보를 가져오고 인기 신호만 pet-data-api에서 받습니다.'
+                  'Track A(9): grooming · hospital · pharmacy · cafe · restaurant · pension · boarding · hotel · supplies — Petory DB 반경 후보 + pet-data popular/trends.'
                 )}
                 {li(
-                  'boarding·hotel 포함 8컨텍스트 시설 행은 locationservice 마스터가 있어야 하며, bulk 적재 스토리는 recommendation.md·location.md의 배치 JSON·Import 흐름과 맞춥니다.'
+                  '시설 행은 locationservice 마스터(BATCH_IMPORT JSON) 필요 — LocationImportService·FacilitySyncScheduler와 연동.'
                 )}
                 {li(
-                  'Track B: supplies · snack · food · clothes 등 구조화 시설 마스터가 없거나 레거시 경로 유지 대상은 recommend() 한 방으로 처리합니다(lat/lng는 내부에서 사실상 미사용).'
+                  'Track B: snack · food · clothes — PetDataApiClient.recommend(), popular 경로는 supplies alias, lat/lng는 미사용.'
                 )}
                 {li(
                   'popular 수집 파이프라인은 컨텍스트별로 runner에서 갈림(local_discovery 등)일 수 있으나, Petory 입장에서는 “Track A면 nearby + 신호 조합”으로 동일하게 취급합니다.'
@@ -407,13 +406,12 @@ var trends  = petDataApiClient.fetchTrends(context, limit, requestId);
               <CodeBlock>{`// RecommendService.java (발췌)
 private static final Set<String> PETORY_OWNED_CONTEXTS = Set.of(
     "grooming", "hospital", "pharmacy", "cafe", "restaurant", "pension",
-    "boarding", "hotel");
+    "boarding", "hotel", "supplies");
 
-// Track B
-private RecommendResponse recommendWithLegacyProxy(...) {
-    RecommendRequest request = RecommendRequest.builder()...build();
-    return petDataApiClient.recommend(request);  // 내부에서 popular + trends
-}`}</CodeBlock>
+// Track A merge 가중치: 거리 55% · 평점 20% · 리뷰 15% · 인기 10%
+
+// Track B — snack | food | clothes
+return petDataApiClient.recommend(request);  // popular + trends 로컬 조립`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -504,7 +502,10 @@ private RecommendResponse recommendWithLegacyProxy(...) {
                   'pet-data-api 쪽 enrich·regex 유지비: 블록리스트 증식은 이미 한계에 도달한 상태이므로 장기적으로 NER·카탈로그 매칭 등 후속 과제입니다.'
                 )}
                 {li(
-                  'supplies 등 Track B는 여전히 Petory 영구 저장 없이 PetDataApiClient 내부 popular+trends 조합 응답에 의존 — 도메인 데이터가 생기면 Track A 패턴 검토 가능.'
+                  'Track B(snack/food/clothes)는 Petory locationservice 없이 pet-data 신호만 사용 — 구조화 마스터 생기면 Track A 확장 검토.'
+                )}
+                {li(
+                  'POST /api/recommend/events — pet-data-api 미구현으로 실제 전송 스킵(debug 로그만).'
                 )}
               </ul>
             </Card>
@@ -567,6 +568,18 @@ private RecommendResponse recommendWithLegacyProxy(...) {
                 <li>
                   •{' '}
                   <a
+                    href={PETORY_LOCATION_ARCH}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    위치·추천 아키텍처 (Petory)
+                  </a>
+                  {' — 통합 지도·API 대조·CATEGORY_TO_CONTEXT'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
                     href={PETORY_RECOMMENDATION_DOC}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -574,7 +587,7 @@ private RecommendResponse recommendWithLegacyProxy(...) {
                   >
                     recommendation.md (Petory)
                   </a>
-                  {' — API·Track A/B·DTO'}
+                  {' — API·Track A/B·가중 merge·DTO'}
                 </li>
                 <li>
                   •{' '}
