@@ -79,11 +79,11 @@ function App() {
             {/* <Route path="/domains/location/v2" element={<LocationDomainV2 />} /> */}
             <Route path="/domains/location/optimization" element={<LocationDomainOptimization />} />
             <Route path="/domains/location/refactoring" element={<LocationDomainRefactoring />} />
-            <Route
+            {/* <Route
               path="/domains/recommendation/pet-data-api"
               element={<PetDataApiPage />}
             />
-            <Route path="/domains/recommendation" element={<RecommendationDomainV2 />} />
+            <Route path="/domains/recommendation" element={<RecommendationDomainV2 />} /> */}
             <Route path="/domains/meetup" element={<MeetupDomainV2 />} />
             {/* <Route path="/domains/meetup/v2" element={<MeetupDomainV2 />} /> */}
             <Route path="/domains/meetup/optimization" element={<MeetupDomainOptimization />} />
@@ -96,13 +96,13 @@ function App() {
             {/* 배포 & 인프라 페이지 */}
             <Route path="/infra" element={<InfraPage />} />
 
-            {/* pet-data-api: Recommendation 도메인 확장 페이지 (구 URL 리다이렉트) */}
+            {/* pet-data-api redirect — 재설계 전까지 비활성화
             <Route
               path="/pet-data-api"
               element={
                 <Navigate to="/domains/recommendation/pet-data-api" replace />
               }
-            />
+            /> */}
 
             {/* MCP 파일 링크 페이지 */}
             <Route path="/docs" element={<MCPFilesPage />} />

@@ -67,9 +67,9 @@ function Navigation() {
       <Link to="/domains/location" className="nav-link">
         Location
       </Link>
-      <Link to="/domains/recommendation" className="nav-link">
+      {/* <Link to="/domains/recommendation" className="nav-link">
         Recommendation
-      </Link>
+      </Link> */}
       <Link to="/domains/meetup" className="nav-link">
         Meetup
       </Link>
@@ -109,9 +109,9 @@ function Navigation() {
       <Link to="/domains/location" className={`nav-link ${path === '/domains/location' || path.startsWith('/domains/location/') ? 'active' : ''}`}>
         Location
       </Link>
-      <Link to="/domains/recommendation" className={`nav-link ${path === '/domains/recommendation' ? 'active' : ''}`}>
+      {/* <Link to="/domains/recommendation" className={`nav-link ${path === '/domains/recommendation' ? 'active' : ''}`}>
         Recommendation
-      </Link>
+      </Link> */}
       <Link to="/domains/meetup" className={`nav-link ${path === '/domains/meetup' || path.startsWith('/domains/meetup/') ? 'active' : ''}`}>
         Meetup
       </Link>
