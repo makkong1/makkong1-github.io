@@ -283,52 +283,98 @@ export const PETORY_FLOW_GROUPS = [
   {
     tab: 'recommendation',
     tocLabel: 'Recommendation',
-    defaultSeq: 'collect',
+    defaultSeq: 'board',
     sequences: [
       {
-        seq: 'collect',
-        pillLabel: 'Signal 수집',
+        seq: 'board',
+        pillLabel: 'Board 연계',
         heading:
-          'Recommendation — 이벤트·NLP 분석·signal 저장(비동기)',
+          'Recommendation — Board 연계(CommunityPostCreatedEvent → signal)',
         chart: `sequenceDiagram
     participant FE as 프론트엔드
     participant BD as Board 도메인
-    participant Care as Care 도메인
-    participant LOC as Location 도메인
     participant REC as Recommendation 도메인
     participant NLP as petory-nlp-server
     participant DB as DB
 
-    alt 커뮤니티 글 작성
-        FE->>BD: POST 게시글
-        BD->>DB: 게시글 저장
-        BD-->>FE: 200 OK
-        BD->>REC: CommunityPostCreatedEvent
-    else 케어 요청 작성
-        FE->>Care: POST 케어 요청
-        Care->>DB: 요청 저장
-        Care-->>FE: 200 OK
-        Care->>REC: CareRequestCreatedEvent
-    else 주변서비스 검색어(로그인)
-        FE->>LOC: GET /api/location-services/search
-        LOC->>DB: 반경·키워드 검색
-        DB-->>LOC: 검색 결과
-        LOC-->>FE: 목록 응답
-        LOC->>REC: LocationSearchPerformedEvent
-    end
+    FE->>BD: POST 게시글(제목·내용)
+    BD->>DB: 게시글 저장
+    BD-->>FE: 200 OK
+    BD->>REC: CommunityPostCreatedEvent
 
     REC->>REC: @Async EventListener
     REC->>NLP: POST /api/pet-intent/analyze
     NLP-->>REC: intentDomain·intent·categories·tags
 
     alt confidence ≥ 0.6
-        REC->>DB: user_pet_intent_signal (TTL 7일)
+        REC->>DB: user_pet_intent_signal (COMMUNITY·TTL 7일)
         DB-->>REC: 저장 OK
     else 신뢰도 낮음
         Note over REC: signal 저장 생략
     end
 
-    Note over REC,NLP: Python 장애·timeout 시 Optional.empty — 본 요청은 이미 성공`,
+    Note over REC,NLP: NLP 실패해도 게시글 작성은 성공`,
+      },
+      {
+        seq: 'care',
+        pillLabel: 'Care 연계',
+        heading:
+          'Recommendation — Care 연계(CareRequestCreatedEvent → signal)',
+        chart: `sequenceDiagram
+    participant FE as 프론트엔드
+    participant Care as Care 도메인
+    participant REC as Recommendation 도메인
+    participant NLP as petory-nlp-server
+    participant DB as DB
+
+    FE->>Care: POST 케어 요청(내용)
+    Care->>DB: 요청 저장
+    Care-->>FE: 200 OK
+    Care->>REC: CareRequestCreatedEvent
+
+    REC->>REC: @Async EventListener
+    REC->>NLP: POST /api/pet-intent/analyze
+    NLP-->>REC: intentDomain·intent·categories·tags
+
+    alt confidence ≥ 0.6
+        REC->>DB: user_pet_intent_signal (CARE·TTL 7일)
+        DB-->>REC: 저장 OK
+    else 신뢰도 낮음
+        Note over REC: signal 저장 생략
+    end
+
+    Note over REC,NLP: NLP 실패해도 케어 요청은 성공`,
+      },
+      {
+        seq: 'location',
+        pillLabel: 'Location 연계',
+        heading:
+          'Recommendation — Location 연계(LocationSearchPerformedEvent → signal)',
+        chart: `sequenceDiagram
+    participant FE as 프론트엔드
+    participant LOC as Location 도메인
+    participant REC as Recommendation 도메인
+    participant NLP as petory-nlp-server
+    participant DB as DB
+
+    FE->>LOC: GET /api/location-services/search + keyword
+    LOC->>DB: 반경·키워드 검색
+    DB-->>LOC: 검색 결과
+    LOC-->>FE: 목록 응답(본 요청 우선)
+    LOC->>REC: LocationSearchPerformedEvent(로그인만)
+
+    REC->>REC: @Async EventListener
+    REC->>NLP: POST /api/pet-intent/analyze
+    NLP-->>REC: intentDomain·intent·categories·tags
+
+    alt confidence ≥ 0.6
+        REC->>DB: user_pet_intent_signal (LOCATION_SEARCH)
+        DB-->>REC: 저장 OK
+    else 신뢰도 낮음
+        Note over REC: signal 저장 생략
+    end
+
+    Note over LOC,REC: 익명 검색은 이벤트·signal 대상 아님`,
       },
       {
         seq: 'card',
