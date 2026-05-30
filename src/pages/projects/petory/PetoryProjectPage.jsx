@@ -152,9 +152,9 @@ function PetoryProjectPage() {
     },
     {
       name: 'Recommendation',
-      description: '외부 Pet Data API로 추천 받기 — Petory는 요청만 전달하고 JSON을 그대로 내려줌',
+      description: '커뮤니티·케어·검색어 intent 분석 후 주변서비스 탭 추천 카드 → Location 카테고리 검색',
       link: '/domains/recommendation',
-      features: ['GET /api/recommend', 'BFF(프록시)', '별도 Python 서비스', 'Location 추천과 구분']
+      features: ['비동기 NLP', 'user_pet_intent_signal', '/pet-recommend/signals', '원문 미저장', 'Location 연동']
     },
     {
       name: 'Meetup',
@@ -552,12 +552,12 @@ function PetoryProjectPage() {
                 <p style={{ fontSize: '0.9rem' }}>아키텍처 및 도메인 문서</p>
               </Link>
               <Link
-                to="/domains/recommendation/pet-data-api"
+                to="/domains/recommendation"
                 className="project-card"
               >
-                <h3>추천·데이터 파이프(pet-data-api)</h3>
+                <h3>Recommendation 도메인</h3>
                 <p style={{ fontSize: '0.9rem' }}>
-                  Petory 분리 저장소 연동 및 수집·추천 경계 요약
+                  intent signal · NLP · 주변서비스 추천 카드
                 </p>
               </Link>
               <Link to="/demo" className="project-card">

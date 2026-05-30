@@ -85,12 +85,12 @@ function HomePage() {
         >
           Petory 확장:{' '}
           <Link
-            to="/domains/recommendation/pet-data-api"
+            to="/domains/recommendation"
             style={{ color: 'var(--link-color)', textDecoration: 'none', fontWeight: 600 }}
           >
-            추천·외부 데이터 파이프 요약(pet-data-api 연동)
+            Recommendation 도메인
           </Link>
-          은 Recommendation 도메인 하위 페이지로 정리해 두었습니다.
+          — 반려생활 입력 기반 intent signal과 주변서비스 추천 카드입니다.
         </p>
       </section>
 
