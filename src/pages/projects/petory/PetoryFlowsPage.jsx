@@ -174,8 +174,10 @@ function PetoryFlowsPage() {
                 }}
               >
                 도메인별 기술 결정과 표는 각 도메인 V2 페이지에 두고, 여기에서는
-                시퀀스만 한 화면에 묶었습니다. Chat 탭에서는 Care·Missing
-                Pet·Meetup 연계축별로 같은 인프라 패턴을 골라 볼 수 있습니다.
+                시퀀스·플로우 다이어그램을 한 화면에 묶었습니다. Recommendation은
+                intent signal → 추천 카드 → Location 검색 흐름(flowchart)입니다.
+                Chat 탭에서는 Care·Missing Pet·Meetup 연계축별로 같은 인프라
+                패턴을 골라 볼 수 있습니다.
               </p>
             </Card>
           </section>
