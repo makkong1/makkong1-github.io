@@ -283,24 +283,78 @@ export const PETORY_FLOW_GROUPS = [
   {
     tab: 'recommendation',
     tocLabel: 'Recommendation',
-    defaultSeq: 'main',
+    defaultSeq: 'collect',
     sequences: [
       {
-        seq: 'main',
-        pillLabel: '',
+        seq: 'collect',
+        pillLabel: 'Signal 수집',
         heading:
-          'Recommendation — intent signal · 추천 카드 · Location 카테고리 검색',
-        chart: `flowchart LR
-    A["커뮤니티 글 / 케어 요청 / 주변서비스 검색어"] --> B["Spring Event 발행"]
-    B --> C["@Async Listener"]
-    C --> D["Python NLP 서버 /api/pet-intent/analyze"]
-    D --> E["intentDomain, intent, recommendedCategories, tags"]
-    E --> F["user_pet_intent_signal 저장"]
-    F --> G["주변서비스 탭 /api/pet-recommend/signals"]
-    G --> H["추천 카드 표시"]
-    H --> I["카드 클릭"]
-    I --> J["/api/location-services/search category 필터"]
-    J --> K["지도/목록에 주변 장소 표시"]`,
+          'Recommendation — 이벤트·NLP 분석·signal 저장(비동기)',
+        chart: `sequenceDiagram
+    participant FE as 프론트엔드
+    participant BD as Board 도메인
+    participant Care as Care 도메인
+    participant LOC as Location 도메인
+    participant REC as Recommendation 도메인
+    participant NLP as petory-nlp-server
+    participant DB as DB
+
+    alt 커뮤니티 글 작성
+        FE->>BD: POST 게시글
+        BD->>DB: 게시글 저장
+        BD-->>FE: 200 OK
+        BD->>REC: CommunityPostCreatedEvent
+    else 케어 요청 작성
+        FE->>Care: POST 케어 요청
+        Care->>DB: 요청 저장
+        Care-->>FE: 200 OK
+        Care->>REC: CareRequestCreatedEvent
+    else 주변서비스 검색어(로그인)
+        FE->>LOC: GET /api/location-services/search
+        LOC->>DB: 반경·키워드 검색
+        DB-->>LOC: 검색 결과
+        LOC-->>FE: 목록 응답
+        LOC->>REC: LocationSearchPerformedEvent
+    end
+
+    REC->>REC: @Async EventListener
+    REC->>NLP: POST /api/pet-intent/analyze
+    NLP-->>REC: intentDomain·intent·categories·tags
+
+    alt confidence ≥ 0.6
+        REC->>DB: user_pet_intent_signal (TTL 7일)
+        DB-->>REC: 저장 OK
+    else 신뢰도 낮음
+        Note over REC: signal 저장 생략
+    end
+
+    Note over REC,NLP: Python 장애·timeout 시 Optional.empty — 본 요청은 이미 성공`,
+      },
+      {
+        seq: 'card',
+        pillLabel: '추천 카드',
+        heading:
+          'Recommendation — /signals · 카드 · Location category 검색',
+        chart: `sequenceDiagram
+    participant FE as 프론트엔드
+    participant REC as Recommendation 도메인
+    participant LOC as Location 도메인
+    participant DB as DB
+
+    FE->>FE: 주변서비스 탭 활성(로그인)
+    FE->>REC: GET /api/pet-recommend/signals
+    REC->>DB: 유효 signal 조회
+    DB-->>REC: cardMessage·actionLabel·targetCategory
+    REC-->>FE: 추천 카드 payload
+
+    FE->>FE: LocationControls 카드 표시
+    FE->>FE: 카드 클릭(targetCategory)
+    FE->>LOC: GET search?category=… (+ lat·lng·radius)
+    LOC->>DB: 반경·카테고리 WHERE
+    DB-->>LOC: 시설 목록
+    LOC-->>FE: 지도·목록 갱신
+
+    Note over FE,LOC: 장소 목록은 REC가 아닌 Location 도메인이 조회`,
       },
     ],
   },
