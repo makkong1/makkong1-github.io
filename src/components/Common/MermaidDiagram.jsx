@@ -1,14 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
-function MermaidDiagram({ chart }) {
+const MERMAID_CONFIG = {
+  startOnLoad: false,
+  securityLevel: 'loose',
+  fontFamily: 'inherit',
+  flowchart: {
+    useMaxWidth: true,
+    htmlLabels: false,
+  },
+};
+
+function MermaidDiagram({ chart, flat = false }) {
   const containerRef = useRef(null);
   const [svgContent, setSvgContent] = useState(null);
   const [error, setError] = useState(null);
   const [isInitialized, setIsInitialized] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
-  // 다크모드 감지
   useEffect(() => {
     const checkDarkMode = () => {
       const theme = document.documentElement.getAttribute('data-theme');
@@ -30,10 +39,8 @@ function MermaidDiagram({ chart }) {
     if (!isInitialized) {
       const theme = document.documentElement.getAttribute('data-theme');
       mermaid.initialize({
-        startOnLoad: false,
+        ...MERMAID_CONFIG,
         theme: theme === 'dark' ? 'dark' : 'default',
-        securityLevel: 'loose',
-        fontFamily: 'inherit',
       });
       setIsInitialized(true);
     }
@@ -43,10 +50,8 @@ function MermaidDiagram({ chart }) {
     if (!isInitialized) return;
 
     mermaid.initialize({
-      startOnLoad: false,
+      ...MERMAID_CONFIG,
       theme: isDarkMode ? 'dark' : 'default',
-      securityLevel: 'loose',
-      fontFamily: 'inherit',
     });
   }, [isDarkMode, isInitialized]);
 
@@ -95,7 +100,6 @@ function MermaidDiagram({ chart }) {
     renderDiagram();
   }, [chart, isInitialized, isDarkMode]);
 
-  // SVG 렌더링 후 다크모드에 맞게 텍스트 색상 조정
   useEffect(() => {
     if (!svgContent || !containerRef.current) return;
 
@@ -154,24 +158,25 @@ function MermaidDiagram({ chart }) {
   return (
     <div
       ref={containerRef}
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '1rem',
-        backgroundColor: 'var(--card-bg)',
-        borderRadius: '8px',
-        overflow: 'auto',
-        minHeight: '200px',
-      }}
+      className={`mermaid-diagram${flat ? ' mermaid-diagram--flat' : ''}`}
+      style={
+        flat
+          ? undefined
+          : {
+              display: 'flex',
+              justifyContent: 'center',
+              padding: '1rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              overflow: 'auto',
+              minHeight: '200px',
+            }
+      }
     >
       {svgContent ? (
         <div
+          className="mermaid-diagram__svg"
           dangerouslySetInnerHTML={{ __html: svgContent }}
-          style={{
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-          }}
         />
       ) : (
         <div

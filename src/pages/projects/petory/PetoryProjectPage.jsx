@@ -16,116 +16,42 @@ function PetoryProjectPage() {
     { id: 'links', title: '관련 링크' }
   ];
 
-  const architectureDiagram = `graph TB
-    subgraph "Frontend Layer"
-        REACT[React SPA<br/>Styled-components<br/>Recharts]
-        SSE_CLIENT[SSE Client<br/>EventSource]
-        WEBSOCKET_CLIENT[WebSocket Client<br/>STOMP]
+  const architectureDiagram = `flowchart TB
+    subgraph CLIENT["클라이언트"]
+        FE["React SPA · Capacitor"]
+        RT["SSE · WebSocket/STOMP"]
     end
-    
-    subgraph "API Gateway Layer"
-        SECURITY[Spring Security<br/>JWT 인증/인가]
-        CONTROLLERS[REST Controllers<br/>WebSocket Controllers<br/>SSE Endpoints]
+
+    subgraph BOOT["Spring Boot"]
+        SEC["Security · JWT"]
+        CORE["핵심 8 도메인\\nUser · Board · Care · Chat\\nLocation · petRecommendation · Meetup"]
+        COMMON["공통\\nPayment · Notification · Report\\nStatistics · Admin · Activity · File"]
     end
-    
-    subgraph "Service Layer"
-        USER_SVC[User Service<br/>인증, 소셜 로그인]
-        BOARD_SVC[Board Service<br/>커뮤니티, 인기글]
-        CARE_SVC[Care Service<br/>케어 매칭, 리뷰]
-        PAYMENT_SVC[Payment Service<br/>펫코인, 에스크로]
-        LOCATION_SVC[Location Service<br/>위치 서비스, 리뷰]
-        REC_SVC[Recommendation Service<br/>intent signal, NLP]
-        MEETUP_SVC[Meetup Service<br/>오프라인 모임]
-        MISSING_SVC[MissingPet Service<br/>실종 제보]
-        CHAT_SVC[Chat Service<br/>실시간 채팅]
-        NOTIF_SVC[Notification Service<br/>알림 시스템]
-        REPORT_SVC[Report Service<br/>신고 및 제재]
-        STATS_SVC[Statistics Service<br/>통계 집계]
-        ACTIVITY_SVC[Activity Service<br/>활동 로그]
-        FILE_SVC[File Service<br/>파일 관리]
+
+    subgraph STORE["데이터"]
+        MYSQL[("MySQL 8")]
+        REDIS[("Redis")]
     end
-    
-    subgraph "Data Layer"
-        REPOS[JPA Repositories]
-        MYSQL[(MySQL<br/>관계형 데이터베이스)]
-        REDIS[(Redis<br/>캐시 및 알림)]
+
+    subgraph OUT["외부"]
+        NLP["petory-nlp-server"]
+        EXT["Naver Map · OAuth · FCM · SMTP"]
     end
-    
-    subgraph "External Services"
-        NLP[petory-nlp-server<br/>FastAPI intent 분석]
-        NAVER_MAP[Naver Map API<br/>Geocoding, Directions]
-        FCM[Firebase FCM<br/>푸시 알림]
-        EMAIL[Email Service<br/>SMTP]
-        OAUTH[OAuth2 Providers<br/>Google, Kakao, Naver]
-    end
-    
-    subgraph "Scheduler Layer"
-        STATS_SCHED[Statistics Scheduler<br/>일별 통계 집계]
-        POPULAR_SCHED[Popularity Scheduler<br/>인기글 스냅샷]
-        SANCTION_SCHED[Sanction Scheduler<br/>제재 자동 해제]
-        CARE_SCHED[Care Scheduler<br/>케어 요청 만료 처리]
-    end
-    
-    REACT --> SECURITY
-    SSE_CLIENT --> SECURITY
-    WEBSOCKET_CLIENT --> SECURITY
-    
-    SECURITY --> CONTROLLERS
-    
-    CONTROLLERS --> USER_SVC
-    CONTROLLERS --> BOARD_SVC
-    CONTROLLERS --> CARE_SVC
-    CONTROLLERS --> PAYMENT_SVC
-    CONTROLLERS --> LOCATION_SVC
-    CONTROLLERS --> REC_SVC
-    CONTROLLERS --> MEETUP_SVC
-    CONTROLLERS --> MISSING_SVC
-    CONTROLLERS --> CHAT_SVC
-    CONTROLLERS --> NOTIF_SVC
-    CONTROLLERS --> REPORT_SVC
-    CONTROLLERS --> STATS_SVC
-    CONTROLLERS --> ACTIVITY_SVC
-    CONTROLLERS --> FILE_SVC
-    
-    USER_SVC --> REPOS
-    BOARD_SVC --> REPOS
-    CARE_SVC --> REPOS
-    CARE_SVC --> CHAT_SVC
-    CARE_SVC --> PAYMENT_SVC
-    CHAT_SVC --> PAYMENT_SVC
-    LOCATION_SVC --> REPOS
-    REC_SVC --> REPOS
-    BOARD_SVC -.-> REC_SVC
-    CARE_SVC -.-> REC_SVC
-    LOCATION_SVC -.-> REC_SVC
-    REC_SVC --> NLP
-    MEETUP_SVC --> REPOS
-    MEETUP_SVC --> CHAT_SVC
-    MISSING_SVC --> REPOS
-    CHAT_SVC --> REPOS
-    NOTIF_SVC --> REPOS
-    NOTIF_SVC --> REDIS
-    NOTIF_SVC --> FCM
-    PAYMENT_SVC --> REPOS
-    REPORT_SVC --> REPOS
-    STATS_SVC --> REPOS
-    ACTIVITY_SVC --> REPOS
-    FILE_SVC --> REPOS
-    
-    REPOS --> MYSQL
-    
-    STATS_SCHED --> STATS_SVC
-    POPULAR_SCHED --> BOARD_SVC
-    SANCTION_SCHED --> USER_SVC
-    CARE_SCHED --> CARE_SVC
-    
-    LOCATION_SVC --> NAVER_MAP
-    USER_SVC --> EMAIL
-    USER_SVC --> OAUTH
-    
-    style REACT fill:#e1f5ff
-    style SECURITY fill:#fff4e1
-    style CHAT_SVC fill:#e1f5ff
+
+    FE --> SEC
+    RT --> SEC
+    SEC --> CORE
+    SEC --> COMMON
+    CORE --> MYSQL
+    COMMON --> MYSQL
+    CORE --> REDIS
+    COMMON --> REDIS
+    CORE -.-> NLP
+    CORE --> EXT
+
+    style FE fill:#e1f5ff
+    style SEC fill:#fff4e1
+    style CORE fill:#e8f5e9
     style MYSQL fill:#ffe1f5
     style REDIS fill:#ffe1f5`;
 
@@ -267,8 +193,8 @@ function PetoryProjectPage() {
           {/* 아키텍처 섹션 */}
           <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
-            <div>
-              <div className="content-card">
+
+            <div className="content-card">
               <h3>설계 근거</h3>
               <div className="feature-points-grid">
                 <div>
@@ -290,50 +216,58 @@ function PetoryProjectPage() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            <div className="content-card">
+              <h3>전체 시스템 아키텍처</h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 0, lineHeight: 1.7 }}>
+                React·Capacitor → Spring Security → domain/ 패키지(핵심 8 + 공통) → MySQL·Redis.
+                Missing Pet은 board 도메인, petRecommendation은 Board·Care·Location 이벤트 후 NLP 연동.
+              </p>
+              <MermaidDiagram chart={architectureDiagram} flat />
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.65 }}>
+                Redis: 알림 · 게시글 캐시 · NLP dedup · 이메일 인증 TTL.
+                배치·도메인 간 연동은{' '}
+                <Link to="/domains/flows" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
+                  통합 시퀀스
+                </Link>
+                와 아래 도메인 카드에서 확인.
+              </p>
+            </div>
+
+            <div className="content-card">
+              <h3>레이어드 아키텍처</h3>
+              <div className="about-text-block">
+                <p>• <strong>Controller Layer</strong>: HTTP 요청/응답 처리, 요청 검증</p>
+                <p>• <strong>Service Layer</strong>: 비즈니스 로직 구현, 트랜잭션 관리</p>
+                <p>• <strong>Repository Layer</strong>: 데이터 액세스 추상화, JPA 쿼리</p>
+                <p>• <strong>Entity Layer</strong>: 도메인 모델 정의, 연관관계 관리</p>
               </div>
+            </div>
 
-        {/* 전체 시스템 아키텍처 다이어그램 */}
-              <div className="content-card">
-                <h3>전체 시스템 아키텍처</h3>
-            <MermaidDiagram chart={architectureDiagram} />
-          </div>
-
-        {/* 레이어드 아키텍처 설명 */}
-              <div className="content-card">
-                <h3>레이어드 아키텍처</h3>
-                <div className="about-text-block">
-                  <p>• <strong>Controller Layer</strong>: HTTP 요청/응답 처리, 요청 검증</p>
-                  <p>• <strong>Service Layer</strong>: 비즈니스 로직 구현, 트랜잭션 관리</p>
-                  <p>• <strong>Repository Layer</strong>: 데이터 액세스 추상화, JPA 쿼리</p>
-                  <p>• <strong>Entity Layer</strong>: 도메인 모델 정의, 연관관계 관리</p>
-                </div>
+            <div className="content-card">
+              <h3>도메인 주도 설계 (DDD)</h3>
+              <div className="about-text-block">
+                <p>• <strong>도메인별 패키지 구조</strong>: 각 도메인은 독립적인 패키지로 구성</p>
+                <p>• <strong>명확한 경계</strong>: 도메인 간 의존성 최소화</p>
+                <p>• <strong>도메인 모델</strong>: 엔티티와 비즈니스 로직의 응집도 향상</p>
               </div>
+            </div>
 
-              <div className="content-card">
-                <h3>도메인 주도 설계 (DDD)</h3>
-                <div className="about-text-block">
-                  <p>• <strong>도메인별 패키지 구조</strong>: 각 도메인은 독립적인 패키지로 구성</p>
-                  <p>• <strong>명확한 경계</strong>: 도메인 간 의존성 최소화</p>
-                  <p>• <strong>도메인 모델</strong>: 엔티티와 비즈니스 로직의 응집도 향상</p>
-                </div>
+            <div className="content-card" style={{ marginBottom: 0 }}>
+              <h3>도메인 간 연관관계</h3>
+              <div style={{ width: '100%', overflowX: 'auto', marginTop: '1rem' }}>
+                <img
+                  src={petoryErdImage}
+                  alt="Petory 데이터베이스 ERD"
+                  style={{
+                    width: '100%',
+                    height: 'auto',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border-color)',
+                  }}
+                />
               </div>
-
-        {/* 데이터베이스 ERD */}
-        <div className="content-card" style={{ marginBottom: 0 }}>
-          <h3>도메인 간 연관관계</h3>
-          <div style={{ width: '100%', overflowX: 'auto', marginTop: '1rem' }}>
-            <img 
-              src={petoryErdImage}
-              alt="Petory 데이터베이스 ERD"
-              style={{ 
-                width: '100%', 
-                height: 'auto', 
-                borderRadius: '8px',
-                border: '1px solid var(--border-color)'
-              }}
-            />
-          </div>
-        </div>
             </div>
           </section>
 

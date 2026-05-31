@@ -709,6 +709,29 @@ code {
   text-decoration: underline;
 }
 
+/* Mermaid — max-width만 제한 (width:100% 강제 금지: Chrome 확대 시 비율 깨짐) */
+.mermaid-diagram {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.mermaid-diagram--flat {
+  margin-top: 0.75rem;
+}
+
+.mermaid-diagram__svg {
+  width: 100%;
+  max-width: 100%;
+}
+
+.mermaid-diagram__svg svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 /* --- Responsive Layout Utilities --- */
 .project-page-layout {
   display: flex;
@@ -886,7 +909,8 @@ code {
   /* (위에서 이미 정의된 미디어 쿼리 사용) */
 
   .tech-stack-wrapper { justify-content: flex-start; gap: 0.4rem; }
-  .mermaid { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .mermaid,
+  .mermaid-diagram { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 }
 
 @media (max-width: 480px) {
@@ -1009,7 +1033,8 @@ code {
   }
   
   /* Mermaid 다이어그램 */
-  .mermaid {
+  .mermaid,
+  .mermaid-diagram {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     max-width: 100%;
