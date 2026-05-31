@@ -95,14 +95,6 @@ function App() {
             {/* 배포 & 인프라 페이지 */}
             <Route path="/infra" element={<InfraPage />} />
 
-            {/* pet-data-api redirect — 재설계 전까지 비활성화
-            <Route
-              path="/pet-data-api"
-              element={
-                <Navigate to="/domains/recommendation/pet-data-api" replace />
-              }
-            /> */}
-
             {/* MCP 파일 링크 페이지 */}
             <Route path="/docs" element={<MCPFilesPage />} />
           </Routes>

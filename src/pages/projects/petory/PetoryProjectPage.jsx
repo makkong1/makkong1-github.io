@@ -34,6 +34,7 @@ function PetoryProjectPage() {
         CARE_SVC[Care Service<br/>케어 매칭, 리뷰]
         PAYMENT_SVC[Payment Service<br/>펫코인, 에스크로]
         LOCATION_SVC[Location Service<br/>위치 서비스, 리뷰]
+        REC_SVC[Recommendation Service<br/>intent signal, NLP]
         MEETUP_SVC[Meetup Service<br/>오프라인 모임]
         MISSING_SVC[MissingPet Service<br/>실종 제보]
         CHAT_SVC[Chat Service<br/>실시간 채팅]
@@ -51,7 +52,9 @@ function PetoryProjectPage() {
     end
     
     subgraph "External Services"
+        NLP[petory-nlp-server<br/>FastAPI intent 분석]
         NAVER_MAP[Naver Map API<br/>Geocoding, Directions]
+        FCM[Firebase FCM<br/>푸시 알림]
         EMAIL[Email Service<br/>SMTP]
         OAUTH[OAuth2 Providers<br/>Google, Kakao, Naver]
     end
@@ -74,6 +77,7 @@ function PetoryProjectPage() {
     CONTROLLERS --> CARE_SVC
     CONTROLLERS --> PAYMENT_SVC
     CONTROLLERS --> LOCATION_SVC
+    CONTROLLERS --> REC_SVC
     CONTROLLERS --> MEETUP_SVC
     CONTROLLERS --> MISSING_SVC
     CONTROLLERS --> CHAT_SVC
@@ -90,12 +94,18 @@ function PetoryProjectPage() {
     CARE_SVC --> PAYMENT_SVC
     CHAT_SVC --> PAYMENT_SVC
     LOCATION_SVC --> REPOS
+    REC_SVC --> REPOS
+    BOARD_SVC -.-> REC_SVC
+    CARE_SVC -.-> REC_SVC
+    LOCATION_SVC -.-> REC_SVC
+    REC_SVC --> NLP
     MEETUP_SVC --> REPOS
     MEETUP_SVC --> CHAT_SVC
     MISSING_SVC --> REPOS
     CHAT_SVC --> REPOS
     NOTIF_SVC --> REPOS
     NOTIF_SVC --> REDIS
+    NOTIF_SVC --> FCM
     PAYMENT_SVC --> REPOS
     REPORT_SVC --> REPOS
     STATS_SVC --> REPOS
@@ -146,15 +156,15 @@ function PetoryProjectPage() {
     },
     {
       name: 'Location',
-      description: '공공데이터 기반 위치 서비스, 통합 검색·AI 추천(에이전트), 네이버맵·리뷰',
+      description: '공공데이터 기반 위치 서비스, 통합 검색, 네이버맵·리뷰',
       link: '/domains/location',
-      features: ['통합 검색 분기', '반경·지역·FULLTEXT', '/location-services/recommend', '네이버맵 API', '리뷰·UX 원칙']
+      features: ['통합 검색 분기', '반경·지역·FULLTEXT', '이 지역 검색 UX', '네이버맵 API', '리뷰·CSV 적재']
     },
     {
       name: 'Recommendation',
       description: '커뮤니티·케어·검색어 intent 분석 후 주변서비스 탭 추천 카드 → Location 카테고리 검색',
       link: '/domains/recommendation',
-      features: ['비동기 NLP', 'user_pet_intent_signal', '/pet-recommend/signals', '원문 미저장', 'Location 연동']
+      features: ['비동기 NLP', 'user_pet_intent_signal', '/pet-recommend/signals', 'petIntentExecutor', 'Location 연동']
     },
     {
       name: 'Meetup',
@@ -179,10 +189,10 @@ function PetoryProjectPage() {
               <h1>Petory</h1>
               <p className="subtitle">반려동물 통합 플랫폼</p>
               <p className="description">
-                본 프로젝트는 기능 구현 이후,
-                도메인별로 발생 가능성이 높은 성능·동시성 문제를 가정하고
-                테스트 코드 기반으로 이를 의도적으로 재현한 뒤
-                측정 → 개선 → 재검증 과정을 반복하는 방식으로 진행되었습니다.
+                반려동물 보호자를 위한 웹·모바일 통합 플랫폼입니다. User·Board·Care·Location·Recommendation
+                등 8개 도메인과 Payment·Notification·Report 공통 기능으로 구성됩니다.
+                기능 구현 이후 도메인별 성능·동시성·NLP 호출 정책 문제를 가정하고, 테스트로
+                재현한 뒤 <strong>측정 → 개선 → 재검증</strong>을 반복했습니다.
               </p>
               <div className="buttons-wrapper">
                 <Link
@@ -454,6 +464,9 @@ function PetoryProjectPage() {
                 </Link>
               ))}
               </div>
+              <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '1rem', marginBottom: 0, lineHeight: 1.7 }}>
+                공통: Payment(펫코인 에스크로) · Notification(SSE·FCM) · Report(신고·제재) · Statistics·Admin(Daily Summary)
+              </p>
             </div>
           </section>
 
@@ -479,7 +492,12 @@ function PetoryProjectPage() {
                 <div className="icon-item">
                   <div className="icon-emoji">📍</div>
                   <strong>위치 서비스</strong>
-                  <p className="stat-sub">공공데이터 연동</p>
+                  <p className="stat-sub">통합 검색·리뷰</p>
+                </div>
+                <div className="icon-item">
+                  <div className="icon-emoji">✨</div>
+                  <strong>추천</strong>
+                  <p className="stat-sub">NLP intent → 추천 카드</p>
                 </div>
                 <div className="icon-item">
                   <div className="icon-emoji">👥</div>
@@ -502,29 +520,36 @@ function PetoryProjectPage() {
               <div className="content-card" style={{ marginBottom: 0 }}>
                 <h3>Backend</h3>
                 <ul className="about-text-block" style={{ listStyle: 'none', padding: 0 }}>
-                  <li>• Spring Boot 3.x</li>
-                  <li>• Java 17+</li>
+                  <li>• Spring Boot 3.5.7</li>
+                  <li>• Java 17</li>
                   <li>• Spring Data JPA</li>
                   <li>• Spring Security</li>
-                  <li>• Spring WebSocket</li>
+                  <li>• Spring WebSocket (STOMP)</li>
                 </ul>
               </div>
               <div className="content-card" style={{ marginBottom: 0 }}>
-                <h3>Frontend</h3>
+                <h3>Frontend · Mobile</h3>
                 <ul className="about-text-block" style={{ listStyle: 'none', padding: 0 }}>
-                  <li>• React</li>
+                  <li>• React 19</li>
                   <li>• Styled-components</li>
-                  <li>• Recharts</li>
-                  <li>• React Router</li>
-                  <li>• Axios</li>
+                  <li>• Recharts · Axios</li>
+                  <li>• Capacitor 8 (Android / iOS)</li>
                 </ul>
               </div>
               <div className="content-card" style={{ marginBottom: 0 }}>
-                <h3>Database & Cache</h3>
+                <h3>NLP</h3>
+                <ul className="about-text-block" style={{ listStyle: 'none', padding: 0 }}>
+                  <li>• Python · FastAPI</li>
+                  <li>• petory-nlp-server</li>
+                  <li>• rule + embedding intent 분류</li>
+                </ul>
+              </div>
+              <div className="content-card" style={{ marginBottom: 0 }}>
+                <h3>Database · Cache · Realtime</h3>
                 <ul className="about-text-block" style={{ listStyle: 'none', padding: 0 }}>
                   <li>• MySQL 8.0</li>
-                  <li>• Redis</li>
-                  <li>• Spring Cache</li>
+                  <li>• Redis · Spring Cache</li>
+                  <li>• SSE · Firebase FCM</li>
                 </ul>
               </div>
               <div className="content-card" style={{ marginBottom: 0 }}>
