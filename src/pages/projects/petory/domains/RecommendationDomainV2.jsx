@@ -48,6 +48,10 @@ const PETORY_NLP_INTENT_ROUTER =
   'https://github.com/makkong1/Petory/blob/main/petory-nlp-server/app/api/pet_intent_router.py';
 const PETORY_RECOMMENDATION_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/recommendation.md';
+const PETORY_REFACTOR_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/refactoring/petRecommendation/pet-recommendation-refactoring-2026-05-31.md';
+const PETORY_TRAFFIC_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/refactoring/petRecommendation/pet-recommendation-nlp-traffic-policy-2026-05-31.md';
 
 function RecommendationDomainV2() {
   const sections = [
@@ -64,6 +68,7 @@ function RecommendationDomainV2() {
     '원문 텍스트 미저장',
     '추천 카드 /signals',
     'Location 카테고리 연결',
+    'NLP 호출·부하 제어',
     '본 기능 무영향 장애 처리',
   ];
 
@@ -87,14 +92,14 @@ function RecommendationDomainV2() {
               fontSize: '0.95rem',
             }}
           >
-            Recommendation 도메인은 사용자의 최근 반려생활 입력을 보고 주변서비스
-            탭에 추천 카드를 띄우는 기능입니다. 처음에는 별도 추천 엔진이나
-            장소 목록 API가 필요하다고 보였지만, 실제로는 Location 검색에
-            카테고리만 넘겨 주면 되는 구조였고, 커뮤니티·케어·검색어에서 의도를
-            모으는 비동기 파이프라인, Python NLP 호출, 원문을 남기지 않는 signal
-            저장까지 함께 다뤄야 했습니다. 저는 글·요청·검색이 본 기능을 막지
-            않게 이벤트로 분석하고, 카드는 무엇을 볼지만 알려 주며 실제 장소
-            조회는 Location 도메인에 맡기는 방향으로 설계했습니다.
+            Recommendation 도메인은 커뮤니티 글·케어 요청·주변서비스 검색어처럼
+            사용자의 최근 반려생활 입력을 분석해, 주변서비스 탭에 추천 카드를
+            보여 주는 기능입니다. 장소 목록을 직접 내려주지 않고 「근처
+            동물병원 보기」처럼 볼 카테고리만 제안한 뒤, 클릭 시 기존 Location
+            검색으로 넘깁니다. 의도 수집 → Python NLP → signal 저장(원문
+            미저장)은 이벤트와 `@Async`로 본 트랜잭션과 분리했고, 분석이
+            늦거나 실패해도 글 작성·케어 요청·검색은 그대로 성공하도록
+            설계했습니다.
           </p>
 
           <section
@@ -200,7 +205,7 @@ function RecommendationDomainV2() {
                     [
                       'signal 저장',
                       'UserPetIntentSignalService',
-                      'confidence ≥ 0.6, source_type COMMUNITY | CARE | LOCATION_SEARCH',
+                      'Python 0.45 / Spring 0.60 이중 필터, intentDomain 중복 생략, 조회 LIMIT 10',
                     ],
                     [
                       '카드 노출',
@@ -304,6 +309,9 @@ function RecommendationDomainV2() {
                   '주변서비스 검색어: LocationServiceService.publishSearchEvent → LocationSearchPerformedEvent (로그인만)',
                 )}
                 {li(
+                  'Board/Care: @TransactionalEventListener(AFTER_COMMIT) — rollback 후 dangling signal 방지',
+                )}
+                {li(
                   'Python 분석 실패·타임아웃이어도 글 작성·케어 요청·검색 응답은 그대로 성공',
                 )}
               </ul>
@@ -367,8 +375,13 @@ POST http://localhost:8000/api/pet-intent/analyze
               >
                 {li('저장: intent_domain, intent, recommended_categories(JSON), confidence, tags')}
                 {li('미저장: 커뮤니티·케어·검색어 원문')}
-                {li('saveIfConfident: confidence ≥ 0.6, expires_at 7일')}
-                {li('LOCATION_SEARCH source_id는 null')}
+                {li(
+                  '2단계 필터: Python 0.45 미만 UNKNOWN → Spring 0.60 미만 저장 거부',
+                )}
+                {li(
+                  '같은 (userIdx, intentDomain) 유효 signal 있으면 저장 생략 — 카드 중복 방지',
+                )}
+                {li('TTL 7일, /signals 조회 LIMIT 10, LOCATION_SEARCH source_id는 null')}
               </ul>
             </Card>
 
@@ -406,6 +419,44 @@ POST http://localhost:8000/api/pet-intent/analyze
   &category=동물병원   // 카드 클릭 후`}</CodeBlock>
             </Card>
 
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                E. Location 검색 NLP 호출 정책
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li(
+                  '카테고리·정렬·반경 변경만으로 같은 keyword Python 반복 호출 차단',
+                )}
+                {li(
+                  '필터 1: length ≥ 7 AND 공백 포함 (자연어 MVP 휴리스틱)',
+                )}
+                {li('필터 2: Redis 사용자+검색어 10분 중복 방지 — 장애 시 분석 생략')}
+              </ul>
+              <CodeBlock>{`"동물병원" → 생략 | "강아지 귀 긁어요" → 분석 후보`}</CodeBlock>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
+                <Link
+                  to="/domains/recommendation/optimization"
+                  style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}
+                >
+                  NLP 호출·부하 제어 상세 →
+                </Link>
+              </p>
+            </Card>
+
             <Card>
               <h3
                 style={{
@@ -414,7 +465,7 @@ POST http://localhost:8000/api/pet-intent/analyze
                   fontSize: '1rem',
                 }}
               >
-                E. 점수 기반 장소 API (카드와 별도)
+                F. 점수 기반 장소 API (카드와 별도)
               </h3>
               <ul
                 style={{
@@ -465,6 +516,13 @@ POST http://localhost:8000/api/pet-intent/analyze
                 {li(
                   'NLP recommendedCategories와 Location category 문자열 불일치 시 카드→검색 연결 품질 저하 가능',
                 )}
+                {li(
+                  '공백 없는 자연어 검색어는 NLP 필터 통과 불가 — MVP 설계상 타협',
+                )}
+                {li(
+                  'NLP 전용 실행 풀 대기열(500) 포화 시 일부 signal 생략 — 게시·케어는 정상',
+                )}
+                {li('Redis 장애 시 Location 검색 NLP 생략(안전 쪽으로 차단)')}
               </ul>
             </Card>
           </section>
@@ -508,7 +566,7 @@ POST http://localhost:8000/api/pet-intent/analyze
                   >
                     PetIntentClient.java
                   </a>
-                  {' — NLP 호출·timeout'}
+                  {' — NLP 호출·타임아웃'}
                 </li>
                 <li>
                   •{' '}
@@ -536,6 +594,26 @@ POST http://localhost:8000/api/pet-intent/analyze
                 </li>
                 <li>
                   •{' '}
+                  <Link
+                    to="/domains/recommendation/refactoring"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Recommendation 리팩토링
+                  </Link>
+                  {' — R1~R9, T1~T5 코드·버그 수정'}
+                </li>
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/recommendation/optimization"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    NLP 호출·부하 제어
+                  </Link>
+                  {' — 전용 실행 풀, 중복 호출 방지, 과부하 유입 제한'}
+                </li>
+                <li>
+                  •{' '}
                   <a
                     href={PETORY_RECOMMENDATION_DOC}
                     target="_blank"
@@ -545,6 +623,28 @@ POST http://localhost:8000/api/pet-intent/analyze
                     recommendation.md (Petory)
                   </a>
                   {' — 흐름·API·프론트·로컬 실행'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_REFACTOR_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    pet-recommendation-refactoring-2026-05-31.md
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_TRAFFIC_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    pet-recommendation-nlp-traffic-policy-2026-05-31.md
+                  </a>
                 </li>
                 <li>
                   •{' '}
