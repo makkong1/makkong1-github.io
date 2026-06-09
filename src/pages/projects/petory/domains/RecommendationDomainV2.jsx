@@ -52,6 +52,8 @@ const PETORY_REFACTOR_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/refactoring/petRecommendation/pet-recommendation-refactoring-2026-05-31.md';
 const PETORY_TRAFFIC_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/refactoring/petRecommendation/pet-recommendation-nlp-traffic-policy-2026-05-31.md';
+const PETORY_NLP_ISSUES_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/petRecommendation/nlp-server-issues-2026-06-09.md';
 
 function RecommendationDomainV2() {
   const sections = [
@@ -65,6 +67,7 @@ function RecommendationDomainV2() {
   const corePillars = [
     '비동기 intent signal',
     'Python NLP 분석',
+    '형태소 정밀 매칭',
     '원문 텍스트 미저장',
     '추천 카드 /signals',
     'Location 카테고리 연결',
@@ -337,20 +340,38 @@ function RecommendationDomainV2() {
                 }}
               >
                 {li(
-                  'POST /api/pet-intent/analyze — intentDomain, intent, recommendedCategories, confidence, intentTags',
+                  'POST /api/pet-intent/analyze — intentDomain, intent, recommendedCategories, confidence, keywords, intentTags, urgency, message',
                 )}
                 {li(
-                  '명확한 키워드는 rule 우선, 애매한 입력은 intent example 유사도(embedding fallback 포함)',
+                  '분류 경로 1 (rule): Kiwipiepy 형태소 분석 후 키워드 exact match → 1음절 한글은 형태소 exact match, 구문/3음절+는 raw substring',
                 )}
                 {li(
-                  '예: "강아지가 귀를 자꾸 긁어요" → MEDICAL · 동물병원 (confidence 0.88)',
+                  '분류 경로 2 (embedding): rule miss 시 jhgan/ko-sroberta-multitask 문장 임베딩 + intent centroid 코사인 유사도',
+                )}
+                {li(
+                  '예: "강아지가 귀를 자꾸 긁어요" → MEDICAL_CONCERN · 동물병원 (rule hit, confidence 0.92)',
+                )}
+                {li(
+                  'petType("DOG"|"CAT"|"OTHER") 수신 → classify(text, pet_type) 전달 — 현재 분류 로직 미사용, DOG/CAT 규칙 확장 예정',
+                )}
+                {li(
+                  'lifespan: 서버 시작 시 임베딩 모델 로드 후 intent centroid warm-up — 첫 요청 지연 방지',
                 )}
               </ul>
               <CodeBlock>{`// PetIntentClient — 실패 시 Optional.empty(), 본 요청 무영향
 POST http://localhost:8000/api/pet-intent/analyze
+{ "text": "강아지가 귀를 자꾸 긁어요", "petType": "DOG" }
+
+// 응답 예시 (rule hit)
 {
-  "text": "강아지가 귀를 자꾸 긁어요",
-  "petType": null
+  "intentDomain": "MEDICAL",
+  "intent": "MEDICAL_CONCERN",
+  "recommendedCategories": ["동물병원", "동물약국"],
+  "confidence": 0.92,
+  "keywords": ["강아지", "귀", "긁"],
+  "intentTags": ["ear", "scratch"],
+  "urgency": "NORMAL",
+  "message": "ear, scratch 불편 표현이 감지되었습니다. ..."
 }`}</CodeBlock>
             </Card>
 
@@ -376,7 +397,10 @@ POST http://localhost:8000/api/pet-intent/analyze
                 {li('저장: intent_domain, intent, recommended_categories(JSON), confidence, tags')}
                 {li('미저장: 커뮤니티·케어·검색어 원문')}
                 {li(
-                  '2단계 필터: Python 0.45 미만 UNKNOWN → Spring 0.60 미만 저장 거부',
+                  'confidence 의미: rule hit → 0.88~0.92 고정 휴리스틱, embedding → 코사인 유사도 [-1,1]. 두 경로는 직접 비교하지 않음',
+                )}
+                {li(
+                  '2단계 필터: Python 0.45 미만 UNKNOWN(embedding path 하한) → Spring 0.60 미만 저장 거부',
                 )}
                 {li(
                   '같은 (userIdx, intentDomain) 유효 signal 있으면 저장 생략 — 카드 중복 방지',
@@ -457,7 +481,7 @@ POST http://localhost:8000/api/pet-intent/analyze
               </p>
             </Card>
 
-            <Card>
+            <Card style={{ marginBottom: '1rem' }}>
               <h3
                 style={{
                   marginBottom: '0.75rem',
@@ -484,6 +508,49 @@ POST http://localhost:8000/api/pet-intent/analyze
                 )}
                 {li(
                   'place_score·tag_match는 태그·score 데이터가 쌓인 뒤 효과가 커짐 — 초기에는 거리·평점·리뷰 검증 중심',
+                )}
+              </ul>
+            </Card>
+
+            <Card>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                G. NLP 품질 개선 — 오탐 수정 & 계약 정합 (2026-06-09)
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li(
+                  'N1: tag_extractor 부분 문자열 매칭 → Kiwi lemma exact match ("귀신"→ear, "눈사람"→eye 오탐 제거)',
+                )}
+                {li(
+                  'N1: tokenizer VV-I/VA-I 추가 — ㅂ/ㅅ 불규칙 어간 미추출 수정 ("가렵"·"붓" 태그 정상화)',
+                )}
+                {li(
+                  'N1: _classify_by_rule 하이브리드 매칭 — 1음절 한글은 형태소, 구문/3음절+는 raw substring ("아파트"→MEDICAL 오탐 방지)',
+                )}
+                {li(
+                  'N2: buildCardMessage 4개 도메인 추가 — FOOD_SNACK, WALK_OUTING, DAYCARE_BOARDING, CULTURE_SPACE',
+                )}
+                {li(
+                  'N5: pet_intent_router → classify(text, pet_type) 계약 연결',
+                )}
+                {li(
+                  'N6: lifespan에서 get_model() 완료 후 warm_up() 순차 호출 — centroid preload로 첫 요청 지연 방지',
+                )}
+                {li(
+                  '회귀 테스트 16개 추가 (tests/test_tag_extractor.py) — 오탐 방지 8개 + 정상 분류 8개',
                 )}
               </ul>
             </Card>
@@ -600,7 +667,7 @@ POST http://localhost:8000/api/pet-intent/analyze
                   >
                     Recommendation 리팩토링
                   </Link>
-                  {' — R1~R9, T1~T5 코드·버그 수정'}
+                  {' — R1~R9, T1~T5, N1~N6 코드·버그 수정'}
                 </li>
                 <li>
                   •{' '}
@@ -645,6 +712,18 @@ POST http://localhost:8000/api/pet-intent/analyze
                   >
                     pet-recommendation-nlp-traffic-policy-2026-05-31.md
                   </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_NLP_ISSUES_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    nlp-server-issues-2026-06-09.md
+                  </a>
+                  {' — N1~N6 오탐·계약 이슈 트러블슈팅'}
                 </li>
                 <li>
                   •{' '}
