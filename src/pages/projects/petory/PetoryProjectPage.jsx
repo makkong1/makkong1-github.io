@@ -1,9 +1,22 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../components/Common/TableOfContents';
 import petoryErdImage from '../../../assets/petory-erd-0131.png';
 
 function PetoryProjectPage() {
+  const [isDarkMode, setIsDarkMode] = useState(
+    () => document.documentElement.getAttribute('data-theme') === 'dark'
+  );
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      setIsDarkMode(document.documentElement.getAttribute('data-theme') === 'dark');
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    return () => observer.disconnect();
+  }, []);
+
   const sections = [
     { id: 'hero', title: '프로젝트 소개' },
     { id: 'achievements', title: '핵심 성과' },
@@ -15,6 +28,20 @@ function PetoryProjectPage() {
     { id: 'tech-stack', title: '기술 스택' },
     { id: 'links', title: '관련 링크' }
   ];
+
+  const nodeStyles = isDarkMode
+    ? `
+    style FE fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
+    style SEC fill:#3a3010,color:#f4e6b0,stroke:#a08030
+    style CORE fill:#1a3a1a,color:#b0d4b0,stroke:#40804a
+    style MYSQL fill:#3a1a3a,color:#e4b0e4,stroke:#904090
+    style REDIS fill:#3a1a3a,color:#e4b0e4,stroke:#904090`
+    : `
+    style FE fill:#e1f5ff,stroke:#4a8fad
+    style SEC fill:#fff4e1,stroke:#a08030
+    style CORE fill:#e8f5e9,stroke:#40804a
+    style MYSQL fill:#ffe1f5,stroke:#904090
+    style REDIS fill:#ffe1f5,stroke:#904090`;
 
   const architectureDiagram = `flowchart TB
     subgraph CLIENT["클라이언트"]
@@ -48,12 +75,7 @@ function PetoryProjectPage() {
     COMMON --> REDIS
     CORE -.-> NLP
     CORE --> EXT
-
-    style FE fill:#e1f5ff
-    style SEC fill:#fff4e1
-    style CORE fill:#e8f5e9
-    style MYSQL fill:#ffe1f5
-    style REDIS fill:#ffe1f5`;
+${nodeStyles}`;
 
   const domains = [
     {
