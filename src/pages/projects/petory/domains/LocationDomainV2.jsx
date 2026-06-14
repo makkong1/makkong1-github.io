@@ -88,16 +88,16 @@ function LocationDomainV2() {
               fontSize: "0.95rem",
             }}
           >
-            위치 서비스 도메인은 지도에서 반려 동반 시설을 찾고 리뷰까지 이어 주는
-            Petory의 탐색·검색 기능입니다. 처음에는 지도와 검색만 맞물리면 된다고
-            보였지만, 실제 구현에서는 키워드·위치·지역이 겹칠 때도 위치를 먼저
-            볼 검색 분기, 통합 지도에서 주변 목록 검색과 맞춤 추천 API를 나누는
-            정리, 지도를 옮길 때 결과가 매번 덮이는 재조회, pet-data-api JSON과
-            공공 CSV로 시설을 채우는 적재까지 함께 다뤄야 했습니다. 저는 검색
-            분기를 서비스 한곳에서 위치 → 지역 → FULLTEXT → 평점순으로 묶고,
-            주변 목록은 검색 API만 쓰며 추천 읽기는 Recommendation 도메인으로
-            모으며, 지도만 움직였을 때는 자동 조회 대신 「이 지역」으로 검색
-            시점을 사용자에게 맡기는 방향으로 설계했습니다.
+            위치 서비스 도메인은 지도에서 반려 동반 시설을 찾고 리뷰까지 이어
+            주는 Petory의 탐색·검색 기능입니다. 처음에는 지도와 검색만 맞물리면
+            된다고 보였지만, 실제 구현에서는 키워드·위치·지역이 겹칠 때도 위치를
+            먼저 볼 검색 분기, 통합 지도에서 주변 목록 검색과 맞춤 추천 API를
+            나누는 정리, 지도를 옮길 때 결과가 매번 덮이는 재조회, pet-data-api
+            JSON과 공공 CSV로 시설을 채우는 적재까지 함께 다뤄야 했습니다. 저는
+            검색 분기를 서비스 한곳에서 위치 → 지역 → FULLTEXT → 평점순으로
+            묶고, 주변 목록은 검색 API만 쓰며 추천 읽기는 Recommendation
+            도메인으로 모으며, 지도만 움직였을 때는 자동 조회 대신 「이
+            지역」으로 검색 시점을 사용자에게 맡기는 방향으로 설계했습니다.
           </p>
 
           <section
@@ -156,18 +156,18 @@ function LocationDomainV2() {
                 경로에서는 키워드를 <strong>시설명에 포함되는지</strong>로만
                 좁히며, 설명·카테고리까지 도는 전국 FULLTEXT 검색은 좌표·지역이
                 없을 때만 씁니다. 좌표가 없으면 지역 계층 → 키워드만 있을 때
-                FULLTEXT → 조건이 없으면 평점순입니다. 통합 지도 주변서비스
-                탭은 위치·반경(기본 5km), 카테고리, 추천순(
+                FULLTEXT → 조건이 없으면 평점순입니다. 통합 지도 주변서비스 탭은
+                위치·반경(기본 5km), 카테고리, 추천순(
                 <code>sort=stable</code>)으로{" "}
                 <code>/api/location-services/search</code>를 호출하고, 응답은
                 최대 <code>size=300</code>건입니다. 지도에서는 뷰포트 중심(
                 <code>mapViewportCenter</code>)과 실제 검색 중심(
                 <code>searchCenter</code>)을 나눠, 드래그만으로는 목록이
-                갱신되지 않고 「이 지역」을 눌렀을 때만 다시 조회합니다.
-                맞춤 추천은 <code>RecommendCard</code>가{" "}
-                <code>/api/recommend</code>를 따로 부르고, 돌아온 시설을
-                목록의 <code>idx</code>와 맞춰 강조할 뿐입니다. 카테고리·키워드·
-                정렬은 프론트에서 걸러내지 않고 DB 쿼리에서 처리합니다.
+                갱신되지 않고 「이 지역」을 눌렀을 때만 다시 조회합니다. 맞춤
+                추천은 <code>RecommendCard</code>가 <code>/api/recommend</code>
+                를 따로 부르고, 돌아온 시설을 목록의 <code>idx</code>와 맞춰
+                강조할 뿐입니다. 카테고리·키워드· 정렬은 프론트에서 걸러내지
+                않고 DB 쿼리에서 처리합니다.
               </p>
             </Card>
 
@@ -273,10 +273,10 @@ function LocationDomainV2() {
                 >
                   size=100
                 </code>
-                . 통합 지도는 UI 반경 기본 <strong>5km</strong>(km→m 변환 후 전달),
-                요청 <code>size=300</code> 고정(
-                <code>LOCATION_RESULT_LIMIT</code>). 백엔드{" "}
-                <code>radius</code> 생략·0 이하 시 서비스 기본은 10km.
+                . 통합 지도는 UI 반경 기본 <strong>5km</strong>(km→m 변환 후
+                전달), 요청 <code>size=300</code> 고정(
+                <code>LOCATION_RESULT_LIMIT</code>). 백엔드 <code>radius</code>{" "}
+                생략·0 이하 시 서비스 기본은 10km.
               </p>
             </Card>
 
@@ -298,7 +298,8 @@ function LocationDomainV2() {
                   margin: "0 0 0.65rem",
                 }}
               >
-                시퀀스 다이어그램은 도메인별로 두지 않고 통합 페이지에만 있습니다.
+                시퀀스 다이어그램은 도메인별로 두지 않고 통합 페이지에만
+                있습니다.
               </p>
               <Link
                 to="/domains/flows?tab=location"
@@ -388,7 +389,9 @@ else                  results = searchLocationServicesByRegion(
                 {li(
                   "이후: 반경 검색 + 통합 지도 size=300 고정(meetup/care만 줌별 limit)",
                 )}
-                {li("컨트롤러 기본값 size=100, size≤0이면 상한 없음(관리자·배치용)")}
+                {li(
+                  "컨트롤러 기본값 size=100, size≤0이면 상한 없음(관리자·배치용)",
+                )}
               </ul>
               <CodeBlock>{`// unifiedMapApi.js (Petory) — location 탭만 고정 상한
 const LOCATION_RESULT_LIMIT = 300;
