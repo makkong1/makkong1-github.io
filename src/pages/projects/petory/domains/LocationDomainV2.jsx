@@ -344,7 +344,7 @@ function LocationDomainV2() {
                 {li(
                   "lat/lng 있으면 → 반경 검색 (통합 지도·초기 로드 기본). keyword·category는 동일 쿼리 WHERE",
                 )}
-                {li("lat/lng 없고 지역 있으면 → road > eup > sigungu > sido")}
+                {li("lat/lng 없고 지역 있으면 → sigungu → sido (eupmyeondong·roadName 비활성화)")}
                 {li(
                   "위치·지역 없고 keyword만 → FULLTEXT(이름·설명·카테고리). 반경·지역에서는 시설명 포함 여부만",
                 )}
@@ -354,7 +354,7 @@ function LocationDomainV2() {
                 )}
               </ul>
               <CodeBlock>{`boolean hasLocation = latitude != null && longitude != null;
-boolean hasRegion   = hasText(sido) || hasText(sigungu) || ...;
+boolean hasRegion   = hasText(sido) || hasText(sigungu);
 boolean hasKeyword  = hasText(keyword);
 
 if (hasLocation)      results = searchLocationServicesByLocation(...);
