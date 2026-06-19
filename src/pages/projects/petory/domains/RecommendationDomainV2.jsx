@@ -44,8 +44,20 @@ const PETORY_PET_INTENT_CLIENT =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/client/PetIntentClient.java';
 const PETORY_INTENT_SIGNAL_ENTITY =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/entity/UserPetIntentSignal.java';
+const PETORY_SIGNAL_LISTENER =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/service/PetIntentSignalEventListener.java';
+const PETORY_SIGNAL_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/service/UserPetIntentSignalService.java';
+const PETORY_RECOMMENDATION_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/service/PetRecommendationService.java';
+const PETORY_HEALTH_ALERT_HANDLER =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/service/PetHealthAlertNotificationHandler.java';
 const PETORY_NLP_INTENT_ROUTER =
   'https://github.com/makkong1/Petory/blob/main/petory-nlp-server/app/api/pet_intent_router.py';
+const PETORY_NLP_INTENT_CLASSIFIER =
+  'https://github.com/makkong1/Petory/blob/main/petory-nlp-server/app/nlp/intent_classifier.py';
+const PETORY_NLP_TAG_EXTRACTOR =
+  'https://github.com/makkong1/Petory/blob/main/petory-nlp-server/app/nlp/tag_extractor.py';
 const PETORY_RECOMMENDATION_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/recommendation.md';
 const PETORY_REFACTOR_DOC =
@@ -160,8 +172,9 @@ function RecommendationDomainV2() {
                 추천</strong>입니다. 커뮤니티 글·케어 요청·주변서비스 검색어가
                 Spring 이벤트로 발행되면 <code>@Async</code> listener가 Python
                 NLP(<code>POST /api/pet-intent/analyze</code>)를 호출하고,
-                confidence 0.6 이상이면 <code>user_pet_intent_signal</code>에
-                저장합니다(원문 미저장, TTL 7일). 주변서비스 탭은{' '}
+                domain·urgency별 저장 기준을 넘으면{' '}
+                <code>user_pet_intent_signal</code>에 저장합니다(원문 미저장,
+                TTL 차등 적용). 주변서비스 탭은{' '}
                 <code>GET /api/pet-recommend/signals</code>로 카드를 받고,
                 클릭 시 <code>targetCategory</code>로 Location 검색을 다시
                 실행합니다.
@@ -208,7 +221,7 @@ function RecommendationDomainV2() {
                     [
                       'signal 저장',
                       'UserPetIntentSignalService',
-                      'Python 0.45 / Spring 0.60 이중 필터, intentDomain 중복 생략, 조회 LIMIT 10',
+                      'Python 0.45 하한 + domain·urgency별 Spring 저장 threshold, intentDomain 중복 생략, 조회 LIMIT 10',
                     ],
                     [
                       '카드 노출',
@@ -400,13 +413,26 @@ POST http://localhost:8000/api/pet-intent/analyze
                   'confidence 의미: rule hit → 0.88~0.92 고정 휴리스틱, embedding → 코사인 유사도 [-1,1]. 두 경로는 직접 비교하지 않음',
                 )}
                 {li(
-                  '2단계 필터: Python 0.45 미만 UNKNOWN(embedding path 하한) → Spring 0.60 미만 저장 거부',
+                  '2단계 필터: Python 0.45 미만 UNKNOWN(embedding path 하한) → Spring 저장 단계에서 domain·urgency별 threshold 적용',
                 )}
                 {li(
                   '같은 (userIdx, intentDomain) 유효 signal 있으면 저장 생략 — 카드 중복 방지',
                 )}
-                {li('TTL 7일, /signals 조회 LIMIT 10, LOCATION_SEARCH source_id는 null')}
+                {li('TTL: MEDICAL HIGH 1일, MEDICAL 3일, LODGING_TRAVEL 14일, 그 외 7일')}
+                {li('/signals 조회 LIMIT 10, LOCATION_SEARCH source_id는 null')}
               </ul>
+              <CodeBlock>{`// Spring 저장 threshold
+MEDICAL + HIGH        -> 0.55
+MEDICAL               -> 0.65
+FOOD_SNACK/SUPPLIES
+WALK_OUTING/CAFE_DINING -> 0.45
+DEFAULT               -> 0.60
+
+// TTL
+MEDICAL + HIGH -> 1일
+MEDICAL        -> 3일
+LODGING_TRAVEL -> 14일
+DEFAULT        -> 7일`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -501,15 +527,49 @@ POST http://localhost:8000/api/pet-intent/analyze
                 }}
               >
                 {li(
-                  'GET /api/pet-recommend?lat&lng&text&radius — PetRecommendScoreCalculator (거리·평점·리뷰·place score·tag match)',
+                  'GET /api/pet-recommend?lat&lng&text&radius&petType — PetRecommendScoreCalculator (거리·평점·리뷰·place score·tag match)',
                 )}
                 {li(
-                  '주변서비스 탭 카드는 §D 카테고리 진입점 추천이 중심 — 점수 API는 텍스트+좌표 기반 장소 순위용',
+                  '현재 프론트 주 경로는 /signals 카드 — 점수 API는 백엔드 기능과 확장 포인트로 분리 설명',
                 )}
                 {li(
                   'place_score·tag_match는 태그·score 데이터가 쌓인 뒤 효과가 커짐 — 초기에는 거리·평점·리뷰 검증 중심',
                 )}
               </ul>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                G. MEDICAL HIGH 건강 알림
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li(
+                  'MEDICAL + HIGH signal 저장 후 SignalSavedEvent 발행 — 주변서비스 카드와 알림 연결',
+                )}
+                {li(
+                  'PetHealthAlertNotificationHandler가 AFTER_COMMIT + @Async로 PET_HEALTH_ALERT 생성',
+                )}
+                {li('알림 실패는 signal 저장을 롤백하지 않음 — 추천 저장과 후속 알림 책임 분리')}
+              </ul>
+              <CodeBlock>{`if ("MEDICAL".equals(event.intentDomain())
+    && "HIGH".equals(event.urgency())) {
+    notificationService.createNotification(
+        event.userIdx(), PET_HEALTH_ALERT, ...);
+}`}</CodeBlock>
             </Card>
 
             <Card>
@@ -520,7 +580,7 @@ POST http://localhost:8000/api/pet-intent/analyze
                   fontSize: '1rem',
                 }}
               >
-                G. NLP 품질 개선 — 오탐 수정 & 계약 정합 (2026-06-09)
+                H. NLP 품질 개선 — 오탐 수정 & 계약 정합 (2026-06-09)
               </h3>
               <ul
                 style={{
@@ -578,8 +638,15 @@ POST http://localhost:8000/api/pet-intent/analyze
                 )}
                 {li('비로그인: signal 저장·/signals 조회 없음')}
                 {li(
-                  'confidence 0.6 미만·만료 signal — 카드 미표시, 기본 주변서비스만',
+                  'domain·urgency별 저장 기준 미달·만료 signal — 카드 미표시, 기본 주변서비스만',
                 )}
+                {li(
+                  'GET /api/pet-recommend 즉시 시설 추천 API는 백엔드에 있으나 현재 프론트 API 래퍼는 /signals만 제공',
+                )}
+                {li(
+                  'GET /api/pet-recommend는 메서드 @PreAuthorize가 없어도 SecurityConfig /api/** catch-all로 실제 접근은 인증 대상',
+                )}
+                {li('petType은 Python까지 전달되지만 현재 분류 로직에서는 아직 미사용')}
                 {li(
                   'NLP recommendedCategories와 Location category 문자열 불일치 시 카드→검색 연결 품질 저하 가능',
                 )}
@@ -590,6 +657,13 @@ POST http://localhost:8000/api/pet-intent/analyze
                   'NLP 전용 실행 풀 대기열(500) 포화 시 일부 signal 생략 — 게시·케어는 정상',
                 )}
                 {li('Redis 장애 시 Location 검색 NLP 생략(안전 쪽으로 차단)')}
+                {li(
+                  'SignalInteractionLog 엔티티·레포는 준비되어 있지만 추천 카드 클릭 저장 로직은 아직 없음',
+                )}
+                {li(
+                  'NLP confidence는 rule 경로와 embedding 경로의 의미가 달라 직접 비교하면 안 됨',
+                )}
+                {li('의료 관련 추천은 진단이 아니라 가까운 동물병원 문의 안내 수준')}
               </ul>
             </Card>
           </section>
@@ -611,6 +685,54 @@ POST http://localhost:8000/api/pet-intent/analyze
                   lineHeight: '2',
                 }}
               >
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_SIGNAL_LISTENER}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    PetIntentSignalEventListener.java
+                  </a>
+                  {' — 이벤트 기반 signal 수집'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_SIGNAL_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    UserPetIntentSignalService.java
+                  </a>
+                  {' — threshold·TTL·중복 저장 방지'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_RECOMMENDATION_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    PetRecommendationService.java
+                  </a>
+                  {' — 즉시 시설 추천·점수 계산'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_HEALTH_ALERT_HANDLER}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    PetHealthAlertNotificationHandler.java
+                  </a>
+                  {' — MEDICAL HIGH 건강 알림'}
+                </li>
                 <li>
                   •{' '}
                   <a
@@ -658,6 +780,30 @@ POST http://localhost:8000/api/pet-intent/analyze
                     pet_intent_router.py
                   </a>
                   {' — petory-nlp-server'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_NLP_INTENT_CLASSIFIER}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    intent_classifier.py
+                  </a>
+                  {' — rule first, embedding fallback'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_NLP_TAG_EXTRACTOR}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    tag_extractor.py
+                  </a>
+                  {' — 형태소 기반 오탐 방지'}
                 </li>
                 <li>
                   •{' '}
