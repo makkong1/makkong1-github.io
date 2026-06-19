@@ -40,10 +40,18 @@ function CodeBlock({ children }) {
 
 const PETORY_CARE_DOMAIN_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/care.md';
+const PETORY_CARE_ARCH_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/architecture/care/%ED%8E%AB%20%EC%BC%80%EC%96%B4%20%26%20%EB%A7%A4%EC%B9%AD%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
 const PETORY_CARE_N1_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/care/care-request-n-plus-one-analysis.md';
 const PETORY_CARE_RACE_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/care/care-deal-confirmation-race-condition.md';
+const PETORY_CARE_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/care/service/CareRequestService.java';
+const PETORY_CONVERSATION_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/chat/service/ConversationService.java';
+const PETORY_ESCROW_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/payment/service/PetCoinEscrowService.java';
 
 function CareDomainV2() {
   const sections = [
@@ -83,11 +91,13 @@ function CareDomainV2() {
             }}
           >
             Care 도메인은 반려동물 돌봄이 필요한 사용자와 돌봄 제공자를 연결하는 Petory의
-            매칭 기능입니다. 처음에는 요청 등록·매칭처럼 보였지만, 실제 구현에서는 두
-            사용자가 동시에 거래를 확정할 때 발생하는 Race Condition, 상태 변경과
-            에스크로 결제의 연계, 목록 조회 N+1 같은 정합성·성능 문제를 함께 다뤄야
-            했습니다. 저는 채팅, 케어 요청, 결제가 하나의 흐름으로 얽히는 구간에서
-            데이터가 어떻게 깨질 수 있는지를 중심으로 설계했습니다.
+            매칭 기능입니다. 구현의 핵심은 요청 등록 자체보다 채팅, 케어 상태,
+            펫코인 에스크로가 맞물리는 거래 확정 흐름이었습니다. 두 사용자가 동시에
+            거래를 확정할 때 발생할 수 있는 Race Condition을 Conversation 비관적
+            락으로 제어하고, 확정 이후에는 CareApplication 승인/생성, CareRequest
+            상태 전이, Payment 에스크로 생성을 연결합니다. 목록 조회에서는 요청자,
+            반려동물, 지원자 수, 파일, 예방접종 정보가 얽히며 발생하는 N+1을 fetch
+            join과 batch 전략으로 줄였습니다.
           </p>
 
           <section
@@ -391,6 +401,7 @@ if (bothConfirmed(conv)) {
               >
                 {li('요청자·반려동물: JOIN FETCH로 목록 쿼리에 포함')}
                 {li('지원자 수·파일: ID 목록 → IN + GROUP BY 배치 집계')}
+                {li('페이징 목록은 Page + OneToMany fetch join 제약 때문에 batch 전략 병행')}
                 {li(
                   <>
                     상세는{' '}
@@ -412,7 +423,8 @@ List<CareRequest> list = careRequestRepository.findAllActiveRequests();
 
 // 2단계: 나머지 연관은 ID 배치 조회
 List<Long> ids = list.stream().map(CareRequest::getIdx).toList();
-// applicationCount, files 등 IN 쿼리 — 총 4~5개로 수렴`}</CodeBlock>
+// applicationCount, files 등 IN 쿼리
+// 4~5개 수렴 수치는 기존 비페이징 N+1 측정 맥락`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -475,8 +487,13 @@ if (newStatus == CANCELLED) {
                 {li('수정/삭제: 요청자 또는 관리자만 — 서비스 내부에서 검증')}
                 {li('상태 변경: 요청자 또는 승인된 제공자로 제한')}
                 {li('연결 가능한 반려동물: 요청자 본인 소유 펫만 허용')}
+                {li('createCareRequest는 body userId가 아니라 인증 사용자 PK를 컨트롤러에서 DTO에 주입')}
               </ul>
-              <CodeBlock>{`// updateStatus — 요청자 또는 승인된 제공자만 가능
+              <CodeBlock>{`// createCareRequest — 인증 사용자 PK 주입 후 서비스로 전달
+Long currentUserIdx = authenticatedUserIdResolver.requireCurrentUserIdx();
+dto.setUserId(currentUserIdx);
+
+// updateStatus — 요청자 또는 승인된 제공자만 가능
 boolean isRequester = request.getUser().getIdx().equals(currentUserId);
 boolean isAcceptedProvider = request.getApplications().stream()
     .anyMatch(app -> app.getStatus() == CareApplicationStatus.ACCEPTED
@@ -560,13 +577,22 @@ if (!isRequester && !isAcceptedProvider)
                   '[개선 완료] 댓글 삭제: Authentication으로 요청자 신원 확인, 작성자·관리자 여부 검증 추가 (기존: 검증 없음)'
                 )}
                 {li(
-                  '권한 검증: createCareRequest·댓글·리뷰 작성은 요청 바디 userId를 신뢰 — JWT 기반 검증으로 개선 여지 있음'
+                  '댓글 작성: CareRequestCommentService.addComment()는 DTO의 userId로 사용자를 조회 — 생성 요청처럼 인증 사용자 주입 방식으로 맞출 여지 있음'
+                )}
+                {li(
+                  '리뷰 작성: CareReviewService.createReview()는 DTO의 reviewerId/revieweeId 기준으로 검증 — 인증 사용자 기준으로 reviewer를 고정하는 개선 여지 있음'
                 )}
                 {li(
                   'API 인증: 컨트롤러상 공개 GET처럼 보이는 목록·상세·검색도 실제로는 SecurityConfig /api/** 때문에 인증 전제'
                 )}
                 {li(
-                  '상태 전이: updateStatus()의 null currentUserId 예외 경로(스케줄러용)는 권한 검증이 통째로 생략됨'
+                  '스케줄러 상태 변경: updateStatus(idx, "COMPLETED", null)은 시스템 작업 경로라 권한 검증을 생략 — 일반 사용자 경로와 구분 필요'
+                )}
+                {li(
+                  '페이징 목록: 모든 연관을 한 번에 fetch join하지 않고 batch 전략을 병행'
+                )}
+                {li(
+                  '댓글 목록: 댓글별 attachment 조회가 반복될 수 있어 댓글 수가 커지면 batch 조회 개선 여지 있음'
                 )}
               </ul>
             </Card>
@@ -611,6 +637,27 @@ if (!isRequester && !isAcceptedProvider)
                 </li>
                 <li>
                   •{' '}
+                  <Link
+                    to="/domains/chat"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Chat 도메인
+                  </Link>
+                  {' — 거래 확정 진입점'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_CARE_ARCH_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    펫 케어 & 매칭 아키텍처
+                  </a>
+                </li>
+                <li>
+                  •{' '}
                   <a
                     href={PETORY_CARE_DOMAIN_DOC}
                     target="_blank"
@@ -640,6 +687,39 @@ if (!isRequester && !isAcceptedProvider)
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     Race Condition 분석 문서 (care-deal-confirmation-race-condition.md)
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_CARE_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    CareRequestService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_CONVERSATION_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    ConversationService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_ESCROW_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    PetCoinEscrowService.java
                   </a>
                 </li>
               </ul>
