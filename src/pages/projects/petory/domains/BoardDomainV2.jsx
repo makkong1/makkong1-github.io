@@ -40,8 +40,18 @@ function CodeBlock({ children }) {
 
 const PETORY_BOARD_DOMAIN_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/board.md';
+const PETORY_BOARD_ARCH_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/architecture/board/%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0%20%EA%B2%8C%EC%8B%9C%ED%8C%90%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
 const PETORY_BOARD_PERF_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/board/performance-optimization.md';
+const PETORY_BOARD_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/BoardService.java';
+const PETORY_COMMENT_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/CommentService.java';
+const PETORY_REACTION_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/ReactionService.java';
+const PETORY_POPULARITY_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/BoardPopularityService.java';
 
 function BoardDomainV2() {
   const sections = [
@@ -54,6 +64,7 @@ function BoardDomainV2() {
 
   const corePillars = [
     '목록 N+1 최적화',
+    '댓글 배치 조회',
     '반응 토글',
     '조회수 중복 방지',
     '인기글 스냅샷',
@@ -81,12 +92,12 @@ function BoardDomainV2() {
             }}
           >
             Board 도메인은 Petory 사용자들이 일상, 정보, 질문, 자랑 글을 올리고
-            소통하는 커뮤니티 영역입니다. 처음에는 일반적인 게시판 기능처럼
-            보였지만, 실제 구현에서는 게시글 목록 조회 성능, 반응 데이터
-            정합성, 조회 중복 제어, 인기글 집계 비용 같은 읽기 중심 문제를 먼저
-            해결해야 했습니다. 저는 이 도메인을 구현하면서 단순 CRUD보다
-            데이터가 많아졌을 때도 흐름이 무너지지 않도록 조회 구조를 다듬는 데
-            집중했습니다.
+            댓글과 반응으로 소통하는 커뮤니티 영역입니다. 처음에는 일반적인
+            게시판 기능처럼 보였지만, 실제 구현에서는 게시글·댓글 목록 조회
+            성능, 반응 데이터 정합성, 조회 중복 제어, 인기글 집계 비용 같은 읽기
+            중심 문제를 먼저 해결해야 했습니다. 현재 구조는 작성자 fetch join,
+            반응/첨부 배치 조회, 조회 로그 <code>insertIgnore</code>, 인기글
+            스냅샷을 조합해 목록·상세·인기글 조회 비용을 분리합니다.
           </p>
 
           <section
@@ -152,7 +163,8 @@ function BoardDomainV2() {
                 >
                   viewerId
                 </code>{' '}
-                기준으로 사용자별 조회 로그를 관리해 중복 증가를 제어했고,
+                기준으로 <code>board_view_log</code>에 <code>boardId + userId</code>{' '}
+                조합을 <code>INSERT IGNORE</code>로 기록해 중복 증가를 제어했고,
                 인기글은 스냅샷을 우선 조회하되 없으면 생성하거나 fallback하는
                 방식으로 읽기 성능과 집계 비용을 분리했습니다.
               </p>
@@ -389,7 +401,8 @@ Map<Long, List<FileDTO>> attachmentsMap =
               >
                 {li('반응: likeCount / dislikeCount 필드 즉시 갱신')}
                 {li('인기글: 스케줄러 스냅샷 우선, 없으면 on-demand 생성·fallback')}
-                {li('인기 점수 조회수: board.viewCount가 아닌 BoardViewLog 집계')}
+                {li('인기 점수: likes * 3 + comments * 2 + views')}
+                {li('인기 점수 조회수: board.viewCount가 아닌 BoardViewLog batch count 기준')}
               </ul>
               <CodeBlock>{`if (existing.isPresent() && sameReaction) {
   boardReactionRepository.delete(existing.get());   // 취소
@@ -423,10 +436,14 @@ Map<Long, List<FileDTO>> attachmentsMap =
                 {li('새로고침만으로는 중복 증가 없음 — 인기 점수도 BoardViewLog 집계 기준')}
               </ul>
               <CodeBlock>{`private boolean shouldIncrementView(Board board, Long viewerId) {
-  if (viewerId == null) return true;
-  if (boardViewLogRepository.existsByBoardAndUser(board, viewer)) return false;
-  boardViewLogRepository.save(log);
-  return true;
+    if (viewerId == null) {
+        return true;
+    }
+    Users viewer = usersRepository.findById(viewerId).orElse(null);
+    if (viewer == null) {
+        return true;
+    }
+    return boardViewLogRepository.insertIgnore(board.getIdx(), viewer.getIdx()) > 0;
 }`}</CodeBlock>
             </Card>
 
@@ -486,10 +503,18 @@ Map<Long, List<FileDTO>> attachmentsMap =
                 }}
               >
                 {li('인기글 대상: "자랑" 카테고리 중심')}
+                {li('legacy "PRIDE" category fallback이 남아 있음')}
                 {li('목록 페이징: Offset → 대용량 시 커서 검토')}
                 {li('조회수: DB 로그 → 트래픽 증가 시 Redis TTL 검토')}
+                {li('상세 조회의 viewerId는 request param이며 인증 컨텍스트에서 자동 추출하지 않음')}
                 {li(
-                  '권한 검증: createBoard·addComment는 JWT principal 기반으로 전환, updateBoard·deleteBoard·updateComment·deleteComment에 assertBoardOwner / assertCommentOwner 소유권 검증 추가 완료'
+                  '게시글 생성과 댓글 작성은 JWT principal 기반이지만, 반응 API는 아직 ReactionRequest.userId()를 사용'
+                )}
+                {li(
+                  'CommentService.updateComment()는 구현되어 있지만 사용자용 BoardController에는 댓글 수정 endpoint가 노출되어 있지 않음'
+                )}
+                {li(
+                  'GET /api/boards 계열은 permitAll annotation만 보고 공개 API처럼 단정하지 않고 SecurityConfig /api/** 규칙을 함께 봐야 함'
                 )}
                 {li('관리자 조회: 최적화/레거시 흐름 공존, 정리 여지')}
               </ul>
@@ -546,6 +571,17 @@ Map<Long, List<FileDTO>> attachmentsMap =
                 <li>
                   •{' '}
                   <a
+                    href={PETORY_BOARD_ARCH_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    커뮤니티 게시판 아키텍처
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
                     href={PETORY_BOARD_DOMAIN_DOC}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -563,6 +599,50 @@ Map<Long, List<FileDTO>> attachmentsMap =
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     성능 비교 문서 (performance-optimization.md)
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_BOARD_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    BoardService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_COMMENT_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    CommentService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_REACTION_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    ReactionService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_POPULARITY_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    BoardPopularityService.java
                   </a>
                 </li>
               </ul>
