@@ -42,6 +42,16 @@ const PETORY_MISSING_PET_SERVICE =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/MissingPetBoardService.java';
 const PETORY_MISSING_PET_COMMENT_SERVICE =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/MissingPetCommentService.java';
+const PETORY_MISSING_PET_CONTROLLER =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/controller/MissingPetBoardController.java';
+const PETORY_ADMIN_MISSING_PET_CONTROLLER =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/admin/controller/AdminMissingPetController.java';
+const PETORY_MISSING_PET_REPO =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/repository/SpringDataJpaMissingPetBoardRepository.java';
+const PETORY_MISSING_PET_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/domains/missingpet.md';
+const PETORY_MISSING_PET_ARCH_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/architecture/missingpet/%EC%8B%A4%EC%A2%85%20%EC%A0%9C%EB%B3%B4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
 
 function MissingPetDomainV2() {
   const sections = [
@@ -142,8 +152,8 @@ function MissingPetDomainV2() {
                 제외하고 파일·댓글 수만 배치 IN 쿼리로 처리하도록
                 분리했습니다. 댓글 일괄 삭제도 N번 루프 대신 배치 UPDATE 1회로
                 전환해 1001개 쿼리를 1개로 줄였습니다. 제보자-목격자 채팅
-                연결은 게시글 전체를 조회하지 않고 작성자 ID 프로젝션 1회로
-                처리해 긴급 액션 경로를 가볍게 유지했습니다.
+                연결은 게시글 전체를 조회하지 않고 작성자 ID 프로젝션 1회와
+                인증 사용자 ID로 처리해 긴급 액션 경로를 가볍게 유지했습니다.
               </p>
             </Card>
 
@@ -363,6 +373,7 @@ public void deleteAllCommentsByBoard(MissingPetBoard board) {
                 {li('목격자 → "목격했어요" → 제보자와 채팅방 생성')}
                 {li('제보자 ID: 게시글 전체 DTO 조립 없이 ID 프로젝션 1회 쿼리')}
                 {li('목격자 ID: 요청 바디 아닌 JWT principal에서 확인')}
+                {li('자기 글 채팅 시작 차단 — createMissingPetChat()에서 제보자와 목격자 동일 여부 검증')}
               </ul>
               <CodeBlock>{`// 작성자 ID만 프로젝션 조회 — 전체 DTO 불필요
 public Long getUserIdByBoardIdx(Long boardIdx) {
@@ -396,7 +407,7 @@ public Long getUserIdByBoardIdx(Long boardIdx) {
               </ul>
             </Card>
 
-            <Card>
+            <Card style={{ marginBottom: '1rem' }}>
               <h3
                 style={{
                   marginBottom: '0.75rem',
@@ -418,7 +429,7 @@ public Long getUserIdByBoardIdx(Long boardIdx) {
                 {li('createBoard·addComment: 요청 바디 userId 신뢰 → JWT principal로 사용자 조회')}
                 {li('updateBoard·updateStatus·deleteBoard·deleteComment: assertOwner로 소유권 검증 추가')}
                 {li('관리자(ADMIN·MASTER)는 우회, 본인 아니면 403 MissingPetForbiddenException')}
-                {li('deleteBoard의 이메일 인증 확인이 게시글 소유자 기준으로 올바르게 동작')}
+                {li('일반 사용자 deleteBoard의 이메일 인증 확인은 게시글 소유자 기준으로 동작')}
               </ul>
               <CodeBlock>{`private void assertOwner(Users boardOwner) {
     Authentication auth =
@@ -431,6 +442,34 @@ public Long getUserIdByBoardIdx(Long boardIdx) {
 String loginId = auth.getName();
 Users user = usersRepository.findActiveByIdString(loginId)
     .orElseThrow(() -> new UserNotFoundException());`}</CodeBlock>
+            </Card>
+
+            <Card>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                F. 홈 추천 점수
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('좌표가 없으면 MISSING 상태 글을 lostDate DESC, createdAt DESC로 조회')}
+                {li('좌표가 있으면 20km bounding box 후보를 DB에서 가져온 뒤 서비스에서 점수 계산')}
+                {li('점수는 실종일 최신성 0.6 + Haversine 거리 0.4 조합, 부족분은 최신 제보로 보충')}
+              </ul>
+              <CodeBlock>{`recencyScore = max(0, 1 - daysSinceLost / 14)
+distScore    = max(0, 1 - distKm / 20)
+score        = 0.6 * recencyScore + 0.4 * distScore`}</CodeBlock>
             </Card>
           </section>
 
@@ -452,9 +491,13 @@ Users user = usersRepository.findActiveByIdString(loginId)
                 }}
               >
                 {li('목격 댓글 위치 정보는 별도 지도 UI 없이 저장만 — 시각화 미구현')}
-                {li('실종 제보 홈 추천 점수(recency·거리 가중합)는 메모리 계산 — 후보 50개 초과 시 정확도 저하')}
-                {li('SecurityConfig /api/** catch-all로 인해 permitAll() 선언 API도 실제로 인증 필요 — 문서·클라이언트와 불일치 여지')}
+                {li('실종 제보 홈 추천은 DB 거리 정렬이 아니라 애플리케이션 Haversine 점수 계산 — 후보 증가 시 공간 인덱스·DB 정렬 검토 필요')}
+                {li('MissingPet 사용자 컨트롤러 대부분은 명시적 @PreAuthorize가 적지만 SecurityConfig /api/** catch-all로 실제 인증 필요')}
+                {li('관리자 삭제도 현재 서비스 구현상 게시글 작성자의 MISSING_PET 이메일 인증을 요구할 수 있음')}
+                {li('관리자 댓글 목록은 deleted=true 파라미터가 있어도 서비스가 삭제되지 않은 댓글만 반환해 삭제 댓글 조회가 제한적')}
                 {li('제보자-목격자 채팅은 개별 1:1 방 생성 — 동일 제보에 목격자 수만큼 채팅방 증가')}
+                {li('댓글 작성 알림은 비동기 후처리 — 알림 실패는 댓글 작성 실패로 전파하지 않음')}
+                {li('MissingPet 코드는 domain/board 패키지 안에 있어 일반 Board와 물리 경계가 섞여 있음')}
               </ul>
             </Card>
           </section>
@@ -499,12 +542,45 @@ Users user = usersRepository.findActiveByIdString(loginId)
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/board/v2"
+                    to="/domains/board"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     Board 도메인
                   </Link>
                   {' — 같은 패키지 내 커뮤니티 게시판'}
+                </li>
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/chat"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Chat 도메인
+                  </Link>
+                  {' — 제보자·목격자 1:1 채팅'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MISSING_PET_CONTROLLER}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    MissingPetBoardController.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_ADMIN_MISSING_PET_CONTROLLER}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    AdminMissingPetController.java
+                  </a>
+                  {' — /api/admin/missing-pets'}
                 </li>
                 <li>
                   •{' '}
@@ -526,6 +602,39 @@ Users user = usersRepository.findActiveByIdString(loginId)
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     MissingPetCommentService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MISSING_PET_REPO}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    SpringDataJpaMissingPetBoardRepository.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MISSING_PET_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    missingpet.md (Petory)
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MISSING_PET_ARCH_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    실종 제보 아키텍처
                   </a>
                 </li>
               </ul>
