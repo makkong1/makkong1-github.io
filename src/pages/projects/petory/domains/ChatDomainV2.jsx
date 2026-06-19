@@ -40,8 +40,18 @@ function CodeBlock({ children }) {
 
 const PETORY_CHAT_MESSAGE_SERVICE =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/chat/service/ChatMessageService.java';
+const PETORY_CONVERSATION_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/chat/service/ConversationService.java';
 const PETORY_CONVERSATION_CREATOR =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/chat/service/ConversationCreatorService.java';
+const PETORY_CHAT_DOMAIN_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/domains/chat.md';
+const PETORY_CHAT_ARCH_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/architecture/chat/%EC%B1%84%ED%8C%85%20%EC%8B%9C%EC%8A%A4%ED%85%9C%20%EC%84%A4%EA%B3%84.md';
+const PETORY_CHAT_READ_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/chat/read-status-performance.md';
+const PETORY_CHAT_N1_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/chat/n-plus-one-conversationparticipant.md';
 
 function ChatDomainV2() {
   const sections = [
@@ -84,8 +94,9 @@ function ChatDomainV2() {
             실제로는 Care·Missing Pet·Meetup의 핵심 액션을 연결하는 공용 인프라
             역할을 합니다. 단순 WebSocket 연결보다, 각 도메인에 맞는 채팅 생성
             규칙과 unread count 동시성 제어, 재참여 정책 같은 운영 디테일을 더
-            중요하게 다뤘습니다. 읽음 처리에서 전체 메시지를 다시 읽던 비효율을
-            제거하고, 참여자 상태 필드만 갱신하는 방식으로 단순화했습니다.
+            중요하게 다뤘습니다. REST와 WebSocket 전송은 모두
+            ChatMessageService로 모이고, 읽음 처리에서 전체 메시지를 다시 읽던
+            비효율을 제거해 참여자 상태 필드만 갱신하는 방식으로 단순화했습니다.
           </p>
 
           <section
@@ -143,7 +154,10 @@ function ChatDomainV2() {
                 이전 대화를 어디까지 보여줄 것인가, 읽음 처리 시 수천 건
                 메시지를 다시 읽는 구조를 어떻게 피할 것인가. 이 도메인은
                 단순 메시지 송수신보다, 채팅을 비즈니스 흐름의 일부로
-                설계한 점이 포트폴리오 가치입니다.
+                설계한 점이 포트폴리오 가치입니다. REST 요청은
+                AuthenticatedUserIdResolver가 사용자 idx를 결정하고, WebSocket은
+                Principal 로그인 ID를 UsersRepository로 다시 조회해 발신자를
+                정합니다.
               </p>
             </Card>
 
@@ -318,7 +332,7 @@ function ChatDomainV2() {
               >
                 {li('REQUIRES_NEW 트랜잭션 — 호출 도메인 롤백이 채팅 생성에 전파되지 않도록 분리')}
                 {li('actingUserId 검증 — JWT 기준 요청자가 반드시 참여자 목록에 포함되어야 함')}
-                {li('relatedType + relatedIdx 기반 기존 채팅방 재사용 — 중복 생성 방지')}
+                {li('relatedType + relatedIdx 기존 방은 ACTIVE 참여자 집합이 새 참여자 집합과 같을 때 재사용')}
                 {li('DIRECT 타입: findDirectConversationBetweenUsers로 1:1 채팅방 재사용')}
                 {li('Care·Missing Pet·Meetup이 각자 생성 로직을 흩뿌리지 않고 한 곳으로 위임')}
               </ul>
@@ -334,11 +348,14 @@ public ConversationDTO createConversation(
             .anyMatch(actingUserId::equals))
         throw ChatForbiddenException.notAllowedToCreateConversation();
 
-    // 2. relatedType 기준 기존 채팅방 재사용
+    // 2. relatedType 기준 기존 방은 ACTIVE 참여자 집합까지 비교 후 재사용
     if (relatedType != null && relatedIdx != null) {
         Optional<Conversation> existing = conversationRepository
             .findByRelatedTypeAndRelatedIdxAndIsDeletedFalse(relatedType, relatedIdx);
-        if (existing.isPresent()) return existing.get(); // 재사용
+        if (existing.isPresent()
+                && hasSameActiveParticipants(existing.get(), participantIds)) {
+            return existing.get(); // 재사용
+        }
     }
 
     // 3. DIRECT 타입: 두 사용자 간 1:1 채팅방 재사용
@@ -523,17 +540,28 @@ if (readFrom != null) {
                   'Care 거래 확정: CARE_APPLICATION 관련 confirmCareDeal()은 현재 로그 기록 중심 — 상태 전이 완전 미구현'
                 )}
                 {li(
-                  '[개선 완료] Meetup 채팅 참여: meetupParticipantsRepository.existsByMeetupIdxAndUserIdx()로 모임 참여자 여부 검증 추가'
+                  'Meetup 채팅 참여: 모임 참여자 검증은 추가됐지만, 채팅 참여 실패와 모임 참여 취소·복구 결합은 정책 여지 있음'
                 )}
                 {li(
-                  '재참여 메시지 제한: 기본 조회는 joinedAt 이후지만 커서 기반 과거 조회(getMessagesBefore)는 별도 보완 필요'
+                  '재참여 메시지 제한: 기본 조회는 joinedAt 이후지만 커서 기반 과거 조회(/before)는 joinedAt 제한을 적용하지 않음'
                 )}
                 {li(
-                  '채팅방 상태 변경: 활성 참여자 여부 기준으로 동작 — 역할별 상태 변경 정책은 더 정교화 가능'
+                  '채팅방 상태 변경: PATCH /status는 ACTIVE 참여자면 가능 — 방장·관리자 전용 정책은 아직 없음'
                 )}
                 {li(
                   'Chat API 전체 로그인 사용자 전용 — SecurityConfig /api/** authenticated() 적용'
                 )}
+                {li(
+                  'WebSocket 브로커는 Spring SimpleBroker 기반 — 다중 서버 확장 시 외부 브로커, 세션 공유, 전달 보장 설계 필요'
+                )}
+                {li(
+                  'REST sender는 AuthenticatedUserIdResolver, WebSocket sender는 Principal.getName() → findByIdString()으로 결정'
+                )}
+                {li('FULLTEXT 검색은 chatmessage(content) 인덱스가 실제 DB에 적용되어야 안정 동작')}
+                {li(
+                  'ConversationParticipant 유니크 제약은 soft delete 이력과 재참여 정책 정리 후 적용 필요'
+                )}
+                {li('ADMIN_SUPPORT, GROUP, SYSTEM, NOTICE, FILE 타입은 모델에 있지만 사용자 플로우는 일부만 구현')}
               </ul>
             </Card>
           </section>
@@ -577,6 +605,36 @@ if (readFrom != null) {
                 </li>
                 <li>
                   •{' '}
+                  <Link
+                    to="/domains/care"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Care 도메인
+                  </Link>
+                  {' — 거래 확정과 에스크로 연결'}
+                </li>
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/meetup"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Meetup 도메인
+                  </Link>
+                  {' — 모임 생성 후 그룹 채팅방 생성'}
+                </li>
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/missing-pet"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Missing Pet 도메인
+                  </Link>
+                  {' — 실종 제보자·목격자 채팅'}
+                </li>
+                <li>
+                  •{' '}
                   <a
                     href={PETORY_CHAT_MESSAGE_SERVICE}
                     target="_blank"
@@ -589,12 +647,67 @@ if (readFrom != null) {
                 <li>
                   •{' '}
                   <a
+                    href={PETORY_CONVERSATION_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    ConversationService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
                     href={PETORY_CONVERSATION_CREATOR}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     ConversationCreatorService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_CHAT_DOMAIN_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    chat.md (Petory)
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_CHAT_ARCH_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    채팅 시스템 설계
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_CHAT_READ_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    read-status-performance.md
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_CHAT_N1_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    n-plus-one-conversationparticipant.md
                   </a>
                 </li>
               </ul>
