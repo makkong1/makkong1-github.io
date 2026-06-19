@@ -46,11 +46,10 @@ const PETORY_LOCATION_DOC =
   "https://github.com/makkong1/Petory/blob/main/docs/domains/location.md";
 const PETORY_LOCATION_ARCH =
   "https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%20%EA%B8%B0%EB%B0%98%20%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md";
+const PETORY_LOCATION_IMPORT_DOC =
+  "https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%EC%84%9C%EB%B9%84%EC%8A%A4_%EA%B3%B5%EA%B3%B5%EB%8D%B0%EC%9D%B4%ED%84%B0_CSV_%EB%B0%B0%EC%B9%98_%EC%9E%84%ED%8F%AC%ED%8A%B8_%EA%B5%AC%ED%98%84.md";
 
 function LocationDomainV2() {
-  const PETORY_RECOMMENDATION_DOC =
-    "https://github.com/makkong1/Petory/blob/main/docs/domains/recommendation.md";
-
   const sections = [
     { id: "pillars", title: "핵심 기능" },
     { id: "intro", title: "도메인 개요" },
@@ -64,7 +63,7 @@ function LocationDomainV2() {
     "sort=stable 추천순",
     "반경·size=300",
     "지도 「이 지역」",
-    "JSON·CSV 적재",
+    "CSV 배치 적재",
     "목록/추천 API 분리",
   ];
 
@@ -92,12 +91,13 @@ function LocationDomainV2() {
             주는 Petory의 탐색·검색 기능입니다. 처음에는 지도와 검색만 맞물리면
             된다고 보였지만, 실제 구현에서는 키워드·위치·지역이 겹칠 때도 위치를
             먼저 볼 검색 분기, 통합 지도에서 주변 목록 검색과 맞춤 추천 API를
-            나누는 정리, 지도를 옮길 때 결과가 매번 덮이는 재조회, pet-data-api
-            JSON과 공공 CSV로 시설을 채우는 적재까지 함께 다뤄야 했습니다. 저는
-            검색 분기를 서비스 한곳에서 위치 → 지역 → FULLTEXT → 평점순으로
-            묶고, 주변 목록은 검색 API만 쓰며 추천 읽기는 Recommendation
-            도메인으로 모으며, 지도만 움직였을 때는 자동 조회 대신 「이
-            지역」으로 검색 시점을 사용자에게 맡기는 방향으로 설계했습니다.
+            나누는 정리, 지도를 옮길 때 결과가 매번 덮이는 재조회, 공공데이터
+            CSV로 시설을 채우는 배치 적재까지 함께 다뤄야 했습니다. 저는 검색
+            진입점을 좌표 반경 검색 → 지역명 fallback → keyword 단독 FULLTEXT로
+            정리하고, 주변 목록은 Location 검색 API가 맡으며 추천 카드는
+            Recommendation 도메인의 signal을 Location category 검색으로 연결하게
+            했습니다. 지도만 움직였을 때는 자동 조회 대신 「이 지역」 액션에서
+            검색 시점을 사용자에게 맡기는 방향으로 설계했습니다.
           </p>
 
           <section
@@ -149,13 +149,15 @@ function LocationDomainV2() {
                   margin: 0,
                 }}
               >
-                백엔드 검색은{" "}
-                <code>LocationServiceService.searchLocationServices</code> 한
-                곳에서만 갈립니다. 좌표가 있으면 반경 검색을 먼저 타고, 같은
-                요청에 키워드가 붙어 있어도 우선순위는 바뀌지 않습니다. 이
-                경로에서는 키워드를 <strong>시설명에 포함되는지</strong>로만
-                좁히며, 설명·카테고리까지 도는 전국 FULLTEXT 검색은 좌표·지역이
-                없을 때만 씁니다. 좌표가 없으면 지역 계층 → 키워드만 있을 때
+                백엔드 검색은 컨트롤러가 요청 파라미터 조합을 보고
+                <code>searchLocationServicesByLocation</code>,{" "}
+                <code>searchLocationServicesByRegion</code>,{" "}
+                <code>searchLocationServicesByKeyword</code>로 분기합니다. 좌표가
+                있으면 반경 검색을 먼저 타고, 같은 요청에 키워드가 붙어 있어도
+                우선순위는 바뀌지 않습니다. 이 경로에서는 키워드를{" "}
+                <strong>시설명에 포함되는지</strong>로만 좁히며, 설명·카테고리까지
+                도는 FULLTEXT 검색은 좌표·지역이 없을 때만 씁니다. 좌표가 없으면
+                <code>sigungu</code>/<code>sido</code> 지역 검색 → keyword 단독
                 FULLTEXT → 조건이 없으면 평점순입니다. 통합 지도 주변서비스 탭은
                 위치·반경(기본 5km), 카테고리, 추천순(
                 <code>sort=stable</code>)으로{" "}
@@ -164,10 +166,11 @@ function LocationDomainV2() {
                 <code>mapViewportCenter</code>)과 실제 검색 중심(
                 <code>searchCenter</code>)을 나눠, 드래그만으로는 목록이
                 갱신되지 않고 「이 지역」을 눌렀을 때만 다시 조회합니다. 맞춤
-                추천은 <code>RecommendCard</code>가 <code>/api/recommend</code>
-                를 따로 부르고, 돌아온 시설을 목록의 <code>idx</code>와 맞춰
-                강조할 뿐입니다. 카테고리·키워드· 정렬은 프론트에서 걸러내지
-                않고 DB 쿼리에서 처리합니다.
+                추천 카드는 Location 목록 API가 직접 만들지 않습니다.
+                Recommendation 도메인이 <code>/api/pet-recommend/signals</code>로
+                최근 signal을 카드로 내려주고, 사용자가 카드를 선택하면 Location
+                검색의 <code>category</code> 필터로 다시 연결됩니다. 카테고리·키워드·정렬은
+                프론트에서 걸러내지 않고 서버 쿼리에서 처리합니다.
               </p>
             </Card>
 
@@ -344,7 +347,9 @@ function LocationDomainV2() {
                 {li(
                   "lat/lng 있으면 → 반경 검색 (통합 지도·초기 로드 기본). keyword·category는 동일 쿼리 WHERE",
                 )}
-                {li("lat/lng 없고 지역 있으면 → sigungu → sido (eupmyeondong·roadName 비활성화)")}
+                {li(
+                  "lat/lng 없고 지역 있으면 → sigungu → sido 지역 검색(eupmyeondong·roadName 직접 검색은 비활성화)",
+                )}
                 {li(
                   "위치·지역 없고 keyword만 → FULLTEXT(이름·설명·카테고리). 반경·지역에서는 시설명 포함 여부만",
                 )}
@@ -354,14 +359,13 @@ function LocationDomainV2() {
                 )}
               </ul>
               <CodeBlock>{`boolean hasLocation = latitude != null && longitude != null;
-boolean hasRegion   = hasText(sido) || hasText(sigungu);
+boolean hasRegion   = hasText(sigungu) || hasText(sido);
 boolean hasKeyword  = hasText(keyword);
 
-if (hasLocation)      results = searchLocationServicesByLocation(...);
-else if (hasRegion)   results = searchLocationServicesByRegion(...);
+if (hasLocation)    results = searchLocationServicesByLocation(...);
+else if (hasRegion) results = searchLocationServicesByRegion(sido, sigungu, ...);
 else if (hasKeyword) results = searchLocationServicesByKeyword(...);  // FULLTEXT
-else                  results = searchLocationServicesByRegion(
-    null, null, null, null, null, category, maxResults);  // 전체 평점순 목록`}</CodeBlock>
+else                results = findByOrderByRatingDesc(...);`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: "1rem" }}>
@@ -469,10 +473,10 @@ onSearchThisArea={() => commitLocationSearch(mapViewportCenter)}`}</CodeBlock>
                 }}
               >
                 {li(
-                  "반경 검색: ST_Within 공간 조건 + keyword(LIKE) + category + sort",
+                  "반경 검색: ST_Within 공간 조건 + ST_Distance_Sphere 실제 반경 검증 + keyword(LIKE) + category + sort",
                 )}
                 {li(
-                  "지역 검색: idx_sigungu_deleted_rating 인덱스 + keyword(LIKE) + category",
+                  "지역 검색: sigungu/sido 기준 조회 + keyword(LIKE) + category",
                 )}
                 {li(
                   "키워드 단독: MATCH(name, description, category1~3) FULLTEXT — 반경/지역 없을 때만",
@@ -498,8 +502,10 @@ WHERE ST_Within(
 ORDER BY
   CASE WHEN :sort = 'stable'   THEN ls.rating END DESC,
   CASE WHEN :sort = 'stable'   THEN ls.review_count END DESC,
+  CASE WHEN :sort = 'score'    THEN ls.score END DESC,
   CASE WHEN :sort = 'reviews'  THEN ls.review_count END DESC,
   CASE WHEN :sort = 'rating'   THEN ls.rating END DESC,
+  ls.idx ASC,
   ST_Distance_Sphere(...) ASC
 -- FULLTEXT(ft_search)는 keyword 단독 경로(위치·지역 없을 때)에서만 사용`}</CodeBlock>
             </Card>
@@ -512,7 +518,7 @@ ORDER BY
                   fontSize: "1rem",
                 }}
               >
-                E. 시설 적재 — JSON·CSV 이중 경로
+                E. 시설 적재 — CSV 배치 경로
               </h3>
               <ul
                 style={{
@@ -524,16 +530,16 @@ ORDER BY
                 }}
               >
                 {li(
-                  "JSON: pet-data-api CLI → pet-locations-*.json → LocationImportService (data_source=BATCH_IMPORT)",
-                )}
-                {li(
-                  "관리자 /api/admin/location — sync·import·collect·import-files (LocationServiceAdminController)",
-                )}
-                {li(
                   "CSV: /api/admin/location-services/import-public-data (AdminLocationController, MASTER)",
                 )}
                 {li(
-                  "FacilitySyncScheduler 01:00 — app.location.import.file-path 설정 시 자동 import",
+                  "CSV 경로 임포트: /api/admin/location-services/import-public-data-path",
+                )}
+                {li(
+                  "PublicDataLocationService가 CSV 파싱·검증·엔티티 변환을 담당",
+                )}
+                {li(
+                  "LocationServiceBatchWriter로 대량 저장 트랜잭션 경계를 분리",
                 )}
               </ul>
             </Card>
@@ -546,7 +552,7 @@ ORDER BY
                   fontSize: "1rem",
                 }}
               >
-                F. 지역 계층 검색 (백엔드 지원)
+                F. 지역 검색은 보조 경로
               </h3>
               <ul
                 style={{
@@ -557,20 +563,18 @@ ORDER BY
                   lineHeight: "1.8",
                 }}
               >
+                {li("메인 지도 기본 경로는 lat/lng 반경 검색")}
+                {li("좌표가 없고 지역명이 있을 때 sigungu/sido 검색으로 fallback")}
                 {li(
-                  "우선순위: roadName → eupmyeondong → sigungu → sido → 전체",
+                  "eupmyeondong·roadName 직접 검색 repository 메서드는 현재 비활성화",
                 )}
-                {li("각 계층별 인덱스 활용 — 반경 검색 대비 응답 속도 우위")}
-                {li(
-                  "현재 메인 UI는 lat/lng 반경 검색 경로 사용 — 지역 검색은 추후 확장 경로",
-                )}
+                {li("지역 경로의 keyword도 FULLTEXT가 아니라 시설명 LIKE 필터")}
               </ul>
-              <CodeBlock>{`// 지역 계층 우선순위 (LocationServiceService)
-if      (hasText(roadName))     return findByRoadName(roadName, ...);
-else if (hasText(eupmyeondong)) return findByEupmyeondong(eupmyeondong, ...);
-else if (hasText(sigungu))      return findBySigungu(sigungu, ...);
-else if (hasText(sido))         return findBySido(sido, ...);
-else                            return findByOrderByRatingDesc(keyword, category);`}</CodeBlock>
+              <CodeBlock>{`// 현재 활성 지역 검색 fallback
+lat/lng 있음                         -> 반경 검색
+lat/lng 없음 + sigungu/sido 있음      -> 지역 검색
+lat/lng 없음 + 지역 없음 + keyword 있음 -> FULLTEXT 검색
+조건 없음                            -> 전체 평점순`}</CodeBlock>
             </Card>
           </section>
 
@@ -592,7 +596,13 @@ else                            return findByOrderByRatingDesc(keyword, category
                 }}
               >
                 {li(
-                  "메인 지도 기본 경로는 lat/lng 반경 검색 중심 — 백엔드 지역 계층 검색은 현재 주 사용자 경로에서 적극적으로 쓰이지 않음",
+                  "메인 지도 기본 경로는 lat/lng 반경 검색 중심 — 백엔드 지역 검색은 현재 주 사용자 경로에서 지역명 fallback에 가까움",
+                )}
+                {li(
+                  "eupmyeondong·roadName 직접 검색 query는 코드 흔적이 있지만 현재 비활성화",
+                )}
+                {li(
+                  "위치/지역 경로의 keyword는 name LIKE이고 keyword 단독 경로만 FULLTEXT라 검색 범위와 품질이 다름",
                 )}
                 {li(
                   "초기 로드 성능 수치는 size 제한 없던 초기 구조 기준 — 현재 통합 지도는 size=300 고정",
@@ -601,13 +611,19 @@ else                            return findByOrderByRatingDesc(keyword, category
                   "/api/location-services와 리뷰 API는 로그인 사용자 전용 — SecurityConfig /api/** authenticated() 적용",
                 )}
                 {li(
-                  "score 정렬은 DB 쿼리가 아닌 서비스 레이어 post-sort — 대용량 시 전체 정렬 비용 발생",
+                  "score 정렬은 반경 검색 SQL과 컨트롤러 후처리가 함께 남아 있어 정렬 책임 정리가 필요",
                 )}
                 {li(
                   "반경 내 전부가 아닌 최대 300건만 반환 — UI 반경(기본 5km)과 백엔드 radius 미전달 시 10km 기본은 별개",
                 )}
                 {li(
-                  "레거시 GET /api/location-services/recommend(Spring AI) 제거 — 맞춤 추천은 Recommendation 도메인만",
+                  "stable 정렬은 결과 안정성 중심이며 실제 거리 가까움을 최우선으로 보장하지 않음",
+                )}
+                {li(
+                  "legacy GET /api/location-services/recommend 흐름은 Recommendation 도메인으로 분리된 것으로 설명",
+                )}
+                {li(
+                  "CSV 적재는 활성 경로지만 JSON 적재는 현재 코드 근거가 부족해 페이지 핵심에서 제외",
                 )}
               </ul>
             </Card>
@@ -672,8 +688,48 @@ else                            return findByOrderByRatingDesc(keyword, category
                     Recommendation 도메인
                   </Link>
                   {
-                    " — 주변 추천 진입(GET /api/recommend), Location /recommend 제거와 정합"
+                    " — 추천 signal과 Location 카테고리 검색 연결"
                   }
+                </li>
+                <li>
+                  •{" "}
+                  <Link
+                    to="/domains/meetup"
+                    style={{
+                      color: "var(--link-color)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Meetup 도메인
+                  </Link>
+                  {" — 통합 지도에서 공유되는 근처 모임 반경 조회"}
+                </li>
+                <li>
+                  •{" "}
+                  <Link
+                    to="/domains/care"
+                    style={{
+                      color: "var(--link-color)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    Care 도메인
+                  </Link>
+                  {" — 통합 지도에서 공유되는 근처 케어 요청 조회"}
+                </li>
+                <li>
+                  •{" "}
+                  <a
+                    href={PETORY_LOCATION_IMPORT_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: "var(--link-color)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    위치서비스 CSV 배치 임포트 문서
+                  </a>
                 </li>
                 <li>
                   •{" "}
