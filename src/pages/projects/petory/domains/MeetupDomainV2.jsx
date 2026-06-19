@@ -42,6 +42,14 @@ const PETORY_MEETUP_SERVICE =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/service/MeetupService.java';
 const PETORY_MEETUP_REPO =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/repository/SpringDataJpaMeetupRepository.java';
+const PETORY_MEETUP_ARCH_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/architecture/meetup/%EC%82%B0%EC%B1%85%20%26%20%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8%20%EB%AA%A8%EC%9E%84%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
+const PETORY_MEETUP_PARTICIPANTS_REPO =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/repository/SpringDataJpaMeetupParticipantsRepository.java';
+const PETORY_MEETUP_CHAT_CREATION_SERVICE =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/service/MeetupChatRoomCreationService.java';
+const PETORY_MEETUP_CHAT_RECOVERY_SCHEDULER =
+  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/service/MeetupChatRoomRecoveryScheduler.java';
 
 function MeetupDomainV2() {
   const sections = [
@@ -83,9 +91,10 @@ function MeetupDomainV2() {
             Meetup 도메인은 반려동물 산책이나 오프라인 모임을 생성하고 참여를
             관리하는 기능입니다. 단순 모임 등록보다, 동시 참가 상황에서도 최대
             인원을 정확하게 지키는 구조를 만드는 데 집중했습니다. 모임 생성
-            직후 필요한 채팅방은 트랜잭션 커밋 이후 이벤트로 분리해 핵심
-            도메인과 파생 도메인의 실패 전파를 줄였고, 근처 모임 검색은 ID만
-            먼저 뽑는 2단계 전략으로 메모리 부담을 낮췄습니다.
+            직후 필요한 채팅방은 트랜잭션 커밋 이후 이벤트로 분리하고 재시도와
+            복구 스케줄러로 보강해 핵심 도메인과 파생 도메인의 실패 전파를
+            줄였습니다. 근처 모임 검색은 공간 조건으로 ID만 먼저 뽑는 2단계
+            전략으로 메모리 부담을 낮췄습니다.
           </p>
 
           <section
@@ -238,9 +247,9 @@ function MeetupDomainV2() {
                   lineHeight: '1.7',
                 }}
               >
-                테스트 데이터 1,000건 기준 · 인메모리 필터링 → DB 필터링 →
-                Bounding Box 적용 3단계 비교 · 현재 운영 경로 절대 성능과
-                동일시하면 안 됨.
+                테스트 데이터 1,000건 기준 리팩토링 비교값 · 인메모리 필터링
+                → DB 반경 필터링 → 공간 조건 최적화 3단계 비교 · 현재 운영
+                경로 절대 성능과 동일시하면 안 됨.
               </p>
             </Card>
 
@@ -360,6 +369,8 @@ if (updated == 0) throw MeetupConflictException.fullCapacity();
                 {li('모임 생성 트랜잭션 내 TransactionSynchronization.afterCommit() 등록')}
                 {li('커밋 성공 후에만 MeetupCreatedEvent 발행 — 롤백 시 이벤트 미발행')}
                 {li('@Async @EventListener — 채팅방 생성 실패가 모임 생성을 롤백하지 않음')}
+                {li('@Retryable 3회 재시도 + 5분 복구 스케줄러로 누락된 그룹방 보정')}
+                {li('joinMeetup()은 모임 참가만 처리 — 채팅방 참가는 Chat API에서 별도 처리')}
               </ul>
               <CodeBlock>{`// 커밋 후 이벤트 발행 (트랜잭션 분리)
 TransactionSynchronizationManager.registerSynchronization(
@@ -377,6 +388,13 @@ TransactionSynchronizationManager.registerSynchronization(
 @Async
 public void handleMeetupCreated(MeetupCreatedEvent event) {
     meetupChatRoomCreationService.createChatRoom(...);
+}
+
+// 생성 실패 보강: 3회 재시도 + 5분 복구 스케줄러
+@Retryable(retryFor = Exception.class, maxAttempts = 3,
+    backoff = @Backoff(delay = 1000, multiplier = 2))
+public void createChatRoom(Long meetupIdx, Long organizerIdx, String title) {
+    conversationCreatorService.createConversation(...);
 }`}</CodeBlock>
             </Card>
 
@@ -399,13 +417,14 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
                   lineHeight: '1.8',
                 }}
               >
-                {li('1단계: findNearbyMeetupIds — 네이티브 쿼리로 ID + 거리 정렬 + LIMIT만 조회')}
+                {li('1단계: findNearbyMeetupIds — ST_Within + ST_Distance_Sphere로 ID + 거리 정렬 + LIMIT만 조회')}
                 {li('2단계: findByIdxInWithOrganizer — IN + JOIN FETCH로 organizer N+1 방지')}
-                {li('전체 데이터 메모리 로드 없이 필요한 항목만 DTO 변환')}
+                {li('응답 DTO의 distance는 서비스에서 미터 단위로 다시 계산해 세팅')}
+                {li('nearby는 지도 마커용 미래 모임 조회 — RECRUITING 정원 미달 목록은 /available과 구분')}
               </ul>
               <CodeBlock>{`// 1단계: ID·정렬·LIMIT만 네이티브 쿼리로
 List<Long> ids = meetupRepository.findNearbyMeetupIds(
-    lat, lng, radiusKm, now, limit);   // Haversine + Bounding Box
+    lat, lng, radiusKm, now, limit);   // ST_Within + ST_Distance_Sphere
 
 // 2단계: organizer JOIN FETCH로 N+1 방지
 List<Meetup> loaded = meetupRepository.findByIdxInWithOrganizer(ids);
@@ -414,7 +433,12 @@ List<Meetup> loaded = meetupRepository.findByIdxInWithOrganizer(ids);
 Map<Long, Meetup> byId = loaded.stream()
     .collect(Collectors.toMap(Meetup::getIdx, m -> m));
 return ids.stream().map(byId::get).filter(Objects::nonNull)
-    .map(converter::toDTO).collect(Collectors.toList());`}</CodeBlock>
+    .map(meetup -> {
+        MeetupDTO dto = converter.toDTO(meetup);
+        dto.setDistance(calculateDistanceMeters(lat, lng,
+            meetup.getLatitude(), meetup.getLongitude()));
+        return dto;
+    }).collect(Collectors.toList());`}</CodeBlock>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -510,10 +534,22 @@ ORDER BY m.date ASC
                   'Meetup API 전체 로그인 사용자 전용 — SecurityConfig /api/** authenticated() 적용'
                 )}
                 {li(
+                  '모임 참가와 Meetup 채팅방 참가는 분리 — joinMeetup() 성공이 곧바로 채팅 참여를 의미하지 않음'
+                )}
+                {li(
+                  '채팅방 생성은 결과적 일관성 — 재시도와 복구가 있어도 생성 직후 짧은 누락 구간이 있을 수 있음'
+                )}
+                {li(
+                  'nearby는 COMPLETED만 제외하는 지도용 미래 모임 조회 — 참여 가능 조건은 /available 또는 홈 추천과 구분 필요'
+                )}
+                {li(
                   '성능 수치는 테스트 데이터 1,000건 기준 문서 측정 — 현재 운영 경로 절대 성능과 다를 수 있음'
                 )}
                 {li(
                   '홈 모임 추천 score 계산(distScore·urgencyScore·capacityScore)은 메모리 정렬 — 후보 증가 시 비용 증가'
+                )}
+                {li(
+                  '키워드·주최자 목록 일부는 풀 페이징 전환 전 임시 상한 MAX_LIST_SIZE = 500 적용'
                 )}
               </ul>
             </Card>
@@ -558,6 +594,27 @@ ORDER BY m.date ASC
                 </li>
                 <li>
                   •{' '}
+                  <Link
+                    to="/domains/chat"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Chat 도메인
+                  </Link>
+                  {' — Meetup 그룹 채팅 참가·메시지 흐름'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MEETUP_ARCH_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    산책 &amp; 오프라인 모임 아키텍처
+                  </a>
+                </li>
+                <li>
+                  •{' '}
                   <a
                     href={PETORY_MEETUP_SERVICE}
                     target="_blank"
@@ -576,6 +633,39 @@ ORDER BY m.date ASC
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     SpringDataJpaMeetupRepository.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MEETUP_PARTICIPANTS_REPO}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    SpringDataJpaMeetupParticipantsRepository.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MEETUP_CHAT_CREATION_SERVICE}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    MeetupChatRoomCreationService.java
+                  </a>
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_MEETUP_CHAT_RECOVERY_SCHEDULER}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    MeetupChatRoomRecoveryScheduler.java
                   </a>
                 </li>
               </ul>
