@@ -1,560 +1,356 @@
-# Report 도메인 - 포트폴리오 상세 설명
+# Report 도메인
 
-## 1. 개요
-
-Report 도메인은 신고 접수 및 제재 시스템으로, 부적절한 콘텐츠나 사용자를 신고하고 관리자가 처리합니다. 폴리모픽 관계를 통한 다양한 대상 타입 신고 지원, 자동 제재 시스템 연동, 중복 신고 방지 등의 기능을 제공합니다.
-
-**주요 기능**:
-- 신고 접수 (게시글, 댓글, 실종제보, 펫케어 제공자 등)
-- 신고 처리 (관리자)
-- 자동 제재 시스템 연동 (경고, 이용제한)
-- 신고 대상 미리보기
-- 신고 이력 관리
-- 중복 신고 방지
+> 기준: 현재 `domain/report`, 관리자 신고 처리 API, `UserSanctionService`, 프론트 신고/관리자 화면 코드.  
+> 역할: 사용자 신고를 접수하고, 관리자가 신고 상태·조치 기록을 남기며, 일부 조치를 User 제재 시스템으로 연결한다.
 
 ---
 
-## 2. 기능 설명
+## 1. 도메인 책임
 
-### 2.1 신고 접수
+Report 도메인은 여러 도메인의 콘텐츠 또는 사용자를 하나의 `report` 테이블로 신고하는 공통 모더레이션 도메인이다.
 
-**신고 접수 프로세스**:
-1. 신고 대상 선택 (게시글, 댓글, 실종제보, 펫케어 제공자)
-2. 신고 사유 입력
-3. 신고 대상 유효성 검증 (`validateTarget()`)
-4. 중복 신고 확인 (`existsByTargetTypeAndTargetIdxAndReporterIdx()`)
-5. 신고 생성 및 저장
+- 일반 사용자 신고 접수
+- 신고 대상 존재 검증
+- 동일 사용자·동일 대상 중복 신고 방지
+- 관리자 신고 목록/상세 조회
+- 신고 상태 처리와 관리자 메모 기록
+- `WARN_USER`, `SUSPEND_USER` 조치 시 UserSanction 연동
+- 관리자 감사 로그 기록
+- 통계 도메인의 신규/처리 신고 집계 대상
 
-**중복 신고 방지**:
-- Unique 제약조건: `(target_type, target_idx, reporter_idx)`로 동일 사용자의 동일 대상 중복 신고 방지
-- 중복 신고 시 `IllegalStateException` 발생
-
-### 2.2 신고 처리
-
-**신고 처리 프로세스**:
-1. 관리자가 신고 검토
-2. 처리 상태 설정 (PENDING → RESOLVED/REJECTED)
-3. 조치 내용 선택 (NONE, DELETE_CONTENT, WARN_USER, SUSPEND_USER, OTHER)
-4. 관리자 메모 작성
-5. 자동 제재 적용 (`WARN_USER` 또는 `SUSPEND_USER` 조치 시 `UserSanctionService` 호출)
-
-**자동 제재 시스템**:
-- `WARN_USER` 또는 `SUSPEND_USER` 조치 시 자동으로 `userSanctionService.applySanctionFromReport()` 호출
-- 제재 사유: 신고 ID와 관리자 메모를 포함한 제재 사유 생성
-
-### 2.3 신고 대상 미리보기
-
-**미리보기 프로세스**:
-1. 신고 상세 조회 시 `buildTargetPreview()` 호출
-2. 신고 대상 타입별로 해당 Repository에서 조회
-3. 대상 정보 추출 (제목, 내용 요약, 작성자 등)
-4. 삭제된 대상의 경우 "(삭제됨)" 표시
+현재 Report 자체는 신고 대상 콘텐츠를 직접 삭제하지 않는다. 실제 게시글 블라인드/삭제는 관리자 UI에서 Board 관리자 API를 별도로 호출한다.
 
 ---
 
-## 3. 서비스 로직 설명
+## 2. 주요 코드 위치
 
-### 3.1 핵심 비즈니스 로직
-
-#### 로직 1: 신고 접수
-**구현 위치**: `ReportService.createReport()`
-
-```java
-@Transactional
-public ReportDTO createReport(ReportRequestDTO request) {
-    // 1. 유효성 검증
-    if (request.getTargetType() == null) {
-        throw new IllegalArgumentException("신고 대상 종류를 선택해주세요.");
-    }
-    if (request.getTargetIdx() == null) {
-        throw new IllegalArgumentException("신고 대상 ID가 필요합니다.");
-    }
-    if (request.getReporterId() == null) {
-        throw new IllegalArgumentException("신고자 정보가 필요합니다.");
-    }
-    if (!StringUtils.hasText(request.getReason())) {
-        throw new IllegalArgumentException("신고 사유를 입력해주세요.");
-    }
-    
-    // 2. 신고자 확인
-    Users reporter = usersRepository.findById(request.getReporterId())
-            .orElseThrow(() -> new IllegalArgumentException("신고자 정보를 찾을 수 없습니다."));
-    
-    // 3. 신고 대상 유효성 검증
-    validateTarget(request.getTargetType(), request.getTargetIdx());
-    
-    // 4. 중복 신고 확인
-    if (reportRepository.existsByTargetTypeAndTargetIdxAndReporterIdx(
-            request.getTargetType(),
-            request.getTargetIdx(),
-            reporter.getIdx())) {
-        throw new IllegalStateException("이미 해당 대상을 신고하셨습니다.");
-    }
-    
-    // 5. 신고 생성
-    Report report = Report.builder()
-            .targetType(request.getTargetType())
-            .targetIdx(request.getTargetIdx())
-            .reporter(reporter)
-            .reason(request.getReason().trim())
-            .build();
-    
-    Report saved = reportRepository.save(report);
-    return reportConverter.toDTO(saved);
-}
-```
-
-**핵심 로직**:
-- **유효성 검증**: 대상 타입, 대상 ID, 신고자, 신고 사유 확인
-- **대상 유효성 검증**: `validateTarget()`로 신고 대상 존재 확인
-- **중복 신고 방지**: `existsByTargetTypeAndTargetIdxAndReporterIdx()`로 중복 신고 방지
-- **Unique 제약조건**: `(target_type, target_idx, reporter_idx)` Unique 제약조건으로 중복 방지
-
-#### 로직 2: 신고 대상 유효성 검증
-**구현 위치**: `ReportService.validateTarget()`
-
-```java
-private void validateTarget(ReportTargetType targetType, Long targetIdx) {
-    boolean exists;
-    switch (targetType) {
-        case BOARD: {
-            exists = boardRepository.existsById(targetIdx);
-            if (!exists) {
-                throw new IllegalArgumentException("신고 대상 게시글을 찾을 수 없습니다.");
-            }
-            break;
-        }
-        case COMMENT: {
-            exists = commentRepository.existsById(targetIdx);
-            if (!exists) {
-                exists = missingPetCommentRepository.existsById(targetIdx);
-            }
-            if (!exists) {
-                throw new IllegalArgumentException("신고 대상 댓글을 찾을 수 없습니다.");
-            }
-            break;
-        }
-        case MISSING_PET: {
-            exists = missingPetBoardRepository.existsById(targetIdx);
-            if (!exists) {
-                throw new IllegalArgumentException("신고 대상 실종 제보를 찾을 수 없습니다.");
-            }
-            break;
-        }
-        case PET_CARE_PROVIDER: {
-            Users provider = usersRepository.findById(targetIdx)
-                    .orElseThrow(() -> new IllegalArgumentException("해당 서비스 제공자를 찾을 수 없습니다."));
-            if (provider.getRole() != Role.SERVICE_PROVIDER) {
-                throw new IllegalArgumentException("서비스 제공자만 신고할 수 있습니다.");
-            }
-            break;
-        }
-        default:
-            throw new IllegalArgumentException("지원하지 않는 신고 대상입니다.");
-    }
-}
-```
-
-**핵심 로직**:
-- **대상 타입별 검증**: 신고 대상 타입에 따라 해당 Repository에서 존재 확인
-- **댓글 검증**: 일반 댓글(`Comment`) 또는 실종제보 댓글(`MissingPetComment`) 모두 확인
-- **펫케어 제공자 검증**: `Role.SERVICE_PROVIDER` 역할 확인
-
-#### 로직 3: 신고 처리 및 자동 제재
-**구현 위치**: `ReportService.handleReport()`
-
-```java
-@Transactional
-public ReportDTO handleReport(Long reportId, Long adminUserId, ReportHandleRequest req) {
-    if (req.getStatus() == null) {
-        throw new IllegalArgumentException("처리 상태를 선택해주세요.");
-    }
-    
-    // 1. 신고 및 관리자 확인
-    Report report = reportRepository.findById(reportId)
-            .orElseThrow(() -> new IllegalArgumentException("신고 정보를 찾을 수 없습니다."));
-    Users admin = usersRepository.findById(adminUserId)
-            .orElseThrow(() -> new IllegalArgumentException("관리자 정보를 찾을 수 없습니다."));
-    
-    // 2. 신고 처리 정보 설정
-    report.setStatus(req.getStatus());
-    report.setHandledBy(admin);
-    report.setHandledAt(LocalDateTime.now());
-    report.setAdminNote(req.getAdminNote());
-    report.setActionTaken(req.getActionTaken() != null ? req.getActionTaken() : ReportActionType.NONE);
-    
-    // 3. 제재 조치가 있으면 자동 적용
-    if (req.getActionTaken() != null &&
-            (req.getActionTaken() == ReportActionType.WARN_USER ||
-                    req.getActionTaken() == ReportActionType.SUSPEND_USER)) {
-        String sanctionReason = String.format("신고 #%d 처리: %s", reportId,
-                req.getAdminNote() != null ? req.getAdminNote() : report.getReason());
-        userSanctionService.applySanctionFromReport(
-                report.getTargetIdx(),
-                req.getActionTaken(),
-                sanctionReason,
-                admin.getIdx(),
-                reportId);
-    }
-    
-    return reportConverter.toDTO(report);
-}
-```
-
-**핵심 로직**:
-- **신고 처리**: 상태, 처리자, 처리 시간, 관리자 메모, 조치 내용 설정
-- **자동 제재**: `WARN_USER` 또는 `SUSPEND_USER` 조치 시 `userSanctionService.applySanctionFromReport()` 호출
-- **제재 사유**: 신고 ID와 관리자 메모를 포함한 제재 사유 생성
-
-#### 로직 4: 신고 대상 미리보기
-**구현 위치**: `ReportService.buildTargetPreview()`
-
-**핵심 로직**:
-- **대상 타입별 조회**: 신고 대상 타입에 따라 해당 Repository에서 조회
-- **정보 추출**: 제목, 내용 요약(300자), 작성자 이름 추출
-- **삭제된 대상 처리**: 삭제된 대상의 경우 "(삭제됨)" 또는 "(탈퇴/없음)" 표시
-- **내용 요약**: `ellipsis()`로 300자 제한 및 말줄임표 추가
-
-### 3.2 서비스 메서드 구조
-
-#### ReportService
-| 메서드 | 설명 | 주요 로직 |
-|--------|------|-----------|
-| `createReport()` | 신고 접수 | 유효성 검증, 대상 검증, 중복 확인, 신고 생성 |
-| `getReports()` | 신고 목록 조회 | 대상 타입/상태별 필터링, 최신순 정렬 |
-| `getReportDetail()` | 신고 상세 조회 | 신고 정보 + 대상 미리보기 |
-| `handleReport()` | 신고 처리 | 상태 설정, 자동 제재 적용 |
-| `validateTarget()` | 신고 대상 유효성 검증 | 대상 타입별 존재 확인 |
-| `buildTargetPreview()` | 신고 대상 미리보기 | 대상 타입별 정보 추출 |
-| `ellipsis()` | 텍스트 요약 | 최대 길이 제한 및 말줄임표 추가 |
-
-### 3.3 트랜잭션 처리
-- **트랜잭션 범위**: 
-  - 신고 접수: `@Transactional` - 신고 생성과 중복 확인을 원자적으로 처리
-  - 신고 처리: `@Transactional` - 신고 처리와 자동 제재를 원자적으로 처리
-  - 조회 메서드: `@Transactional(readOnly = true)` - 읽기 전용 최적화 (클래스 레벨)
-- **격리 수준**: 기본값 (READ_COMMITTED)
-- **중복 신고 방지**: Unique 제약조건으로 DB 레벨에서도 중복 방지
+| 영역 | 파일 |
+|---|---|
+| 일반 신고 API | `domain/report/controller/ReportController.java` |
+| 관리자 신고 API | `domain/admin/controller/AdminReportController.java` |
+| 관리자 facade | `domain/admin/service/AdminReportFacade.java` |
+| 신고 서비스 | `domain/report/service/ReportService.java` |
+| 신고 엔티티 | `domain/report/entity/Report.java` |
+| 대상 타입 enum | `domain/report/entity/ReportTargetType.java` |
+| 처리 상태 enum | `domain/report/entity/ReportStatus.java` |
+| 조치 enum | `domain/report/entity/ReportActionType.java` |
+| repository adapter | `domain/report/repository/JpaReportAdapter.java` |
+| Spring Data JPA | `domain/report/repository/SpringDataJpaReportRepository.java` |
+| 사용자 제재 연동 | `domain/user/service/UserSanctionService.java` |
+| 프론트 신고 API | `frontend/src/api/reportApi.js` |
+| 프론트 관리자 목록 | `frontend/src/components/Admin/sections/ReportManagementSection.js` |
+| 프론트 관리자 상세 | `frontend/src/components/Admin/sections/ReportDetailModal.js` |
 
 ---
 
-## 4. 아키텍처 설명
+## 3. API
 
-### 4.1 엔티티 구조
+### 3.1 일반 사용자 신고 접수
 
-#### Report (신고)
-```java
-@Entity
-@Table(name = "report", 
-       uniqueConstraints = @UniqueConstraint(columnNames = {"target_type", "target_idx", "reporter_idx"}))
-public class Report {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long idx;
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "target_type", nullable = false, length = 32)
-    private ReportTargetType targetType; // 신고 대상 타입
-    
-    @Column(name = "target_idx", nullable = false)
-    private Long targetIdx; // 신고 대상 ID
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "reporter_idx", nullable = false)
-    private Users reporter; // 신고자
-    
-    @Column(name = "reason", nullable = false, columnDefinition = "TEXT")
-    private String reason; // 신고 사유
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "status", nullable = false, length = 16)
-    @Builder.Default
-    private ReportStatus status = ReportStatus.PENDING; // 상태
-    
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "handled_by")
-    private Users handledBy; // 처리자 (관리자)
-    
-    @Column(name = "handled_at")
-    private LocalDateTime handledAt; // 처리 시간
-    
-    @Enumerated(EnumType.STRING)
-    @Column(name = "action_taken", nullable = false, length = 32)
-    @Builder.Default
-    private ReportActionType actionTaken = ReportActionType.NONE; // 조치 내용
-    
-    @Column(name = "admin_note", columnDefinition = "TEXT")
-    private String adminNote; // 관리자 메모
-    
-    @Column(name = "created_at", nullable = false)
-    private LocalDateTime createdAt;
-    
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
-    
-    @PrePersist
-    protected void onCreate() {
-        LocalDateTime now = LocalDateTime.now();
-        this.createdAt = now;
-        this.updatedAt = now;
-        if (this.status == null) {
-            this.status = ReportStatus.PENDING;
-        }
-        if (this.actionTaken == null) {
-            this.actionTaken = ReportActionType.NONE;
-        }
-    }
-    
-    @PreUpdate
-    protected void onUpdate() {
-        this.updatedAt = LocalDateTime.now();
-    }
-}
-```
-
-**특징**:
-- `BaseTimeEntity`를 상속하지 않음 (`@PrePersist`, `@PreUpdate`로 직접 관리)
-- Unique 제약조건: `(target_type, target_idx, reporter_idx)`로 중복 신고 방지
-- 폴리모픽 관계: `targetType`과 `targetIdx`로 다양한 대상 타입 신고 지원
-
-#### ReportTargetType (신고 대상 타입)
-```java
-public enum ReportTargetType {
-    BOARD,              // 커뮤니티 게시글
-    COMMENT,            // 댓글 (일반 댓글 또는 실종제보 댓글)
-    MISSING_PET,        // 실종 제보
-    PET_CARE_PROVIDER   // 펫케어 제공자
-}
-```
-
-#### ReportStatus (신고 상태)
-```java
-public enum ReportStatus {
-    PENDING,    // 대기 중
-    RESOLVED,   // 처리 완료
-    REJECTED    // 거부됨
-}
-```
-
-#### ReportActionType (조치 내용)
-```java
-public enum ReportActionType {
-    NONE,           // 조치 없음
-    DELETE_CONTENT, // 콘텐츠 삭제
-    SUSPEND_USER,   // 사용자 이용제한 (자동 제재 적용)
-    WARN_USER,      // 사용자 경고 (자동 제재 적용)
-    OTHER           // 기타
-}
-```
-
-### 4.2 도메인 구조
-```
-domain/report/
-  ├── controller/
-  │   └── ReportController.java
-  ├── service/
-  │   └── ReportService.java
-  ├── entity/
-  │   ├── Report.java
-  │   ├── ReportTargetType.java (enum)
-  │   ├── ReportStatus.java (enum)
-  │   └── ReportActionType.java (enum)
-  ├── repository/
-  │   └── ReportRepository.java
-  ├── converter/
-  │   └── ReportConverter.java
-  └── dto/
-      ├── ReportDTO.java
-      ├── ReportRequestDTO.java
-      ├── ReportDetailDTO.java
-      └── ReportHandleRequest.java
-```
-
-### 4.3 엔티티 관계도 (ERD)
-```mermaid
-erDiagram
-    Users ||--o{ Report : "신고자"
-    Users ||--o{ Report : "처리자"
-    Report -.->|폴리모픽| Board : "게시글"
-    Report -.->|폴리모픽| Comment : "댓글"
-    Report -.->|폴리모픽| MissingPetBoard : "실종제보"
-    Report -.->|폴리모픽| Users : "펫케어 제공자"
-```
-
-### 4.4 API 설계
-
-#### REST API
-| 엔드포인트 | Method | 설명 |
-|-----------|--------|------|
-| `/api/reports` | POST | 신고 접수 (인증 필요) |
-| `/api/reports` | GET | 신고 목록 조회 (관리자, targetType/status 파라미터로 필터링) |
-| `/api/reports/{id}` | GET | 신고 상세 조회 (관리자) |
-| `/api/reports/{id}/handle` | POST | 신고 처리 (관리자) |
-
-**신고 접수 요청 예시**:
 ```http
 POST /api/reports
+Authorization: Bearer <JWT>
 Content-Type: application/json
-
-{
-  "targetType": "BOARD",
-  "targetIdx": 123,
-  "reporterId": 1,
-  "reason": "부적절한 내용이 포함되어 있습니다."
-}
 ```
 
-**신고 접수 응답 예시**:
+요청 body:
+
 ```json
 {
-  "idx": 1,
   "targetType": "BOARD",
-  "targetIdx": 123,
-  "reporterId": 1,
-  "reason": "부적절한 내용이 포함되어 있습니다.",
-  "status": "PENDING",
-  "actionTaken": "NONE",
-  "createdAt": "2024-01-15T14:00:00"
+  "targetIdx": 10,
+  "reporterId": 3,
+  "reason": "부적절한 내용입니다."
 }
 ```
 
-**신고 목록 조회 요청 예시**:
+`ReportController`는 `@PreAuthorize("isAuthenticated()")`로 인증을 요구한다.
+
+주의: 현재 구현은 인증된 사용자 ID를 서버에서 주입하지 않고 request body의 `reporterId`를 사용한다. 프론트는 `user.idx`를 넣지만, 서버 레벨에서 JWT 사용자와 `reporterId` 일치 검증은 없다.
+
+### 3.2 관리자 신고 API
+
 ```http
-GET /api/reports?targetType=BOARD&status=PENDING
+GET  /api/admin/reports?targetType=&status=
+GET  /api/admin/reports/{id}
+POST /api/admin/reports/{id}/handle
 ```
 
-**신고 상세 조회 응답 예시**:
+권한:
+
+- `ADMIN`
+- `MASTER`
+
+처리 요청 body:
+
 ```json
-{
-  "report": {
-    "idx": 1,
-    "targetType": "BOARD",
-    "targetIdx": 123,
-    "reporterId": 1,
-    "reason": "부적절한 내용이 포함되어 있습니다.",
-    "status": "PENDING",
-    "actionTaken": "NONE",
-    "createdAt": "2024-01-15T14:00:00"
-  },
-  "target": {
-    "type": "BOARD",
-    "id": 123,
-    "title": "게시글 제목",
-    "summary": "게시글 내용 요약...",
-    "authorName": "홍길동"
-  }
-}
-```
-
-**신고 처리 요청 예시**:
-```http
-POST /api/reports/1/handle
-Content-Type: application/json
-
 {
   "status": "RESOLVED",
   "actionTaken": "WARN_USER",
-  "adminNote": "경고 조치를 적용합니다."
+  "adminNote": "반복 신고 확인"
 }
 ```
 
----
-
-## 5. 트랜잭션 처리
-
-### 5.1 트랜잭션 전략
-- **신고 접수**: `@Transactional` - 신고 생성과 중복 확인을 원자적으로 처리
-- **신고 처리**: `@Transactional` - 신고 처리와 자동 제재를 원자적으로 처리
-- **조회 메서드**: `@Transactional(readOnly = true)` - 읽기 전용 최적화 (클래스 레벨)
-
-### 5.2 동시성 제어
-- **중복 신고 방지**: Unique 제약조건 `(target_type, target_idx, reporter_idx)`로 DB 레벨에서 중복 방지
-- **신고 처리**: 트랜잭션으로 신고 처리와 자동 제재를 원자적으로 처리
+`AdminReportFacade.handleReport()`는 처리 후 `AdminAuditService`에 `REPORT_HANDLE` 로그를 남긴다.
 
 ---
 
-## 6. 트러블슈팅
+## 4. 데이터 모델
 
----
+### 4.1 Report
 
-## 7. 성능 최적화
+테이블명은 `report`다.
 
-### 7.1 DB 최적화
+| 필드 | 설명 |
+|---|---|
+| `idx` | 신고 PK |
+| `targetType` | 신고 대상 타입 |
+| `targetIdx` | 신고 대상 ID |
+| `reporter` | 신고자 |
+| `reason` | 신고 사유 |
+| `status` | 처리 상태 |
+| `handledBy` | 처리 관리자 |
+| `handledAt` | 처리 시각 |
+| `actionTaken` | 관리자 조치 기록 |
+| `adminNote` | 관리자 메모 |
+| `createdAt`, `updatedAt` | `BaseTimeEntity`에서 관리 |
 
-#### 인덱스 전략
+중복 방지:
 
-**report 테이블**:
-```sql
--- 처리자별 신고 조회
-CREATE INDEX handled_by ON report(handled_by);
-
--- 신고자별 신고 조회
-CREATE INDEX reporter_idx ON report(reporter_idx);
-
--- 신고 대상별 조회 (Unique 제약조건, 중복 신고 방지)
-CREATE UNIQUE INDEX target_type ON report(target_type, target_idx, reporter_idx);
+```text
+UNIQUE (target_type, target_idx, reporter_idx)
 ```
 
-**선정 이유**:
-- 자주 조회되는 컬럼 (reporter_idx, handled_by)
-- WHERE 절에서 자주 사용되는 조건 (target_type, target_idx)
-- JOIN에 사용되는 외래키 (reporter_idx, handled_by)
-- 중복 신고 방지를 위한 Unique 제약조건 (target_type, target_idx, reporter_idx)
+엔티티 기본값:
 
-### 7.2 애플리케이션 레벨 최적화
+- `status`: `PENDING`
+- `actionTaken`: `NONE`
 
-#### 대상 미리보기 최적화
-**구현 위치**: `ReportService.buildTargetPreview()`
+### 4.2 ReportTargetType
 
-**최적화 사항**:
-- **Lazy Loading**: `FetchType.LAZY`로 필요할 때만 조회
-- **내용 요약**: 300자 제한으로 불필요한 데이터 전송 감소
-- **삭제된 대상 처리**: 삭제된 대상의 경우 별도 조회 없이 "(삭제됨)" 표시
+```java
+BOARD
+COMMENT
+MISSING_PET
+PET_CARE_PROVIDER
+CARE_REVIEW
+```
 
-**효과**: 신고 상세 조회 시 불필요한 데이터 조회 감소, 응답 시간 단축
+### 4.3 ReportStatus
 
-#### 중복 신고 확인 최적화
-**구현 위치**: `ReportRepository.existsByTargetTypeAndTargetIdxAndReporterIdx()`
+```java
+PENDING
+RESOLVED
+REJECTED
+```
 
-**최적화 사항**:
-- **Exists 쿼리**: `exists()` 메서드로 존재 여부만 확인 (전체 데이터 조회 없음)
-- **Unique 제약조건**: DB 레벨에서도 중복 방지
+ERD 일부 문서에는 `REVIEWING`이 남아 있지만 현재 enum에는 없다.
 
-**효과**: 중복 신고 확인 시 빠른 응답 시간
+### 4.4 ReportActionType
+
+```java
+NONE
+DELETE_CONTENT
+SUSPEND_USER
+WARN_USER
+OTHER
+```
+
+`DELETE_CONTENT`는 신고 row의 조치 기록일 뿐, `ReportService.handleReport()`가 콘텐츠 삭제를 자동 수행하지 않는다.
 
 ---
 
-## 8. 핵심 포인트 요약
+## 5. 신고 생성 흐름
 
-### 8.1 폴리모픽 관계
-- **다양한 대상 타입**: `ReportTargetType` enum으로 게시글, 댓글, 실종제보, 펫케어 제공자 신고 지원
-- **유연한 확장**: 새로운 대상 타입 추가 시 enum과 `validateTarget()`만 수정하면 됨
-- **대상 미리보기**: `buildTargetPreview()`로 신고 대상 타입별 정보 추출
+`ReportService.createReport()` 흐름:
 
-### 8.2 중복 신고 방지
-- **Unique 제약조건**: `(target_type, target_idx, reporter_idx)`로 DB 레벨에서 중복 방지
-- **애플리케이션 레벨 확인**: `existsByTargetTypeAndTargetIdxAndReporterIdx()`로 중복 확인
-- **에러 처리**: 중복 신고 시 `IllegalStateException` 발생
+1. `targetType`, `targetIdx`, `reporterId`, `reason` 검증
+2. 신고자 `Users` 조회
+3. 신고 대상 존재 검증
+4. 동일 사용자·동일 대상 중복 신고 확인
+5. `Report` 생성
+6. `report` 테이블 저장
+7. `ReportDTO` 반환
 
-### 8.3 자동 제재 시스템
-- **제재 연동**: `WARN_USER` 또는 `SUSPEND_USER` 조치 시 자동으로 `UserSanctionService` 호출
-- **제재 사유**: 신고 ID와 관리자 메모를 포함한 제재 사유 생성
-- **트랜잭션 보장**: 신고 처리와 자동 제재를 원자적으로 처리
+대상 검증:
 
-### 8.4 신고 대상 유효성 검증
-- **대상 타입별 검증**: 신고 대상 타입에 따라 해당 Repository에서 존재 확인
-- **댓글 검증**: 일반 댓글(`Comment`) 또는 실종제보 댓글(`MissingPetComment`) 모두 확인
-- **펫케어 제공자 검증**: `Role.SERVICE_PROVIDER` 역할 확인
+| targetType | 검증 방식 |
+|---|---|
+| `BOARD` | `BoardRepository.existsById(targetIdx)` |
+| `COMMENT` | 일반 `Comment` 또는 `MissingPetComment` 존재 확인 |
+| `MISSING_PET` | `MissingPetBoardRepository.existsById(targetIdx)` |
+| `PET_CARE_PROVIDER` | `Users` 존재 + `Role.SERVICE_PROVIDER` 확인 |
+| `CARE_REVIEW` | `CareReviewRepository.existsById(targetIdx)` |
 
-### 8.5 성능 최적화
-- **인덱스 전략**: 상태별, 대상별 인덱스로 조회 성능 향상
-- **Lazy Loading**: `FetchType.LAZY`로 필요할 때만 조회
-- **내용 요약**: 300자 제한으로 불필요한 데이터 전송 감소
-- **Exists 쿼리**: 중복 신고 확인 시 존재 여부만 확인
+프론트에서 현재 주로 쓰는 신고 진입점:
 
-### 8.6 엔티티 설계 특징
-- **BaseTimeEntity 미사용**: `@PrePersist`, `@PreUpdate`로 직접 시간 관리
-- **Unique 제약조건**: `(target_type, target_idx, reporter_idx)`로 중복 신고 방지
-- **폴리모픽 관계**: `targetType`과 `targetIdx`로 다양한 대상 타입 신고 지원
-- **상태 관리**: `ReportStatus` enum으로 상태 관리 (PENDING, RESOLVED, REJECTED)
-- **조치 내용**: `ReportActionType` enum으로 조치 내용 관리 (NONE, DELETE_CONTENT, WARN_USER, SUSPEND_USER, OTHER)
+- 커뮤니티 게시글
+- 커뮤니티 댓글
+- 실종 제보
+- 실종 제보 댓글
+
+백엔드는 `PET_CARE_PROVIDER`, `CARE_REVIEW`도 지원하지만 현재 관리자 UI 탭에는 `CARE_REVIEW`가 노출되지 않고, 일반 프론트 주요 신고 버튼도 위 네 가지 중심이다.
+
+---
+
+## 6. 신고 목록과 상세
+
+### 6.1 목록
+
+`GET /api/admin/reports`는 `targetType`, `status` 필터를 받는다.
+
+Repository query:
+
+```text
+WHERE (:targetType IS NULL OR r.targetType = :targetType)
+  AND (:status IS NULL OR r.status = :status)
+ORDER BY r.createdAt DESC
+```
+
+서비스는 조회된 목록 안에서 `targetType + targetIdx`별 신고 수를 계산해 `ReportDTO.reportCount`에 넣고, 최종적으로 다음 순서로 정렬한다.
+
+1. `reportCount DESC`
+2. `createdAt DESC`
+
+주의: `reportCount`는 현재 필터로 조회된 목록 안에서 계산한다. 전체 DB 기준 동일 대상 신고 총수와 다를 수 있다.
+
+### 6.2 상세
+
+`GET /api/admin/reports/{id}`는 신고 정보와 대상 미리보기를 함께 반환한다.
+
+미리보기 필드:
+
+- `type`
+- `id`
+- `title`
+- `summary`
+- `authorName`
+
+대상이 삭제되었거나 조회되지 않으면 `(삭제됨)`, `(탈퇴/없음)` 같은 placeholder를 반환한다.
+
+---
+
+## 7. 신고 처리와 제재 연동
+
+`ReportService.handleReport()` 흐름:
+
+1. 처리 상태 `status` 필수 검증
+2. 신고 row 조회
+3. 관리자 `Users` 조회
+4. `report.handle(admin, status, actionTaken, adminNote)`
+5. `WARN_USER`, `SUSPEND_USER`이면 `UserSanctionService.applySanctionFromReport()` 호출
+6. JPA 변경 감지로 신고 처리 정보 저장
+
+`Report.handle()`이 저장하는 값:
+
+- `status`
+- `handledBy`
+- `handledAt`
+- `adminNote`
+- `actionTaken` 또는 기본 `NONE`
+
+### 7.1 UserSanction 연동
+
+`UserSanctionService.applySanctionFromReport()` 분기:
+
+| actionTaken | 실제 동작 |
+|---|---|
+| `WARN_USER` | 경고 추가 |
+| `SUSPEND_USER` | 3일 이용제한 추가 |
+| `NONE` | 제재 없음 |
+| `DELETE_CONTENT` | 제재 없음 |
+| `OTHER` | 제재 없음 |
+
+경고는 `Users.warningCount`를 원자적으로 증가시키고, 경고가 3회 이상이면 3일 이용제한을 추가한다.
+
+### 7.2 제재 대상 ID 주의
+
+현재 `handleReport()`는 제재 대상 사용자 ID로 `report.getTargetIdx()`를 그대로 넘긴다.
+
+```java
+userSanctionService.applySanctionFromReport(
+    report.getTargetIdx(),
+    req.getActionTaken(),
+    sanctionReason,
+    admin.getIdx(),
+    reportId
+);
+```
+
+이 방식은 `PET_CARE_PROVIDER`처럼 `targetIdx`가 사용자 ID인 신고에는 맞다. 하지만 `BOARD`, `COMMENT`, `MISSING_PET`, `CARE_REVIEW`은 `targetIdx`가 콘텐츠 ID라서 실제 작성자 사용자 ID와 다르다.
+
+따라서 콘텐츠 신고에서 `WARN_USER` 또는 `SUSPEND_USER`를 선택하면 잘못된 사용자 ID에 제재를 시도하거나 `UserNotFoundException`이 날 수 있다. 콘텐츠 작성자 제재가 필요하면 target 타입별 작성자 조회가 먼저 필요하다.
+
+---
+
+## 8. 관리자 프론트 동작
+
+`ReportManagementSection`:
+
+- 기본 targetType: `BOARD`
+- 기본 status: `PENDING`
+- 탭: `BOARD`, `COMMENT`, `MISSING_PET`, `PET_CARE_PROVIDER`
+- `CARE_REVIEW` 탭은 현재 없다.
+
+`ReportDetailModal`:
+
+- 신고 상세 조회
+- 이미 `PENDING`이 아니면 읽기 전용
+- 처리 상태: `RESOLVED`, `REJECTED`
+- 조치: `NONE`, `DELETE_CONTENT`, `SUSPEND_USER`, `WARN_USER`, `OTHER`
+- `BOARD` 대상인 경우 별도 Board 관리자 API로 블라인드/해제/삭제/복구 버튼 제공
+
+즉, 신고 처리와 실제 콘텐츠 조치는 분리되어 있다.
+
+---
+
+## 9. 통계 연동
+
+Statistics 도메인은 ReportRepository를 사용한다.
+
+| 집계 항목 | 기준 |
+|---|---|
+| `newReports` | `createdAt` 기간 내 신고 수 |
+| `resolvedReports` | `status=RESOLVED`이고 `updatedAt` 기간 내 처리된 신고 수 |
+
+---
+
+## 10. 예외
+
+| 상황 | 예외 |
+|---|---|
+| 대상 타입 없음 | `ReportValidationException.targetTypeRequired()` |
+| 대상 ID 없음 | `ReportValidationException.targetIdxRequired()` |
+| 신고자 ID 없음 | `ReportValidationException.reporterRequired()` |
+| 사유 없음 | `ReportValidationException.reasonRequired()` |
+| 처리 상태 없음 | `ReportValidationException.statusRequired()` |
+| 지원하지 않는 대상 | `ReportValidationException.unsupportedTarget()` |
+| 이미 신고한 대상 | `ReportConflictException.alreadyReported()` |
+| 신고 row 없음 | `ReportNotFoundException` |
+| 신고 대상 없음 | `ReportTargetNotFoundException` |
+| 제공자 신고 대상이 서비스 제공자가 아님 | `ReportForbiddenException.providerOnly()` |
+| 신고자/관리자 사용자 없음 | `UserNotFoundException` |
+
+---
+
+## 11. 현재 한계와 주의사항
+
+- 일반 신고 생성은 인증 사용자와 request `reporterId` 일치 여부를 검증하지 않는다.
+- `WARN_USER`, `SUSPEND_USER`는 `targetIdx`를 사용자 ID로 넘기므로 콘텐츠 신고에서는 제재 대상 매핑이 틀릴 수 있다.
+- `DELETE_CONTENT`는 기록용 enum이며 ReportService가 실제 삭제를 수행하지 않는다.
+- `CARE_REVIEW`는 백엔드 enum/검증은 있지만 관리자 UI 탭에는 없다.
+- 관리자 report API는 Page가 아니라 List를 반환한다.
+- `reportCount`는 필터링된 목록 안에서 계산되므로 전체 동일 대상 신고 총수와 다를 수 있다.
+- 현재 코드에는 `ReportAssistAgentService`나 `/api/admin/reports/{id}/assist` 엔드포인트가 없다. 관련 내용은 오래된 설계 문서에만 남아 있다.
+- 신고 중복 방지는 애플리케이션 체크와 DB unique 제약을 함께 사용하지만, 동시 요청에서는 DB unique 충돌이 최종 방어선이다.
+
+---
+
+## 12. DomainV2 페이지에 넣을 포인트
+
+- `ReportTargetType + targetIdx` 폴리모픽 구조로 여러 도메인의 신고를 하나의 테이블에 모았다.
+- `(target_type, target_idx, reporter_idx)` unique 제약으로 동일 사용자 중복 신고를 막는다.
+- 관리자 목록은 target/status 필터와 신고 수 기반 정렬을 제공한다.
+- 상세 조회는 대상 미리보기를 붙여 관리자가 신고 맥락을 바로 확인할 수 있게 한다.
+- 신고 처리 기록과 실제 콘텐츠 조치는 분리되어 있다.
+- UserSanction 연동은 있지만 현재 제재 대상 ID 매핑은 사용자 대상 신고에만 안전하다.

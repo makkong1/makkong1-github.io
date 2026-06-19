@@ -1,427 +1,251 @@
-# Redis 캐싱 전략 정리
+# Redis 캐시 & 임시 데이터 아키텍처
 
-## 📋 개요
+> 기준 코드: `global/security/RedisConfig.java`, `domain/notification`, `domain/user`, `domain/location`, `domain/statistics`, `domain/petRecommendation`, `domain/board`.
 
-Petory 프로젝트에서 Redis를 활용한 캐싱 전략을 적용하여 성능을 최적화하고 있습니다. Redis는 **Spring Cache Abstraction** (`@Cacheable`, `@CacheEvict`)과 **직접 RedisTemplate 사용** 두 가지 방식으로 활용됩니다.
-
-## 🎯 적용된 캐싱 전략
-
-### 1. 게시글 목록 캐싱 (`boardList`) ⚠️ 현재 비활성화
-
-**상태**: 현재 개발 중 데이터 동기화 문제로 인해 **비활성화**되어 있습니다.
-
-**캐시 키**: `boardList:{category}` 또는 `boardList:ALL`
-
-**적용 메서드**:
-- `BoardService.getAllBoards(String category)` - `@Cacheable` **주석 처리됨**
-
-**TTL**: 10분 (RedisConfig에서 설정, 현재 미사용)
-
-**참고**: 코드에는 캐시 무효화 로직이 남아있으나, 실제 캐싱은 비활성화 상태입니다.
-
-**코드 위치**: `backend/main/java/com/linkup/Petory/domain/board/service/BoardService.java:57-58`
-
-```java
-// 캐시 임시 비활성화 - 개발 중 데이터 동기화 문제 해결
-// @Cacheable(value = "boardList", key = "#category != null ? #category : 'ALL'")
-public List<BoardDTO> getAllBoards(String category) { ... }
-```
+Redis는 Petory에서 주 저장소가 아니라 **읽기 캐시, 최신 알림 버퍼, 회원가입 전 인증 상태, 추천 분석 중복 방지**를 담당하는 보조 인프라다. 영속 데이터의 기준은 MySQL이며, Redis에는 TTL이 있거나 재계산 가능한 데이터만 저장한다.
 
 ---
 
-### 2. 게시글 상세 캐싱 (`boardDetail`)
+## 1. 책임 범위
 
-**캐시 키**: `boardDetail:{boardId}`
+| 구분 | 현재 사용 | 대표 키/캐시명 | TTL | 주 데이터 소스 |
+| --- | --- | --- | --- | --- |
+| Spring Cache - 오늘 통계 | 사용 중 | `todayStats::today` | 1분 | `daily_statistics` |
+| Spring Cache - 인기 위치 서비스 | 사용 중 | `popularLocationServices::{category}` | 기본 30분 | `location_service` |
+| 알림 최신 버퍼 | 사용 중 | `notification:{userId}` | 24시간 | `notification` |
+| 회원가입 전 이메일 인증 | 사용 중 | `email_verification:pre_registration:{email}` | 24시간 | Redis 단기 상태 |
+| 추천 위치검색 dedup | 사용 중 | `nlp:loc-dedup:{userIdx}:{keyword}` | 10분 | Redis 단기 상태 |
+| 게시글 목록/상세 캐시 | 읽기 적재 비활성 | `boardList`, `boardDetail` | 10분/1시간 | `board` |
+| 사용자 캐시 | 설정만 존재 | `user` | 1시간 | `users` |
+| 반응 카운트 임시 저장 | Bean만 존재 | `reaction:board:*`, `reaction:comment:*` | 코드상 미사용 | `board_reaction`, `comment_reaction` |
 
-**적용 메서드**:
-- `BoardService.getBoard(Long idx, Long viewerId)` - `@Cacheable` 적용
-
-**TTL**: 1시간 (RedisConfig에서 설정)
-
-**캐시 무효화 시점**:
-- ✅ 게시글 생성 시: `boardList` 캐시 전체 무효화
-- ✅ 게시글 수정 시: 해당 게시글 캐시 무효화 + `boardList` 캐시 전체 무효화
-- ✅ 게시글 삭제 시: 해당 게시글 캐시 무효화 + `boardList` 캐시 전체 무효화
-- ✅ 게시글 상태 변경 시: 해당 게시글 캐시 무효화 + `boardList` 캐시 전체 무효화
-- ✅ 게시글 복구 시: 해당 게시글 캐시 무효화 + `boardList` 캐시 전체 무효화
-- ✅ 댓글 추가 시: 해당 게시글 캐시 무효화 (댓글 수 포함)
-- ✅ 댓글 수정 시: 해당 게시글 캐시 무효화
-- ✅ 댓글 삭제 시: 해당 게시글 캐시 무효화
-- ✅ 댓글 상태 변경 시: 해당 게시글 캐시 무효화
-- ✅ 댓글 복구 시: 해당 게시글 캐시 무효화
-- ✅ 좋아요/싫어요 반응 시: 해당 게시글 캐시 무효화 (좋아요 수 포함)
-
-**코드 위치**: `backend/main/java/com/linkup/Petory/domain/board/service/BoardService.java`
-
-```java
-@Cacheable(value = "boardDetail", key = "#idx")
-@Transactional
-public BoardDTO getBoard(long idx, Long viewerId) { ... }
-
-@CacheEvict(value = "boardList", allEntries = true)
-@Transactional
-public BoardDTO createBoard(BoardDTO dto) { ... }
-
-@Caching(evict = {
-    @CacheEvict(value = "boardDetail", key = "#idx"),
-    @CacheEvict(value = "boardList", allEntries = true)
-})
-@Transactional
-public BoardDTO updateBoard(long idx, BoardDTO dto) { ... }
-```
+핵심은 **설정된 캐시 이름과 실제 캐시 적재 경로가 다르다**는 점이다. `boardList`, `boardDetail`, `user`는 `RedisCacheManager`에 설정되어 있지만 현재 조회 메서드에서 캐시를 채우지 않는다.
 
 ---
 
-### 3. 좋아요/싫어요 반응 캐싱
+## 2. Redis 설정 구조
 
-**전략**: Write-Through 방식 (즉시 캐시 무효화)
+```mermaid
+flowchart LR
+    APP["Spring Boot App"]
+    CONFIG["RedisConfig"]
+    REDIS["Redis standalone<br/>spring.redis.host/port/database"]
+    CACHE["RedisCacheManager"]
+    STRING["customStringRedisTemplate"]
+    OBJECT["objectRedisTemplate"]
+    NOTI["notificationRedisTemplate"]
+    REACTION["reactionCountRedisTemplate"]
 
-**적용 메서드**:
-- `ReactionService.reactToBoard()` - `@CacheEvict` 적용
-
-**동작 방식**:
-- 좋아요/싫어요 반응 시 DB에 즉시 반영
-- 게시글 상세 캐시를 무효화하여 다음 조회 시 최신 데이터 반영
-
-**코드 위치**: `backend/main/java/com/linkup/Petory/domain/board/service/ReactionService.java:36`
-
-```java
-@CacheEvict(value = "boardDetail", key = "#boardId")
-public ReactionSummaryDTO reactToBoard(Long boardId, Long userId, ReactionType reactionType) { ... }
+    APP --> CONFIG
+    CONFIG --> REDIS
+    CONFIG --> CACHE
+    CONFIG --> STRING
+    CONFIG --> OBJECT
+    CONFIG --> NOTI
+    CONFIG --> REACTION
 ```
 
-**참고**: 댓글 반응(`reactToComment`)에는 캐시 무효화가 적용되지 않습니다.
+연결 설정은 `spring.redis.*` 레거시 속성명을 사용한다. `spring.data.redis.*`가 아니라는 점이 로컬 설정에서 중요하다.
+
+| 설정 | 값/동작 |
+| --- | --- |
+| 연결 방식 | `LettuceConnectionFactory` + `RedisStandaloneConfiguration` |
+| 기본 host/port | `localhost:6379` |
+| database | 기본 `0` |
+| password | 값이 있을 때만 설정 |
+| 캐싱 활성화 | `@EnableCaching` |
+| key 직렬화 | `StringRedisSerializer` |
+| value 직렬화 | `GenericJackson2JsonRedisSerializer` |
+| 날짜 타입 | `JavaTimeModule`, timestamp 비활성 |
+| null 캐시 | 비활성화 |
+
+JSON serializer는 non-final 타입에 타입 정보를 포함한다. 내부 Redis 값을 애플리케이션이 직접 읽고 쓰는 구조라 편하지만, Redis를 외부 입력 저장소처럼 열어두면 역직렬화 위험이 커질 수 있다. 운영에서는 Redis 접근 경계를 내부망/인증으로 제한하는 전제가 필요하다.
 
 ---
 
-### 4. 인기 위치 서비스 캐싱 (`popularLocationServices`)
+## 3. Spring Cache 흐름
 
-**캐시 키**: `popularLocationServices:{category}`
+```mermaid
+sequenceDiagram
+    participant API as Controller
+    participant SVC as @Cacheable Service
+    participant CACHE as RedisCacheManager
+    participant DB as MySQL
 
-**적용 메서드**:
-- `LocationServiceService.getPopularLocationServices(String category)` - `@Cacheable` 적용
-
-**TTL**: 기본값 30분 (RedisConfig에서 설정)
-
-**용도**: 카테고리별 인기 위치 서비스 상위 10개 조회 결과 캐싱
-
-**코드 위치**: `backend/main/java/com/linkup/Petory/domain/location/service/LocationServiceService.java:28`
-
-```java
-@Cacheable(value = "popularLocationServices", key = "#category")
-public List<LocationServiceDTO> getPopularLocationServices(String category) {
-    return locationServiceRepository.findTop10ByCategoryOrderByRatingDesc(category)
-        .stream()
-        .map(locationServiceConverter::toDTO)
-        .collect(Collectors.toList());
-}
+    API->>SVC: 조회 요청
+    SVC->>CACHE: cacheName + key 조회
+    alt cache hit
+        CACHE-->>SVC: cached DTO
+    else cache miss
+        SVC->>DB: 원본 조회
+        DB-->>SVC: entity/result
+        SVC->>CACHE: 결과 저장(TTL)
+    end
+    SVC-->>API: response
 ```
 
-**참고**: 현재 캐시 무효화 로직이 없어 TTL에만 의존합니다. 위치 서비스 평점 변경 시 캐시 무효화가 필요할 수 있습니다.
+### 실제 캐시 적재
+
+| 캐시명 | 메서드 | 키 | TTL | 비고 |
+| --- | --- | --- | --- | --- |
+| `todayStats` | `StatisticsService.getTodaySnapshot()` | `'today'` | 1분 | 관리자 대시보드성 폴링 쿼리 완화 |
+| `popularLocationServices` | `LocationServiceService.getPopularLocationServices(category)` | `#p0` | 기본 30분 | 전용 TTL 설정이 없어 기본값 적용 |
+
+### 설정은 있지만 읽기 적재가 없는 캐시
+
+| 캐시명 | 현재 상태 |
+| --- | --- |
+| `boardList` | `BoardService.getAllBoards()`의 `@Cacheable`이 주석 처리되어 있다. 생성/수정/삭제 시 `@CacheEvict`는 남아 있다. |
+| `boardDetail` | `BoardService.getBoard()`에서 조회수 실시간 반영 때문에 `@Cacheable`이 제거되어 있다. 댓글/반응/관리자 상태 변경에서 `@CacheEvict`만 남아 있다. |
+| `user` | CacheManager TTL은 1시간으로 설정되어 있지만 현재 `@Cacheable(value = "user")` 사용처가 없다. |
+
+게시판 캐시는 “무효화 코드가 있으니 Redis에 저장된다”로 해석하면 안 된다. 현재 기준으로 게시글 목록/상세 응답을 Redis에 적재하는 경로는 없다.
 
 ---
 
-### 5. 알림 시스템 캐싱 (직접 RedisTemplate 사용)
+## 4. 알림 Redis 버퍼
 
-**캐시 키**: `notification:{userId}`
+```mermaid
+sequenceDiagram
+    participant Producer as Domain Service
+    participant NS as NotificationService
+    participant DB as MySQL notification
+    participant REDIS as Redis notification:{userId}
+    participant SSE as SSE
+    participant FCM as FCM
 
-**적용 방식**: Spring Cache가 아닌 **직접 RedisTemplate 사용**
-
-**사용하는 RedisTemplate**: `notificationRedisTemplate`
-
-**TTL**: 24시간
-
-**용도**: 사용자별 최신 알림 50개를 Redis에 캐싱하여 실시간 조회 성능 향상
-
-**특징**:
-- 최신 알림 50개만 유지 (초과 시 자동 삭제)
-- MySQL과 병합하여 조회 (Redis + DB 병합 전략)
-- 알림 생성 시 Redis와 MySQL 모두 저장
-- 읽음 처리 시 Redis에서 해당 알림 제거
-- 전체 읽음 처리 시 Redis 캐시 전체 삭제
-
-**코드 위치**: `backend/main/java/com/linkup/Petory/domain/notification/service/NotificationService.java`
-
-```java
-// Redis에 알림 저장 (최신 50개, 24시간 TTL)
-private void saveToRedis(Long userId, NotificationDTO notification) {
-    String redisKey = REDIS_KEY_PREFIX + userId; // "notification:" + userId
-    List<NotificationDTO> existingNotifications = getFromRedis(userId);
-    
-    List<NotificationDTO> notifications = new ArrayList<>(existingNotifications);
-    notifications.add(0, notification); // 최신 알림을 맨 앞에 추가
-    if (notifications.size() > 50) {
-        notifications = notifications.subList(0, 50);
-    }
-    
-    notificationRedisTemplate.opsForValue().set(redisKey, notifications,
-        Duration.ofHours(24));
-}
+    Producer->>NS: createNotification()
+    NS->>DB: Notification 저장
+    NS->>REDIS: 최신 알림 list 앞에 추가, 최대 50개, TTL 24h
+    NS->>SSE: 접속 중 사용자에게 전송
+    NS->>FCM: 푸시 발송
 ```
 
-**주요 메서드**:
-- `createNotification()`: 알림 생성 시 Redis에 저장
-- `getUserNotifications()`: Redis와 DB 병합 조회
-- `markAsRead()`: 개별 알림 읽음 처리 시 Redis에서 제거
-- `markAllAsRead()`: 전체 읽음 처리 시 Redis 캐시 전체 삭제
+알림은 DB 저장 후 Redis에도 최신 목록을 저장한다.
+
+| 항목 | 내용 |
+| --- | --- |
+| Template | `notificationRedisTemplate` |
+| Key | `notification:{userId}` |
+| Value | `List<NotificationDTO>` |
+| 정렬 | 최신 알림을 앞에 추가 |
+| 최대 개수 | 50개 |
+| TTL | 24시간 |
+| 목록 조회 | Redis 목록이 있으면 DB 목록과 병합 후 중복 제거 |
+| 단건 읽음 | DB 읽음 처리 후 Redis 목록에서 해당 알림 제거 |
+| 전체 읽음 | DB 읽음 처리 후 Redis key 삭제 |
+| 안 읽은 목록/개수 | Redis 병합 없이 DB 기준 조회 |
+
+현재 알림 Redis 접근에는 추천 dedup처럼 장애 fallback이 없다. Redis 쓰기/읽기에서 예외가 나면 알림 생성 또는 목록 조회 흐름에 영향을 줄 수 있으므로, 운영 안정성을 높이려면 알림 Redis는 best-effort 처리로 감싸는 개선 여지가 있다.
 
 ---
 
-### 6. 이메일 인증 상태 캐싱 (직접 RedisTemplate 사용)
+## 5. 이메일 인증 임시 상태
 
-**캐시 키**: `email_verification:pre_registration:{email}`
+```mermaid
+flowchart TD
+    A["회원가입 전 이메일 인증 요청"]
+    B{"dev skip?"}
+    C["JWT 이메일 인증 토큰 발송"]
+    D["인증 링크 진입"]
+    E["Redis<br/>email_verification:pre_registration:{email}=verified<br/>TTL 24h"]
+    F["회원가입 요청"]
+    G{"Redis verified?"}
+    H["Users 생성 + emailVerified=true"]
+    I["Redis key 삭제"]
 
-**적용 방식**: Spring Cache가 아닌 **직접 RedisTemplate 사용**
-
-**사용하는 RedisTemplate**: `customStringRedisTemplate`
-
-**TTL**: 24시간
-
-**용도**: 회원가입 전 이메일 인증 상태를 임시 저장
-
-**특징**:
-- 회원가입 전 이메일 인증 완료 상태를 Redis에 저장
-- 회원가입 시 Redis에서 확인하여 `emailVerified = true`로 설정
-- 24시간 내 회원가입하지 않으면 자동 만료
-- 회원가입 완료 후 Redis에서 삭제
-
-**코드 위치**: `backend/main/java/com/linkup/Petory/domain/user/service/EmailVerificationService.java`
-
-```java
-// 회원가입 전 이메일 인증 완료 처리 (Redis에 저장)
-public String verifyPreRegistrationEmail(String token) {
-    String email = jwtUtil.extractEmailFromEmailToken(token);
-    String redisKey = PRE_REGISTRATION_VERIFICATION_KEY_PREFIX + email;
-    
-    stringRedisTemplate.opsForValue().set(
-        redisKey,
-        "verified",
-        PRE_REGISTRATION_VERIFICATION_EXPIRE_HOURS, // 24시간
-        TimeUnit.HOURS
-    );
-    
-    return email;
-}
-
-// 회원가입 전 이메일 인증 완료 여부 확인
-public boolean isPreRegistrationEmailVerified(String email) {
-    String redisKey = PRE_REGISTRATION_VERIFICATION_KEY_PREFIX + email;
-    String value = stringRedisTemplate.opsForValue().get(redisKey);
-    return "verified".equals(value);
-}
+    A --> B
+    B -->|yes| E
+    B -->|no| C --> D --> E
+    E --> F --> G
+    G -->|yes| H --> I
 ```
+
+회원가입 전에는 아직 `users` 레코드가 없으므로, 이메일 인증 완료 상태를 Redis에 임시 저장한다.
+
+| 항목 | 내용 |
+| --- | --- |
+| Template | Spring Boot 자동 구성 `StringRedisTemplate` |
+| Key | `email_verification:pre_registration:{email}` |
+| Value | `verified` |
+| TTL | 24시간 |
+| 생성 시점 | 개발 모드 skip 또는 이메일 인증 링크 검증 완료 |
+| 조회 시점 | 회원가입 처리 전 |
+| 삭제 시점 | 회원가입 완료 후 |
+
+일반 로그인 refresh token은 Redis가 아니라 `users.refresh_token`, `users.refresh_expiration`에 저장한다. `RedisConfig`의 문자열 템플릿 주석에는 refresh token/blacklist 용도가 언급되어 있지만, 현재 인증 코드 기준 refresh token 저장소는 DB다.
 
 ---
 
-## 🔄 캐시 무효화 흐름도
+## 6. 추천 위치검색 dedup
 
-### 게시글 생성/수정/삭제/상태변경/복구
-```
-게시글 생성/수정/삭제/상태변경/복구
-    ↓
-@CacheEvict 실행
-    ↓
-boardList 캐시 전체 무효화 (allEntries = true)
-boardDetail 캐시 무효화 (해당 게시글)
-    ↓
-다음 조회 시 DB에서 최신 데이터 조회 후 캐시 저장
-```
+위치 검색 이벤트가 자연어로 판단되면 추천 NLP 분석 후보가 된다. 이때 같은 사용자와 같은 검색어가 10분 안에 반복되면 Redis로 중복 호출을 막는다.
 
-### 댓글 추가/수정/삭제/상태변경/복구
-```
-댓글 추가/수정/삭제/상태변경/복구
-    ↓
-@CacheEvict 실행
-    ↓
-boardDetail 캐시 무효화 (해당 게시글)
-    ↓
-다음 조회 시 DB에서 최신 데이터 조회 후 캐시 저장
-```
+| 항목 | 내용 |
+| --- | --- |
+| Listener | `PetIntentSignalEventListener` |
+| Template | `customStringRedisTemplate` |
+| Key | `nlp:loc-dedup:{userIdx}:{normalizedKeyword}` |
+| Value | `1` |
+| TTL | 10분 |
+| Redis 명령 | `setIfAbsent(key, "1", ttl)` |
+| 실패 정책 | Redis 예외 발생 시 Location NLP 분석을 생략 |
 
-### 좋아요/싫어요 반응
-```
-좋아요/싫어요 반응
-    ↓
-@CacheEvict 실행
-    ↓
-boardDetail 캐시 무효화 (해당 게시글)
-    ↓
-다음 조회 시 DB에서 최신 데이터 조회 후 캐시 저장
-```
+커뮤니티 게시글/케어 요청 이벤트는 트랜잭션 커밋 후 NLP 서버 호출로 이어지고, 위치 검색은 트랜잭션 없이 발생하므로 일반 `@EventListener`에서 자연어 필터와 Redis dedup을 거친다.
 
 ---
 
-## 📝 적용된 파일 목록
+## 7. 게시판 캐시 잔존 구조
 
-### Spring Cache 사용 (`@Cacheable`, `@CacheEvict`)
+게시판에는 캐시 무효화 어노테이션이 남아 있지만 현재 주요 조회는 DB 기준이다.
 
-#### BoardService.java
-**파일 위치**: `backend/main/java/com/linkup/Petory/domain/board/service/BoardService.java`
+| 위치 | Redis 관련 코드 | 현재 의미 |
+| --- | --- | --- |
+| `BoardService.getAllBoards()` | `@Cacheable(boardList)` 주석 처리 | 목록 캐시 적재 없음 |
+| `BoardService.getBoard()` | `@Cacheable` 없음 | 조회수 실시간 반영 때문에 상세 캐시 적재 없음 |
+| `BoardService.createBoard()` | `@CacheEvict(boardList)` | 캐시가 없으면 실질적으로 no-op |
+| `BoardService.update/delete/status/restore` | `@CacheEvict(boardDetail, boardList)` | 향후 재도입 대비 잔존 무효화 |
+| `CommentService` | 댓글 변경 시 `boardDetail` evict | 현재 상세 캐시가 없어 no-op에 가까움 |
+| `ReactionService` | 게시글 반응 시 `boardDetail` evict | 현재 상세 캐시가 없어 no-op에 가까움 |
 
-- ⚠️ `getAllBoards()` - `@Cacheable` **주석 처리됨 (비활성화)** (line 57-58)
-- ✅ `getBoard()` - `@Cacheable` 적용 (line 207)
-- ✅ `createBoard()` - `@CacheEvict` 적용 (line 221)
-- ✅ `updateBoard()` - `@CacheEvict` 적용 (Caching 사용) (line 246-249)
-- ✅ `deleteBoard()` - `@CacheEvict` 적용 (Caching 사용) (line 276-279)
-- ✅ `updateBoardStatus()` - `@CacheEvict` 적용 (Caching 사용) (line 555-558)
-- ✅ `restoreBoard()` - `@CacheEvict` 적용 (Caching 사용) (line 568-571)
-
-#### CommentService.java
-**파일 위치**: `backend/main/java/com/linkup/Petory/domain/board/service/CommentService.java`
-
-- ✅ `addComment()` - `@CacheEvict` 적용 (line 65)
-- ✅ `updateComment()` - `@CacheEvict` 적용 (line 107)
-- ✅ `deleteComment()` - `@CacheEvict` 적용 (line 141)
-- ✅ `updateCommentStatus()` - `@CacheEvict` 적용 (line 197)
-- ✅ `restoreComment()` - `@CacheEvict` 적용 (line 215)
-
-#### ReactionService.java
-**파일 위치**: `backend/main/java/com/linkup/Petory/domain/board/service/ReactionService.java`
-
-- ✅ `reactToBoard()` - `@CacheEvict` 적용 (line 36)
-- ⚠️ `reactToComment()` - 캐시 무효화 없음 (댓글 반응은 캐시되지 않음)
-
-#### LocationServiceService.java
-**파일 위치**: `backend/main/java/com/linkup/Petory/domain/location/service/LocationServiceService.java`
-
-- ✅ `getPopularLocationServices()` - `@Cacheable` 적용 (line 28)
-
-### 직접 RedisTemplate 사용
-
-#### NotificationService.java
-**파일 위치**: `backend/main/java/com/linkup/Petory/domain/notification/service/NotificationService.java`
-
-**사용하는 RedisTemplate**: `notificationRedisTemplate` (주입: line 28)
-
-- ✅ `createNotification()` - Redis에 알림 저장 (line 64)
-- ✅ `getUserNotifications()` - Redis와 DB 병합 조회 (line 75-97)
-- ✅ `markAsRead()` - Redis에서 개별 알림 제거 (line 139)
-- ✅ `markAllAsRead()` - Redis 캐시 전체 삭제 (line 158)
-- `saveToRedis()` - Redis에 알림 저장 (private, line 164)
-- `getFromRedis()` - Redis에서 알림 조회 (private, line 193)
-- `removeFromRedis()` - Redis에서 알림 제거 (private, line 206)
-- `mergeNotifications()` - Redis와 DB 데이터 병합 (private, line 222)
-
-#### EmailVerificationService.java
-**파일 위치**: `backend/main/java/com/linkup/Petory/domain/user/service/EmailVerificationService.java`
-
-**사용하는 RedisTemplate**: `customStringRedisTemplate` (주입: line 29)
-
-- ✅ `verifyPreRegistrationEmail()` - Redis에 인증 상태 저장 (line 124-128)
-- ✅ `isPreRegistrationEmailVerified()` - Redis에서 인증 상태 확인 (line 142-143)
-- ✅ `removePreRegistrationVerification()` - Redis에서 인증 상태 삭제 (line 153)
+게시글 상세 캐시를 다시 켜려면 조회수, 댓글, 반응, 첨부파일, 신고/관리자 상태 변경의 동기화 정책을 먼저 정해야 한다. 현재는 정확성을 우선해 DB 조회를 유지하는 구조다.
 
 ---
 
-## ⚙️ Redis 설정 (RedisConfig.java)
+## 8. 미사용 또는 부분 사용 Bean
 
-**파일 위치**: `backend/main/java/com/linkup/Petory/global/security/RedisConfig.java`
-
-### Spring Cache TTL 설정
-- **boardList**: 10분 (현재 미사용 - `getAllBoards()` 주석 처리됨)
-- **boardDetail**: 1시간
-- **popularLocationServices**: 기본값 30분 (명시적 설정 없음)
-- **user**: 1시간 (설정되어 있으나 실제 사용 안 함)
-- **기본**: 30분
-
-### RedisTemplate 설정
-
-#### 1. `customStringRedisTemplate` (line 87-96)
-- **용도**: 문자열 기반 데이터 저장
-- **실제 사용**: 이메일 인증 상태 (`EmailVerificationService`)
-- **설정**: Key/Value 모두 String 직렬화
-- **참고**: 주석에는 "Refresh Token, 블랙리스트 등에 사용"이라고 되어 있으나, 현재 코드에서는 이메일 인증 상태에만 사용됨
-
-#### 2. `objectRedisTemplate` (line 103-112)
-- **용도**: 객체 저장용 (JSON 직렬화)
-- **실제 사용**: 현재 사용 안 함
-- **설정**: Key는 String, Value는 GenericJackson2JsonRedisSerializer
-- **참고**: 주석에는 "게시글 캐싱, 사용자 정보 캐싱 등에 사용"이라고 되어 있으나, 실제로는 Spring Cache가 자동으로 사용
-
-#### 3. `notificationRedisTemplate` (line 120-129)
-- **용도**: 알림 리스트 저장
-- **실제 사용**: `NotificationService`에서 사용
-- **설정**: Key는 String, Value는 GenericJackson2JsonRedisSerializer
-- **TTL**: 24시간 (서비스 코드에서 설정)
-
-#### 4. `reactionCountRedisTemplate` (line 137-144)
-- **용도**: 좋아요/싫어요 배치 동기화용
-- **실제 사용**: 현재 사용 안 함
-- **설정**: Key는 String, Value는 Long (GenericJackson2JsonRedisSerializer 사용)
-- **참고**: 주석에는 "좋아요/싫어요 배치 동기화용"이라고 되어 있으나, 현재 코드에서는 사용되지 않음
-
-### Redis 사용 용도별 정리
-
-| 용도 | RedisTemplate | TTL | 방식 | 상태 |
-|------|--------------|-----|------|------|
-| 게시글 상세 캐싱 | Spring Cache | 1시간 | `@Cacheable` | ✅ 활성화 |
-| 인기 위치 서비스 | Spring Cache | 30분 | `@Cacheable` | ✅ 활성화 |
-| 알림 버퍼링 | `notificationRedisTemplate` | 24시간 | 직접 사용 | ✅ 활성화 |
-| 이메일 인증 상태 | `customStringRedisTemplate` | 24시간 | 직접 사용 | ✅ 활성화 |
-| 게시글 목록 캐싱 | Spring Cache | 10분 | `@Cacheable` | ⚠️ 비활성화 |
-| 사용자 정보 캐싱 | Spring Cache | 1시간 | `@Cacheable` | ❌ 미사용 |
-| 객체 캐싱 | `objectRedisTemplate` | - | 직접 사용 | ❌ 미사용 |
-| 반응 카운트 배치 | `reactionCountRedisTemplate` | - | 직접 사용 | ❌ 미사용 |
+| Bean | 현재 코드 사용 여부 | 판단 |
+| --- | --- | --- |
+| `customStringRedisTemplate` | 사용 중 | 추천 위치검색 dedup 전용으로 사용 |
+| `notificationRedisTemplate` | 사용 중 | 알림 최신 버퍼 |
+| `objectRedisTemplate` | 미사용 | 직접 객체 캐시 용도로 정의되어 있으나 주입처 없음 |
+| `reactionCountRedisTemplate` | 미사용 | 반응 카운트 Redis 배치 동기화 구상 흔적. 현재 반응 카운트는 DB 집계 |
+| `StringRedisTemplate` | 사용 중 | 이메일 사전 인증. 프로젝트 정의 Bean이 아니라 Boot 자동 구성 주입 |
 
 ---
 
-## 🎯 캐시 무효화 전략 요약
+## 9. 운영 관점 체크포인트
 
-### 1. 게시글 목록 캐싱 (현재 비활성화)
-- ⚠️ 현재 비활성화 상태이므로 무효화 로직은 작동하지 않음
-- 게시글 생성/수정/삭제 시 `boardList` 캐시 전체 무효화 로직은 남아있으나 실제 캐싱이 안 되므로 의미 없음
-
-### 2. 게시글 상세 캐싱
-- **게시글 변경**: 해당 게시글 캐시만 무효화 + `boardList` 캐시 전체 무효화
-- **댓글 변경**: 해당 게시글 캐시 무효화 (댓글 수 포함)
-- **반응 변경**: 해당 게시글 캐시 무효화 (좋아요 수 포함)
-
-### 3. 인기 위치 서비스 캐싱
-- **캐시 무효화**: 현재 구현되지 않음 (TTL에 의존)
-- **개선 필요**: 위치 서비스 평점 변경 시 캐시 무효화 고려
-
-### 4. 알림 시스템 캐싱
-- **알림 생성**: Redis와 MySQL 모두 저장
-- **읽음 처리**: Redis에서 해당 알림 제거 (MySQL은 유지)
-- **전체 읽음**: Redis 캐시 전체 삭제
-
-### 5. 이메일 인증 상태 캐싱
-- **인증 완료**: Redis에 저장 (24시간 TTL)
-- **회원가입 시**: Redis에서 확인 후 삭제 (`removePreRegistrationVerification()`)
-- **자동 만료**: 24시간 후 자동 삭제
-
-### 6. 트랜잭션 고려사항
-- `@CacheEvict`는 기본적으로 트랜잭션 커밋 후 실행 (`beforeInvocation = false`)
-- 트랜잭션 롤백 시 캐시 무효화도 롤백됨
-- 직접 RedisTemplate 사용 시 트랜잭션과 독립적으로 동작
+1. Redis 속성명은 `spring.redis.host`, `spring.redis.port`를 사용한다.
+2. Redis는 단일 standalone 연결이며 sentinel/cluster 설정은 없다.
+3. `todayStats`는 결제 발생 시 DB에는 즉시 반영되지만 캐시는 최대 1분 stale할 수 있다.
+4. `popularLocationServices`는 위치 서비스 삭제/평점 변경 시 명시적 evict가 없으므로 최대 30분 stale할 수 있다.
+5. 알림 Redis는 DB와 병합하지만 Redis 장애 fallback이 없어 장애 전파 가능성이 있다.
+6. 이메일 사전 인증은 Redis 단기 상태이므로 Redis 초기화 시 진행 중인 회원가입 인증 상태가 사라진다.
+7. 추천 위치검색 dedup은 Redis 장애 시 NLP 호출을 생략하도록 fail-closed로 설계되어 원 사용자 액션은 유지된다.
+8. refresh token은 DB 저장이다. Redis token blacklist나 refresh token 저장소는 현재 구현되어 있지 않다.
 
 ---
 
-## ⚠️ 주의사항
+## 10. 관련 문서
 
-1. **게시글 목록 캐싱 비활성화**: 현재 개발 중 데이터 동기화 문제로 비활성화되어 있습니다. 재활성화 시 주의가 필요합니다.
-
-2. **댓글 수 포함**: 게시글 상세에 댓글 수가 포함되므로 댓글 추가/삭제 시 게시글 상세 캐시를 무효화합니다.
-
-3. **좋아요 수 포함**: 게시글 상세에 좋아요/싫어요 수가 포함되므로 반응 변경 시 게시글 상세 캐시를 무효화합니다.
-
-4. **TTL 안전망**: 캐시 무효화가 실패하더라도 TTL로 인해 일정 시간 후 자동으로 만료됩니다.
-
-5. **알림 병합 전략**: Redis와 MySQL 데이터를 병합할 때 중복 제거 및 정렬 로직이 필요합니다 (`mergeNotifications()` 메서드).
-
-6. **이메일 인증 상태**: 회원가입 전 인증 상태는 24시간 내에만 유효하며, 회원가입 시 자동으로 삭제됩니다.
-
-7. **인기 위치 서비스 캐시 무효화**: 현재 위치 서비스 평점 변경 시 캐시 무효화가 구현되지 않아 TTL에만 의존합니다.
-
-8. **미사용 RedisTemplate**: `objectRedisTemplate`, `reactionCountRedisTemplate`는 설정되어 있으나 현재 사용되지 않습니다. 향후 사용 계획이 있다면 유지하고, 없다면 제거를 고려할 수 있습니다.
-
-9. **댓글 반응 캐싱 없음**: 댓글에 대한 좋아요/싫어요 반응은 캐시되지 않습니다. 필요시 추가 고려가 필요합니다.
-
----
-
-## 📚 참고 자료
-
-- Spring Cache Abstraction: https://docs.spring.io/spring-framework/reference/integration/cache.html
-- Redis Cache Configuration: `backend/main/java/com/linkup/Petory/global/security/RedisConfig.java`
-- Spring Data Redis: https://docs.spring.io/spring-data/redis/docs/current/reference/html/
-
+- `docs/domains/user.md`
+- `docs/architecture/user/사용자 인증 및 프로필 아키텍처.md`
+- `docs/domains/notification.md`
+- `docs/architecture/notification/알림 시스템 아키텍처.md`
+- `docs/domains/recommendation.md`
+- `docs/architecture/recommendation/반려생활 추천 & NLP 아키텍처.md`
+- `docs/domains/board.md`
+- `docs/architecture/board/커뮤니티 게시판 아키텍처.md`
+- `docs/domains/location.md`
+- `docs/architecture/location/위치 기반 서비스 아키텍처.md`
