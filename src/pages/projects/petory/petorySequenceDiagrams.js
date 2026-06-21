@@ -58,12 +58,15 @@ export const PETORY_FLOW_GROUPS = [
     participant DB as DB
 
     FE->>BD: POST 글 작성
-    BD->>FI: Attachment 연동
-    BD->>DB: 게시글·조회 로그 적재 등
+    BD->>DB: 게시글 저장
+    BD->>FI: Attachment 동기화
     BD-->>FE: DTO
 
-    FE->>BD: GET 목록·상세 등
+    FE->>BD: GET 목록·상세
     BD->>DB: 반응·첨부 배치 집계 등
+    alt 상세 조회 + 로그인 사용자
+        BD->>DB: BoardViewLog insertIgnore 후 조회수 보정
+    end
 
     FE->>BD: POST 댓글
     BD->>DB: 코멘트
@@ -89,20 +92,25 @@ export const PETORY_FLOW_GROUPS = [
     participant Pay as Payment 도메인
 
     FE->>Care: POST 케어 요청(요청자 세션)
-    FE->>Chat: 채팅 진입 등(제공자 세션)
-    Care->>Chat: 같은 related로 방 연결
-    Chat->>Care: 거래 확정(비관적 락 검증)
+    Care-->>FE: CareRequest 저장
+    FE->>Chat: 지원 기반 채팅방 조회·생성
+    Chat->>Chat: confirmCareDeal(Conversation 비관적 락 + 양쪽 확정)
 
-    Care->>Pay: PetCoinEscrow 생성·적립 시도
-    Pay-->>Care: 에스크로 상태
-    Care->>Care: 신청·완료 전이
-    Note over Pay: 완료 시 Payment 도메인에서 지급·환불`,
+    alt relatedType == CARE_REQUEST
+        Chat->>Care: CareApplication 승인/생성 + CareRequest IN_PROGRESS
+        Chat->>Pay: PetCoinEscrow 생성·차감 시도
+        Pay-->>Chat: 에스크로 상태
+    else relatedType == CARE_APPLICATION
+        Note over Chat: 현재 상태 전이·에스크로 생성 없음
+    end
+
+    Note over Pay: 완료/취소 시 Payment 도메인에서 지급·환불`,
       },
       {
         seq: 'chat',
         pillLabel: 'Chat 연계(인프라)',
         heading:
-          'Chat — Care 연계(RELATED_CARE 후 메시지·unread·읽음)',
+          'Chat — Care 연계(CARE_REQUEST/CARE_APPLICATION 후 메시지·unread·읽음)',
         chart: `sequenceDiagram
     participant FE as 프론트엔드
     participant Care as Care 도메인
@@ -110,7 +118,7 @@ export const PETORY_FLOW_GROUPS = [
     participant DB as DB
 
     FE->>Care: 케어 비즈 요청(API)
-    Care->>Chat: RELATED_CARE_REQUEST 등으로 방 생성 위임
+    Care->>Chat: CARE_REQUEST 또는 CARE_APPLICATION related로 방 생성 위임
     Chat->>Chat: REQUIRES_NEW·참여자 검증 DIRECT 재사용
     Chat->>DB: Conversation · Participant 저장
     DB-->>Chat: 방 식별자
@@ -118,7 +126,7 @@ export const PETORY_FLOW_GROUPS = [
     FE->>Chat: 메시지 전송
     Chat->>DB: 메시지 + unread 증가
     FE->>Chat: 목록·읽음 요청
-    alt 재참여 조회
+    alt 일반 메시지 조회 재참여
         Chat->>DB: joinedAt 이후만
     else 읽음 처리
         Chat->>DB: unread 초기화 lastRead
@@ -139,16 +147,17 @@ export const PETORY_FLOW_GROUPS = [
     participant FE as 프론트엔드
     participant MP as MissingPet 도메인
     participant DB as DB
+    participant FI as File 도메인
     participant NF as Notification 도메인
     participant Chat as Chat 도메인
 
-    FE->>MP: 실종 게시글 작성 API(제보자)
+    FE->>MP: 실종 게시글 작성 API(제보자, imageUrl)
     MP->>DB: MissingPet 저장
-    FE->>MP: 파일 첨부 API(제보자)
-    MP->>DB: Attachment 링크
+    MP->>FI: Attachment 동기화
 
     FE->>MP: 목격 댓글 API(목격자)
     MP->>DB: 댓글 저장
+    MP->>FI: 댓글 이미지 Attachment 동기화(선택)
     MP->>NF: 제보자 알림 트리거
 
     FE->>MP: 제보자와 채팅 시작(목격자)
@@ -159,7 +168,7 @@ export const PETORY_FLOW_GROUPS = [
         seq: 'chat',
         pillLabel: 'Chat 연계(인프라)',
         heading:
-          'Chat — Missing Pet 연계(RELATED_MISSING_PET 후 메시지·읽음)',
+          'Chat — Missing Pet 연계(MISSING_PET_BOARD 후 메시지·읽음)',
         chart: `sequenceDiagram
     participant FE as 프론트엔드
     participant MP as MissingPet 도메인
@@ -167,7 +176,7 @@ export const PETORY_FLOW_GROUPS = [
     participant DB as DB
 
     FE->>MP: 제보 작성·목격 채팅 시작 등(API)
-    MP->>Chat: RELATED_MISSING_PET 등으로 방 생성 위임
+    MP->>Chat: MISSING_PET_BOARD related로 방 생성 위임
     Chat->>Chat: REQUIRES_NEW·참여자 검증 DIRECT 재사용
     Chat->>DB: Conversation · Participant 저장
     DB-->>Chat: 방 식별자
@@ -175,7 +184,7 @@ export const PETORY_FLOW_GROUPS = [
     FE->>Chat: 메시지 전송
     Chat->>DB: 메시지 + unread 증가
     FE->>Chat: 목록·읽음 요청
-    alt 재참여 조회
+    alt 일반 메시지 조회 재참여
         Chat->>DB: joinedAt 이후만
     else 읽음 처리
         Chat->>DB: unread 초기화 lastRead
@@ -234,7 +243,7 @@ export const PETORY_FLOW_GROUPS = [
     FE->>Chat: 그룹 메시지 또는 목록
     Chat->>DB: 메시지 + unread 증가
     FE->>Chat: 재참여·읽음 요청
-    alt 재참여 조회
+    alt 일반 메시지 조회 재참여
         Chat->>DB: joinedAt 이후만
     else 읽음 처리
         Chat->>DB: unread 초기화 lastRead
@@ -306,8 +315,8 @@ export const PETORY_FLOW_GROUPS = [
     REC->>NLP: POST /api/pet-intent/analyze
     NLP-->>REC: intentDomain·intent·categories·tags
 
-    alt confidence ≥ 0.6
-        REC->>DB: user_pet_intent_signal (COMMUNITY·TTL 7일)
+    alt domain·urgency별 Spring threshold 통과
+        REC->>DB: user_pet_intent_signal 저장(TTL 1/3/7/14일)
         DB-->>REC: 저장 OK
     else 신뢰도 낮음
         Note over REC: signal 저장 생략
@@ -336,8 +345,8 @@ export const PETORY_FLOW_GROUPS = [
     REC->>NLP: POST /api/pet-intent/analyze
     NLP-->>REC: intentDomain·intent·categories·tags
 
-    alt confidence ≥ 0.6
-        REC->>DB: user_pet_intent_signal (CARE·TTL 7일)
+    alt domain·urgency별 Spring threshold 통과
+        REC->>DB: user_pet_intent_signal 저장(TTL 1/3/7/14일)
         DB-->>REC: 저장 OK
     else 신뢰도 낮음
         Note over REC: signal 저장 생략
@@ -361,17 +370,21 @@ export const PETORY_FLOW_GROUPS = [
     LOC->>DB: 반경·키워드 검색
     DB-->>LOC: 검색 결과
     LOC-->>FE: 목록 응답(본 요청 우선)
-    LOC->>REC: LocationSearchPerformedEvent(로그인만)
+    LOC->>REC: LocationSearchPerformedEvent(로그인 사용자)
 
-    REC->>REC: @Async EventListener
-    REC->>NLP: POST /api/pet-intent/analyze
-    NLP-->>REC: intentDomain·intent·categories·tags
-
-    alt confidence ≥ 0.6
-        REC->>DB: user_pet_intent_signal (LOCATION_SEARCH)
-        DB-->>REC: 저장 OK
-    else 신뢰도 낮음
-        Note over REC: signal 저장 생략
+    REC->>REC: 자연어 필터(length≥7·공백) + Redis 10분 dedup
+    alt 필터 통과
+        REC->>REC: @Async EventListener
+        REC->>NLP: POST /api/pet-intent/analyze
+        NLP-->>REC: intentDomain·intent·categories·tags
+        alt domain·urgency별 Spring threshold 통과
+            REC->>DB: user_pet_intent_signal 저장(LOCATION_SEARCH)
+            DB-->>REC: 저장 OK
+        else 신뢰도 낮음
+            Note over REC: signal 저장 생략
+        end
+    else 필터 실패 또는 Redis 장애
+        Note over REC: NLP 호출·signal 저장 생략
     end
 
     Note over LOC,REC: 익명 검색은 이벤트·signal 대상 아님`,
@@ -413,7 +426,7 @@ export const PETORY_FLOW_GROUPS = [
         seq: 'care',
         pillLabel: 'Care 연계',
         heading:
-          'Chat — Care 연계(RELATED_CARE 후 메시지·unread·읽음)',
+          'Chat — Care 연계(CARE_REQUEST/CARE_APPLICATION 후 메시지·unread·읽음)',
         chart: `sequenceDiagram
     participant FE as 프론트엔드
     participant Care as Care 도메인
@@ -421,7 +434,7 @@ export const PETORY_FLOW_GROUPS = [
     participant DB as DB
 
     FE->>Care: 케어 비즈 요청(API)
-    Care->>Chat: RELATED_CARE_REQUEST 등으로 방 생성 위임
+    Care->>Chat: CARE_REQUEST 또는 CARE_APPLICATION related로 방 생성 위임
     Chat->>Chat: REQUIRES_NEW·참여자 검증 DIRECT 재사용
     Chat->>DB: Conversation · Participant 저장
     DB-->>Chat: 방 식별자
@@ -429,7 +442,7 @@ export const PETORY_FLOW_GROUPS = [
     FE->>Chat: 메시지 전송
     Chat->>DB: 메시지 + unread 증가
     FE->>Chat: 목록·읽음 요청
-    alt 재참여 조회
+    alt 일반 메시지 조회 재참여
         Chat->>DB: joinedAt 이후만
     else 읽음 처리
         Chat->>DB: unread 초기화 lastRead
@@ -439,7 +452,7 @@ export const PETORY_FLOW_GROUPS = [
         seq: 'missingpet',
         pillLabel: 'Missing Pet 연계',
         heading:
-          'Chat — Missing Pet 연계(RELATED_MISSING_PET 후 메시지·읽음)',
+          'Chat — Missing Pet 연계(MISSING_PET_BOARD 후 메시지·읽음)',
         chart: `sequenceDiagram
     participant FE as 프론트엔드
     participant MP as MissingPet 도메인
@@ -447,7 +460,7 @@ export const PETORY_FLOW_GROUPS = [
     participant DB as DB
 
     FE->>MP: 제보 작성·목격 채팅 시작 등(API)
-    MP->>Chat: RELATED_MISSING_PET 등으로 방 생성 위임
+    MP->>Chat: MISSING_PET_BOARD related로 방 생성 위임
     Chat->>Chat: REQUIRES_NEW·참여자 검증 DIRECT 재사용
     Chat->>DB: Conversation · Participant 저장
     DB-->>Chat: 방 식별자
@@ -455,7 +468,7 @@ export const PETORY_FLOW_GROUPS = [
     FE->>Chat: 메시지 전송
     Chat->>DB: 메시지 + unread 증가
     FE->>Chat: 목록·읽음 요청
-    alt 재참여 조회
+    alt 일반 메시지 조회 재참여
         Chat->>DB: joinedAt 이후만
     else 읽음 처리
         Chat->>DB: unread 초기화 lastRead
@@ -481,7 +494,7 @@ export const PETORY_FLOW_GROUPS = [
     FE->>Chat: 그룹 메시지 또는 목록
     Chat->>DB: 메시지 + unread 증가
     FE->>Chat: 재참여·읽음 요청
-    alt 재참여 조회
+    alt 일반 메시지 조회 재참여
         Chat->>DB: joinedAt 이후만
     else 읽음 처리
         Chat->>DB: unread 초기화 lastRead

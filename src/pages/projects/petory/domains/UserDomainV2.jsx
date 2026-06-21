@@ -40,6 +40,8 @@ function CodeBlock({ children }) {
 
 const PETORY_USER_ARCH_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/architecture/user/%EC%82%AC%EC%9A%A9%EC%9E%90%20%EC%9D%B8%EC%A6%9D%20%EB%B0%8F%20%ED%94%84%EB%A1%9C%ED%95%84%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
+const PETORY_USER_DOMAIN_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/domains/user.md';
 const PETORY_AUTH_SERVICE =
   'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/user/service/AuthService.java';
 const PETORY_OAUTH2_SERVICE =
@@ -66,10 +68,11 @@ function UserDomainV2() {
 
   const corePillars = [
     'JWT 인증',
+    'CustomUserDetails',
     'OAuth 계정 연결',
+    '프로필 조합',
     'Pet 소유 검증',
     '제재 상태 동기화',
-    '보안 트레이드오프',
   ];
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
@@ -97,9 +100,10 @@ function UserDomainV2() {
             함께 관리하는 신원 기반 도메인입니다. 거의 모든 보호 API의 입구
             역할을 하기 때문에 보안 구조와 트레이드오프가 코드에 직접
             반영됩니다. 현재 구조는 Access JWT와 DB 저장 Refresh Token을
-            조합하고, OAuth 계정은 provider 식별자와 동일 이메일 연결로
-            통합하며, Pet과 제재 흐름은 다른 도메인이 신뢰할 수 있는 사용자
-            상태를 제공합니다.
+            조합하고, 보호 API에서는 <code>CustomUserDetails</code>로 사용자
+            식별자를 통일합니다. OAuth 계정은 provider 식별자와 동일 이메일
+            연결로 통합하고, 프로필·Pet·제재 흐름은 다른 도메인이 신뢰할 수
+            있는 사용자 상태를 제공합니다.
           </p>
 
           <section
@@ -177,12 +181,15 @@ function UserDomainV2() {
                 <tbody>
                   {[
                     ['Access 인증', 'JWT Bearer, subject는 Users.id'],
+                    ['보호 API 주체', 'CustomUserDetails(idx, loginId, role, emailVerified, status)'],
                     ['Access TTL', 'jwt.access-token-expiration-ms, 기본 15분'],
                     ['Refresh 저장', 'Users.refreshToken + refreshExpiration'],
                     ['Refresh TTL', '1일, refresh 성공 시 기존 refresh 유지'],
                     ['OAuth 연결', 'provider + providerId 우선, 없으면 동일 email 계정 연결'],
+                    ['소셜 신규 사용자', 'nickname이 비어 있으면 needsNickname=true callback'],
                     ['OAuth callback', 'access/refresh token을 query parameter로 redirect'],
                     ['Email 인증', 'JWT token + Redis pre-registration 상태 24시간'],
+                    ['내 프로필 조회', 'User + Pet + Care/Location 리뷰 요약 + Meetup 히스토리 조합'],
                     ['반려 소유 검증', 'JWT subject ↔ Pet.user.id 대조'],
                     ['제재 정리', '로그인/OAuth 진입 + 배치 스케줄러 이중 처리'],
                     ['관리자 사용자 목록', 'paging API, role/status/q 필터'],
@@ -258,6 +265,8 @@ function UserDomainV2() {
                     ['채팅방 목록 관련 쿼리 수', '21개', '4개 (↓81%)'],
                     ['응답 시간', '305ms', '55ms'],
                     ['메모리', '0.58MB', '0.13MB'],
+                    ['로그인 DTO 생성', '토큰 발급 후 사용자 재조회', '이미 로드한 Users 엔티티 변환'],
+                    ['회원가입 중복 검사', '필드별 개별 조회 가능성', 'nickname/username/email 단일 쿼리'],
                   ].map(([label, before, after], i, arr) => (
                     <tr
                       key={label}
@@ -317,7 +326,8 @@ function UserDomainV2() {
                 >
                   성능 최적화
                 </Link>{' '}
-                페이지 참고.
+                페이지 참고. 최신 User 문서 기준으로 로그인/refresh 응답 DTO는
+                토큰 발급 시 이미 로드한 <code>Users</code> 엔티티에서 생성합니다.
               </p>
             </Card>
 
@@ -383,7 +393,8 @@ function UserDomainV2() {
               >
                 {li('Access는 짧은 TTL JWT (기본 15분) — 무상태 검증')}
                 {li('Refresh는 DB 컬럼에 저장 — refreshToken + refreshExpiration')}
-                {li('사용자당 최근 1개만 유지 — 후발 로그인이 이전 세션 무효화')}
+                {li('refresh 성공 시 Refresh Token은 유지하고 Access Token만 재발급')}
+                {li('logout은 DB refresh token과 만료 시각을 null로 정리')}
                 {li('로그인 시 BANNED / SUSPENDED 선확인 후 토큰 발급')}
               </ul>
               <CodeBlock>{`// 제재 상태 확인 후 Access + Refresh 발급
@@ -416,8 +427,9 @@ user.setRefreshExpiration(LocalDateTime.now().plusDays(1));`}</CodeBlock>
               >
                 {li('소셜 로그인 → 동일 이메일이면 기존 계정에 SocialUser 연결')}
                 {li('없으면 신규 생성 — Unique 충돌 대비 재시도 경로 포함')}
+                {li('신규 소셜 사용자는 UUID suffix 기반 id/username 생성')}
+                {li('nickname이 비어 있으면 callback에 needsNickname=true 추가')}
                 {li('성공 후 Access / Refresh 발급, query parameter redirect')}
-                {li('OAuth2Service는 토큰 발급 후 DTO 생성을 위해 사용자 추가 조회가 남아 있음')}
               </ul>
               <CodeBlock>{`// 이메일 기준 기존 계정 연결, 없으면 신규 생성
 private Users createOrLinkUser(..., String email, ...) {
@@ -439,7 +451,40 @@ private Users createOrLinkUser(..., String email, ...) {
                   fontSize: '1rem',
                 }}
               >
-                C. Pet 소유 검증
+                C. 현재 사용자 식별과 프로필 조합
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('JwtAuthenticationFilter는 JWT subject인 Users.id로 UserDetails를 로드')}
+                {li('UsersDetailsServiceImpl은 Spring 기본 User 대신 CustomUserDetails를 principal로 저장')}
+                {li('UserProfileController와 PetController는 @AuthenticationPrincipal을 직접 사용')}
+                {li('기존 컨트롤러는 AuthenticatedUserIdResolver fallback 경로로 호환')}
+                {li('GET /api/users/me는 User/Pet과 Care·Location 리뷰 요약, Meetup 히스토리를 조합')}
+              </ul>
+              <CodeBlock>{`Authorization: Bearer {accessToken}
+  -> JwtAuthenticationFilter
+  -> JwtUtil.getIdFromToken(token) = Users.id
+  -> UsersDetailsServiceImpl.loadUserByUsername(loginId)
+  -> CustomUserDetails(idx, loginId, role, emailVerified, status)
+  -> @AuthenticationPrincipal 또는 AuthenticatedUserIdResolver`}</CodeBlock>
+            </Card>
+
+            <Card style={{ marginBottom: '1rem' }}>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                D. Pet 소유 검증
               </h3>
               <ul
                 style={{
@@ -451,6 +496,7 @@ private Users createOrLinkUser(..., String email, ...) {
                 }}
               >
                 {li('Pet은 단순 프로필이 아닌 사용자 자산 — 케어·실종 도메인이 참조')}
+                {li('PetController는 CustomUserDetails.loginId를 서비스에 전달')}
                 {li('조회·수정·삭제·복구 4개 경로 모두 소유권 검증 통과 필수')}
                 {li('프로필 이미지는 File 도메인과 동기화')}
                 {li('PetType.ETC는 breed 필수')}
@@ -473,7 +519,7 @@ private static void assertPetOwnedBy(Pet pet, String ownerUserId) {
                   fontSize: '1rem',
                 }}
               >
-                D. 제재 상태 동기화
+                E. 제재 상태 동기화
               </h3>
               <ul
                 style={{
@@ -520,7 +566,7 @@ public void releaseExpiredSuspensions() {
                   fontSize: '1rem',
                 }}
               >
-                E. 보안 트레이드오프
+                F. 남은 구조적 과제
               </h3>
               <ul
                 style={{
@@ -531,10 +577,10 @@ public void releaseExpiredSuspensions() {
                   lineHeight: '1.8',
                 }}
               >
-                {li('Access JWT 유효 기간 중 제재 상태 재평가 없음 — TTL에 의존')}
-                {li('Refresh Token 회전 미적용 — 탈취 시 TTL 내 재사용 가능')}
-                {li('OAuth / SSE 등에서 토큰을 쿼리 스트링으로 전달 — 노출 표면 존재')}
-                {li('이 트레이드오프들은 아래 한계 섹션에 명시')}
+                {li('JwtAuthenticationFilter는 validateToken, isTokenExpired, getIdFromToken을 각각 호출')}
+                {li('AuthController.validate와 logout은 Authorization header를 직접 파싱')}
+                {li('OAuth callback은 token을 query parameter로 전달해 노출 표면이 남아 있음')}
+                {li('GET /api/pets/type/{petType}는 현재 사용자 소유 필터가 아닌 타입 기준 전체 조회')}
               </ul>
             </Card>
           </section>
@@ -556,8 +602,8 @@ public void releaseExpiredSuspensions() {
                   marginBottom: '0.75rem',
                 }}
               >
-                인증 구조의 기본 흐름은 갖췄지만, 보안 정책 일부는 현실적인
-                트레이드오프를 선택한 상태입니다.
+                최신 문서 기준으로 주요 리팩토링은 반영됐지만, 아래 항목은 아직
+                명시적으로 남아 있는 구조적 과제입니다.
               </p>
               <ul
                 style={{
@@ -569,19 +615,13 @@ public void releaseExpiredSuspensions() {
                 }}
               >
                 {li(
-                  'Access JWT 유효 동안 BANNED / SUSPENDED 상태를 매 요청 재평가하지 않음 — 제재 즉시성은 Access TTL에 의존'
-                )}
-                {li(
-                  'Refresh Token 회전 미적용 — 사용자당 최근 1개 문자열만 갱신, 탈취 시 TTL 내 재사용 가능'
-                )}
-                {li(
                   'OAuth 성공 후 쿼리 스트링 토큰 리다이렉트 구간 존재 — 브라우저 기록·Referer 노출 표면'
                 )}
                 {li(
-                  'JwtAuthenticationFilter가 SSE 등을 위해 token 쿼리 파라미터도 허용 — URL 노출 표면'
+                  'JwtAuthenticationFilter의 JWT 검증/만료확인/subject 추출은 아직 claims를 여러 번 파싱'
                 )}
                 {li(
-                  'OAuth2Service는 토큰 발급 후 DTO 생성을 위해 usersService.getUserById() 추가 조회가 남아 있음'
+                  'AuthController.validateToken()과 logout()은 아직 Authorization header를 직접 파싱'
                 )}
                 {li(
                   'OAuth2 경로의 제재 예외는 일반 로그인처럼 도메인 예외로 내려가지 않고 redirect error query로 전달'
@@ -632,6 +672,18 @@ public void releaseExpiredSuspensions() {
                     User 리팩토링
                   </Link>
                   {' — DTO record, 코드 구조'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_USER_DOMAIN_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Petory — User 도메인 문서 (GitHub)
+                  </a>
+                  {' — API 범위, 엔티티, 현재 구현 기준'}
                 </li>
                 <li>
                   •{' '}
@@ -737,7 +789,7 @@ public void releaseExpiredSuspensions() {
                   >
                     JwtAuthenticationFilter.java
                   </a>
-                  {' — Bearer/query token 처리'}
+                  {' — Bearer token 검증과 principal 생성'}
                 </li>
               </ul>
             </Card>
