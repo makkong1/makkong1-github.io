@@ -58,7 +58,6 @@ function BoardDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
-    { id: 'limits', title: '한계 & 개선' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -484,43 +483,6 @@ Map<Long, List<FileDTO>> attachmentsMap =
 }`}</CodeBlock>
             </Card>
           </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              한계 &amp; 다음 개선
-            </h2>
-            <Card>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li('인기글 대상: "자랑" 카테고리 중심')}
-                {li('legacy "PRIDE" category fallback이 남아 있음')}
-                {li('목록 페이징: Offset → 대용량 시 커서 검토')}
-                {li('조회수: DB 로그 → 트래픽 증가 시 Redis TTL 검토')}
-                {li('상세 조회의 viewerId는 request param이며 인증 컨텍스트에서 자동 추출하지 않음')}
-                {li(
-                  '게시글 생성과 댓글 작성은 JWT principal 기반이지만, 반응 API는 아직 ReactionRequest.userId()를 사용'
-                )}
-                {li(
-                  'CommentService.updateComment()는 구현되어 있지만 사용자용 BoardController에는 댓글 수정 endpoint가 노출되어 있지 않음'
-                )}
-                {li(
-                  'GET /api/boards 계열은 permitAll annotation만 보고 공개 API처럼 단정하지 않고 SecurityConfig /api/** 규칙을 함께 봐야 함'
-                )}
-                {li('관리자 조회: 최적화/레거시 흐름 공존, 정리 여지')}
-              </ul>
-            </Card>
-          </section>
-
           <section
             id="docs"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}

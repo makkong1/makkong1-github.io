@@ -62,7 +62,6 @@ function UserDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
-    { id: 'limits', title: '한계 & 개선' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -558,84 +557,7 @@ public void releaseExpiredSuspensions() {
 }`}</CodeBlock>
             </Card>
 
-            <Card>
-              <h3
-                style={{
-                  marginBottom: '0.75rem',
-                  color: 'var(--text-color)',
-                  fontSize: '1rem',
-                }}
-              >
-                F. 남은 구조적 과제
-              </h3>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li('JwtAuthenticationFilter는 validateToken, isTokenExpired, getIdFromToken을 각각 호출')}
-                {li('AuthController.validate와 logout은 Authorization header를 직접 파싱')}
-                {li('OAuth callback은 token을 query parameter로 전달해 노출 표면이 남아 있음')}
-                {li('GET /api/pets/type/{petType}는 현재 사용자 소유 필터가 아닌 타입 기준 전체 조회')}
-              </ul>
-            </Card>
           </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              한계 &amp; 다음 개선
-            </h2>
-            <Card>
-              <p
-                style={{
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                  lineHeight: '1.7',
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                }}
-              >
-                최신 문서 기준으로 주요 리팩토링은 반영됐지만, 아래 항목은 아직
-                명시적으로 남아 있는 구조적 과제입니다.
-              </p>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li(
-                  'OAuth 성공 후 쿼리 스트링 토큰 리다이렉트 구간 존재 — 브라우저 기록·Referer 노출 표면'
-                )}
-                {li(
-                  'JwtAuthenticationFilter의 JWT 검증/만료확인/subject 추출은 아직 claims를 여러 번 파싱'
-                )}
-                {li(
-                  'AuthController.validateToken()과 logout()은 아직 Authorization header를 직접 파싱'
-                )}
-                {li(
-                  'OAuth2 경로의 제재 예외는 일반 로그인처럼 도메인 예외로 내려가지 않고 redirect error query로 전달'
-                )}
-                {li(
-                  'GET /api/pets/type/{petType}는 사용자 소유 필터가 없는 타입 기준 전체 조회'
-                )}
-                {li(
-                  'UserSanctionService.addWarning()은 경고 증가 후 최신 count 확인을 위해 user를 다시 조회'
-                )}
-              </ul>
-            </Card>
-          </section>
-
           <section
             id="docs"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}

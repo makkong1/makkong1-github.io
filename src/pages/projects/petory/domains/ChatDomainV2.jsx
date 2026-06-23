@@ -58,7 +58,6 @@ function ChatDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
-    { id: 'limits', title: '한계 & 개선' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -515,57 +514,6 @@ if (readFrom != null) {
               </ul>
             </Card>
           </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              한계 &amp; 다음 개선
-            </h2>
-            <Card>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li(
-                  'Care 거래 확정: CARE_REQUEST 경로는 상태 변경·후속 코인 처리가 이어지지만 에스크로 실패 롤백은 미구현'
-                )}
-                {li(
-                  'Care 거래 확정: CARE_APPLICATION 관련 confirmCareDeal()은 현재 로그 기록 중심 — 상태 전이 완전 미구현'
-                )}
-                {li(
-                  'Meetup 채팅 참여: 모임 참여자 검증은 추가됐지만, 채팅 참여 실패와 모임 참여 취소·복구 결합은 정책 여지 있음'
-                )}
-                {li(
-                  '재참여 메시지 제한: 기본 조회는 joinedAt 이후지만 커서 기반 과거 조회(/before)는 joinedAt 제한을 적용하지 않음'
-                )}
-                {li(
-                  '채팅방 상태 변경: PATCH /status는 ACTIVE 참여자면 가능 — 방장·관리자 전용 정책은 아직 없음'
-                )}
-                {li(
-                  'Chat API 전체 로그인 사용자 전용 — SecurityConfig /api/** authenticated() 적용'
-                )}
-                {li(
-                  'WebSocket 브로커는 Spring SimpleBroker 기반 — 다중 서버 확장 시 외부 브로커, 세션 공유, 전달 보장 설계 필요'
-                )}
-                {li(
-                  'REST sender는 AuthenticatedUserIdResolver, WebSocket sender는 Principal.getName() → findByIdString()으로 결정'
-                )}
-                {li('FULLTEXT 검색은 chatmessage(content) 인덱스가 실제 DB에 적용되어야 안정 동작')}
-                {li(
-                  'ConversationParticipant 유니크 제약은 soft delete 이력과 재참여 정책 정리 후 적용 필요'
-                )}
-                {li('ADMIN_SUPPORT, GROUP, SYSTEM, NOTICE, FILE 타입은 모델에 있지만 사용자 플로우는 일부만 구현')}
-              </ul>
-            </Card>
-          </section>
-
           <section
             id="docs"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}

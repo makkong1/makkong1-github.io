@@ -319,57 +319,31 @@ ${nodeStyles}`;
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.65 }}>
               면접에서 설명 가능한 대표 사례 4개를 선별했습니다.
             </p>
-            <div className="section-card">
-              <div className="feature-points-grid">
-                <div className="content-card" style={{ marginBottom: 0 }}>
-                  <h3 style={{ marginBottom: '0.4rem' }}>JPA N+1 성능 개선</h3>
-                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.6rem', lineHeight: 1.6 }}>
-                    Board 301→3 queries · Care ~2,400→4~5 · Chat 21→4 · MissingPet 105→3
-                  </p>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
-                    IN 절 배치 조회 + Fetch Join + Map 기반 DTO 조립
-                  </p>
-                  <Link to="/domains/refactoring#n-plus-one" className="text-link" style={{ fontSize: '0.88rem', fontWeight: 500 }}>
-                    대표 개선 사례 보기 →
-                  </Link>
-                </div>
-                <div className="content-card" style={{ marginBottom: 0 }}>
-                  <h3 style={{ marginBottom: '0.4rem' }}>동시성 / Race Condition</h3>
-                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.6rem', lineHeight: 1.6 }}>
-                    Meetup 인원 초과 방지 · PetCoin Lost Update 방지
-                  </p>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
-                    조건부 원자적 UPDATE · SELECT FOR UPDATE 비관적 락
-                  </p>
-                  <Link to="/domains/refactoring#concurrency" className="text-link" style={{ fontSize: '0.88rem', fontWeight: 500 }}>
-                    대표 개선 사례 보기 →
-                  </Link>
-                </div>
-                <div className="content-card" style={{ marginBottom: 0 }}>
-                  <h3 style={{ marginBottom: '0.4rem' }}>Location 검색 최적화</h3>
-                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.6rem', lineHeight: 1.6 }}>
-                    초기 로드 22,699개 → 1,026개 · 쿼리 198~368ms → 36~53ms
-                  </p>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
-                    10km 반경 백엔드 필터 + 지역명 시군구 검색 우회
-                  </p>
-                  <Link to="/domains/refactoring#location" className="text-link" style={{ fontSize: '0.88rem', fontWeight: 500 }}>
-                    대표 개선 사례 보기 →
-                  </Link>
-                </div>
-                <div className="content-card" style={{ marginBottom: 0 }}>
-                  <h3 style={{ marginBottom: '0.4rem' }}>보안 / 인가 계약 정리</h3>
-                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.6rem', lineHeight: 1.6 }}>
-                    Chat IDOR 제거 · JWT principal 기반 인가 · 참여자 검증
-                  </p>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
-                    클라이언트 userId 신뢰 제거 → 서버 인증 주체 기준으로 전환
-                  </p>
-                  <Link to="/domains/refactoring#security" className="text-link" style={{ fontSize: '0.88rem', fontWeight: 500 }}>
-                    대표 개선 사례 보기 →
-                  </Link>
-                </div>
-              </div>
+            <div className="problem-summary-grid">
+              <Link to="/domains/refactoring#n-plus-one" className="problem-summary-card">
+                <span>01</span>
+                <h3>JPA N+1 성능 개선</h3>
+                <p>Board 301→3 · Care ~2,400→4~5 · Chat 21→4 · MissingPet 105→3</p>
+                <strong>배치 조회 · Fetch Join · Map DTO 조립</strong>
+              </Link>
+              <Link to="/domains/refactoring#concurrency" className="problem-summary-card">
+                <span>02</span>
+                <h3>동시성 제어</h3>
+                <p>Meetup 인원 초과와 PetCoin Lost Update 가능성을 테스트로 재현</p>
+                <strong>조건부 UPDATE · SELECT FOR UPDATE</strong>
+              </Link>
+              <Link to="/domains/refactoring#location" className="problem-summary-card">
+                <span>03</span>
+                <h3>Location 검색 최적화</h3>
+                <p>초기 로드 22,699개→1,026개, 지역명 검색 198~368ms→36~53ms</p>
+                <strong>반경 조회 · 시군구 검색 우회</strong>
+              </Link>
+              <Link to="/domains/refactoring#security" className="problem-summary-card">
+                <span>04</span>
+                <h3>보안/인가 계약 정리</h3>
+                <p>Chat 메시지 조회·검색·상태 변경에서 참여자 검증 경계를 정리</p>
+                <strong>JWT principal · requireActiveParticipant</strong>
+              </Link>
             </div>
           </section>
 
@@ -525,4 +499,3 @@ ${nodeStyles}`;
 }
 
 export default PetoryProjectPage;
-

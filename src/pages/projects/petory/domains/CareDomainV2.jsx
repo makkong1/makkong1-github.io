@@ -58,7 +58,6 @@ function CareDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
-    { id: 'limits', title: '한계 & 개선' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -363,7 +362,7 @@ function CareDomainV2() {
                 {li('두 사용자 동시 확정 → 상태 전이 누락 위험 (stuck state)')}
                 {li('Conversation 조회에 비관적 락 적용 → 확정 로직 순차 처리')}
                 {li('기존 CareApplication 있으면 ACCEPTED, 없으면 그 자리에서 생성')}
-                {li('에스크로는 시도 — 실패 시 IN_PROGRESS 유지, 로그만 남김 (한계)')}
+                {li('에스크로 생성은 상태 전이 이후 별도 후속 처리로 분리')}
               </ul>
               <CodeBlock>{`// Conversation에 비관적 락 획득
 Conversation conv = conversationRepository
@@ -537,67 +536,6 @@ if (!isRequester && !isAcceptedProvider)
 }`}</CodeBlock>
             </Card>
           </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              한계 &amp; 다음 개선
-            </h2>
-            <Card>
-              <p
-                style={{
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                  lineHeight: '1.7',
-                  marginTop: 0,
-                  marginBottom: '0.75rem',
-                }}
-              >
-                결제 원자성과 권한 정책까지 완전히 닫힌 완성형이라기보다, 핵심 병목과
-                정합성 이슈를 단계적으로 다듬어 온 사례에 더 가깝습니다.
-              </p>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li(
-                  '에스크로 원자성: IN_PROGRESS 저장 후 에스크로 생성 실패를 로그로만 남겨 상태 전이와 결제가 원자적으로 묶이지 않음'
-                )}
-                {li(
-                  '리뷰 시점: COMPLETED가 아닌 CareApplicationStatus.ACCEPTED 기준으로 리뷰 작성 가능'
-                )}
-                {li(
-                  '[개선 완료] 댓글 삭제: Authentication으로 요청자 신원 확인, 작성자·관리자 여부 검증 추가 (기존: 검증 없음)'
-                )}
-                {li(
-                  '댓글 작성: CareRequestCommentService.addComment()는 DTO의 userId로 사용자를 조회 — 생성 요청처럼 인증 사용자 주입 방식으로 맞출 여지 있음'
-                )}
-                {li(
-                  '리뷰 작성: CareReviewService.createReview()는 DTO의 reviewerId/revieweeId 기준으로 검증 — 인증 사용자 기준으로 reviewer를 고정하는 개선 여지 있음'
-                )}
-                {li(
-                  'API 인증: 컨트롤러상 공개 GET처럼 보이는 목록·상세·검색도 실제로는 SecurityConfig /api/** 때문에 인증 전제'
-                )}
-                {li(
-                  '스케줄러 상태 변경: updateStatus(idx, "COMPLETED", null)은 시스템 작업 경로라 권한 검증을 생략 — 일반 사용자 경로와 구분 필요'
-                )}
-                {li(
-                  '페이징 목록: 모든 연관을 한 번에 fetch join하지 않고 batch 전략을 병행'
-                )}
-                {li(
-                  '댓글 목록: 댓글별 attachment 조회가 반복될 수 있어 댓글 수가 커지면 batch 조회 개선 여지 있음'
-                )}
-              </ul>
-            </Card>
-          </section>
-
           <section
             id="docs"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}

@@ -54,7 +54,6 @@ function LocationDomainV2() {
     { id: "pillars", title: "핵심 기능" },
     { id: "intro", title: "도메인 개요" },
     { id: "design", title: "기술 결정" },
-    { id: "limits", title: "한계 & 개선" },
     { id: "docs", title: "관련 페이지" },
   ];
 
@@ -577,58 +576,6 @@ lat/lng 없음 + 지역 없음 + keyword 있음 -> FULLTEXT 검색
 조건 없음                            -> 전체 평점순`}</CodeBlock>
             </Card>
           </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
-          >
-            <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              한계 &amp; 다음 개선
-            </h2>
-            <Card>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  margin: 0,
-                  color: "var(--text-secondary)",
-                  lineHeight: "1.8",
-                }}
-              >
-                {li(
-                  "메인 지도 기본 경로는 lat/lng 반경 검색 중심 — 백엔드 지역 검색은 현재 주 사용자 경로에서 지역명 fallback에 가까움",
-                )}
-                {li(
-                  "eupmyeondong·roadName 직접 검색 query는 코드 흔적이 있지만 현재 비활성화",
-                )}
-                {li(
-                  "위치/지역 경로의 keyword는 name LIKE이고 keyword 단독 경로만 FULLTEXT라 검색 범위와 품질이 다름",
-                )}
-                {li(
-                  "초기 로드 성능 수치는 size 제한 없던 초기 구조 기준 — 현재 통합 지도는 size=300 고정",
-                )}
-                {li(
-                  "/api/location-services와 리뷰 API는 로그인 사용자 전용 — SecurityConfig /api/** authenticated() 적용",
-                )}
-                {li(
-                  "score 정렬은 반경 검색 SQL과 컨트롤러 후처리가 함께 남아 있어 정렬 책임 정리가 필요",
-                )}
-                {li(
-                  "반경 내 전부가 아닌 최대 300건만 반환 — UI 반경(기본 5km)과 백엔드 radius 미전달 시 10km 기본은 별개",
-                )}
-                {li(
-                  "stable 정렬은 결과 안정성 중심이며 실제 거리 가까움을 최우선으로 보장하지 않음",
-                )}
-                {li(
-                  "legacy GET /api/location-services/recommend 흐름은 Recommendation 도메인으로 분리된 것으로 설명",
-                )}
-                {li(
-                  "CSV 적재는 활성 경로지만 JSON 적재는 현재 코드 근거가 부족해 페이지 핵심에서 제외",
-                )}
-              </ul>
-            </Card>
-          </section>
-
           <section
             id="docs"
             style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}

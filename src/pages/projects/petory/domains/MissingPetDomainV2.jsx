@@ -58,7 +58,6 @@ function MissingPetDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
-    { id: 'limits', title: '한계 & 개선' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -472,36 +471,6 @@ distScore    = max(0, 1 - distKm / 20)
 score        = 0.6 * recencyScore + 0.4 * distScore`}</CodeBlock>
             </Card>
           </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              한계 &amp; 다음 개선
-            </h2>
-            <Card>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li('목격 댓글 위치 정보는 별도 지도 UI 없이 저장만 — 시각화 미구현')}
-                {li('실종 제보 홈 추천은 DB 거리 정렬이 아니라 애플리케이션 Haversine 점수 계산 — 후보 증가 시 공간 인덱스·DB 정렬 검토 필요')}
-                {li('MissingPet 사용자 컨트롤러 대부분은 명시적 @PreAuthorize가 적지만 SecurityConfig /api/** catch-all로 실제 인증 필요')}
-                {li('관리자 삭제도 현재 서비스 구현상 게시글 작성자의 MISSING_PET 이메일 인증을 요구할 수 있음')}
-                {li('관리자 댓글 목록은 deleted=true 파라미터가 있어도 서비스가 삭제되지 않은 댓글만 반환해 삭제 댓글 조회가 제한적')}
-                {li('제보자-목격자 채팅은 개별 1:1 방 생성 — 동일 제보에 목격자 수만큼 채팅방 증가')}
-                {li('댓글 작성 알림은 비동기 후처리 — 알림 실패는 댓글 작성 실패로 전파하지 않음')}
-                {li('MissingPet 코드는 domain/board 패키지 안에 있어 일반 Board와 물리 경계가 섞여 있음')}
-              </ul>
-            </Card>
-          </section>
-
           <section
             id="docs"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}

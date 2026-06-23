@@ -72,7 +72,6 @@ function RecommendationDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
-    { id: 'limits', title: '한계 & 개선' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -615,59 +614,6 @@ DEFAULT        -> 7일`}</CodeBlock>
               </ul>
             </Card>
           </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              한계 &amp; 다음 개선
-            </h2>
-            <Card>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li(
-                  'Python NLP 서버 미기동 시 signal이 쌓이지 않아 카드 없음 — 검색·게시·케어는 정상',
-                )}
-                {li('비로그인: signal 저장·/signals 조회 없음')}
-                {li(
-                  'domain·urgency별 저장 기준 미달·만료 signal — 카드 미표시, 기본 주변서비스만',
-                )}
-                {li(
-                  'GET /api/pet-recommend 즉시 시설 추천 API는 백엔드에 있으나 현재 프론트 API 래퍼는 /signals만 제공',
-                )}
-                {li(
-                  'GET /api/pet-recommend는 메서드 @PreAuthorize가 없어도 SecurityConfig /api/** catch-all로 실제 접근은 인증 대상',
-                )}
-                {li('petType은 Python까지 전달되지만 현재 분류 로직에서는 아직 미사용')}
-                {li(
-                  'NLP recommendedCategories와 Location category 문자열 불일치 시 카드→검색 연결 품질 저하 가능',
-                )}
-                {li(
-                  '공백 없는 자연어 검색어는 NLP 필터 통과 불가 — MVP 설계상 타협',
-                )}
-                {li(
-                  'NLP 전용 실행 풀 대기열(500) 포화 시 일부 signal 생략 — 게시·케어는 정상',
-                )}
-                {li('Redis 장애 시 Location 검색 NLP 생략(안전 쪽으로 차단)')}
-                {li(
-                  'SignalInteractionLog 엔티티·레포는 준비되어 있지만 추천 카드 클릭 저장 로직은 아직 없음',
-                )}
-                {li(
-                  'NLP confidence는 rule 경로와 embedding 경로의 의미가 달라 직접 비교하면 안 됨',
-                )}
-                {li('의료 관련 추천은 진단이 아니라 가까운 동물병원 문의 안내 수준')}
-              </ul>
-            </Card>
-          </section>
-
           <section
             id="docs"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}

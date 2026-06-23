@@ -56,7 +56,6 @@ function MeetupDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
-    { id: 'limits', title: '한계 & 개선' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -506,55 +505,6 @@ ORDER BY m.date ASC
 -- Pageable → DB LIMIT/OFFSET 자동 적용`}</CodeBlock>
             </Card>
           </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              한계 &amp; 다음 개선
-            </h2>
-            <Card>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li(
-                  '상태 전이는 스케줄러 주기 기반 — 정원이 찬 직후 즉시 CLOSED가 되지 않을 수 있음'
-                )}
-                {li(
-                  'CLOSED → RECRUITING 자동 복구 경로 없음 — 참가 취소로 자리가 생겨도 재오픈 안 됨'
-                )}
-                {li(
-                  'Meetup API 전체 로그인 사용자 전용 — SecurityConfig /api/** authenticated() 적용'
-                )}
-                {li(
-                  '모임 참가와 Meetup 채팅방 참가는 분리 — joinMeetup() 성공이 곧바로 채팅 참여를 의미하지 않음'
-                )}
-                {li(
-                  '채팅방 생성은 결과적 일관성 — 재시도와 복구가 있어도 생성 직후 짧은 누락 구간이 있을 수 있음'
-                )}
-                {li(
-                  'nearby는 COMPLETED만 제외하는 지도용 미래 모임 조회 — 참여 가능 조건은 /available 또는 홈 추천과 구분 필요'
-                )}
-                {li(
-                  '성능 수치는 테스트 데이터 1,000건 기준 문서 측정 — 현재 운영 경로 절대 성능과 다를 수 있음'
-                )}
-                {li(
-                  '홈 모임 추천 score 계산(distScore·urgencyScore·capacityScore)은 메모리 정렬 — 후보 증가 시 비용 증가'
-                )}
-                {li(
-                  '키워드·주최자 목록 일부는 풀 페이징 전환 전 임시 상한 MAX_LIST_SIZE = 500 적용'
-                )}
-              </ul>
-            </Card>
-          </section>
-
           <section
             id="docs"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
