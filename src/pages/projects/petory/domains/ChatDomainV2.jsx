@@ -586,22 +586,12 @@ if (readFrom != null) {
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/chat/optimization"
+                    to="/domains/refactoring#security"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    Chat 성능 최적화
+                    대표 개선 사례 보기
                   </Link>
-                  {' — 읽음 처리 Before/After, 참여자 N+1 상세'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/chat/refactoring"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Chat 리팩토링
-                  </Link>
-                  {' — 생성 규칙 분리, 트랜잭션 보안 정리'}
+                  {' — 보안/인가 계약 정리 · N+1 성능 개선'}
                 </li>
                 <li>
                   •{' '}

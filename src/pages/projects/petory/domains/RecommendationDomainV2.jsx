@@ -807,26 +807,6 @@ DEFAULT        -> 7일`}</CodeBlock>
                 </li>
                 <li>
                   •{' '}
-                  <Link
-                    to="/domains/recommendation/refactoring"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Recommendation 리팩토링
-                  </Link>
-                  {' — R1~R9, T1~T5, N1~N6 코드·버그 수정'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/recommendation/optimization"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    NLP 호출·부하 제어
-                  </Link>
-                  {' — 전용 실행 풀, 중복 호출 방지, 과부하 유입 제한'}
-                </li>
-                <li>
-                  •{' '}
                   <a
                     href={PETORY_RECOMMENDATION_DOC}
                     target="_blank"

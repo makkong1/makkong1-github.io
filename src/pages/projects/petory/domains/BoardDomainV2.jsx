@@ -541,22 +541,12 @@ Map<Long, List<FileDTO>> attachmentsMap =
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/board/optimization"
+                    to="/domains/refactoring#n-plus-one"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    Board 성능 최적화
+                    대표 개선 사례 보기
                   </Link>
-                  {' — N+1 상세, 인덱스, Before/After'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/board/refactoring"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Board 리팩토링
-                  </Link>
-                  {' — 중복 제거, 코드 구조'}
+                  {' — N+1 성능 개선 (Board · Care · Chat · MissingPet)'}
                 </li>
                 <li>
                   •{' '}

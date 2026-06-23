@@ -406,15 +406,15 @@ if (bothConfirmed(conv)) {
                   <>
                     상세는{' '}
                     <Link
-                      to="/domains/care/optimization"
+                      to="/domains/refactoring#n-plus-one"
                       style={{
                         color: 'var(--link-color)',
                         textDecoration: 'none',
                       }}
                     >
-                      성능 최적화
+                      대표 개선 사례
                     </Link>{' '}
-                    페이지 참고
+                    참고
                   </>
                 )}
               </ul>
@@ -618,22 +618,12 @@ if (!isRequester && !isAcceptedProvider)
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/care/optimization"
+                    to="/domains/refactoring#n-plus-one"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    Care 성능 최적화
+                    대표 개선 사례 보기
                   </Link>
-                  {' — N+1 상세, Fetch Join 전략, Before/After'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/care/refactoring"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Care 리팩토링
-                  </Link>
-                  {' — 코드 구조, 중복 제거'}
+                  {' — N+1 성능 개선 · 동시성/Race Condition'}
                 </li>
                 <li>
                   •{' '}

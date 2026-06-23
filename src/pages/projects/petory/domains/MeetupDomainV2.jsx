@@ -575,22 +575,12 @@ ORDER BY m.date ASC
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/meetup/optimization"
+                    to="/domains/refactoring#concurrency"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    Meetup 성능 최적화
+                    대표 개선 사례 보기
                   </Link>
-                  {' — 근처 모임 Before/After, N+1 상세'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/meetup/refactoring"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Meetup 리팩토링
-                  </Link>
-                  {' — 2단계 조회 구조, 목록 쿼리 변경 근거'}
+                  {' — 동시성/Race Condition 해결'}
                 </li>
                 <li>
                   •{' '}

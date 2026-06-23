@@ -315,92 +315,61 @@ ${nodeStyles}`;
           </section>
 
           <section id="problem-solving" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 해결 사례</h2>
+            <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>성능 개선 & 리팩토링</h2>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.65 }}>
+              면접에서 설명 가능한 대표 사례 4개를 선별했습니다.
+            </p>
             <div className="section-card">
-            
-            {/* 케이스 1: 펫케어 요청 목록 조회 최적화 */}
-            <div className="content-card">
-              <h3>케이스 1: 펫케어 요청 목록 조회 최적화</h3>
-              <div className="stat-grid" style={{ gap: '1rem' }}>
-                <div className="stat-item">
-                  <div className="stat-sub">쿼리 수</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>2400개 → 4-5개</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>99.8% 감소</div>
+              <div className="feature-points-grid">
+                <div className="content-card" style={{ marginBottom: 0 }}>
+                  <h3 style={{ marginBottom: '0.4rem' }}>JPA N+1 성능 개선</h3>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.6rem', lineHeight: 1.6 }}>
+                    Board 301→3 queries · Care ~2,400→4~5 · Chat 21→4 · MissingPet 105→3
+                  </p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+                    IN 절 배치 조회 + Fetch Join + Map 기반 DTO 조립
+                  </p>
+                  <Link to="/domains/refactoring#n-plus-one" className="text-link" style={{ fontSize: '0.88rem', fontWeight: 500 }}>
+                    대표 개선 사례 보기 →
+                  </Link>
                 </div>
-                <div className="stat-item">
-                  <div className="stat-sub">실행 시간</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>1084ms → 66ms</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>94% 개선</div>
+                <div className="content-card" style={{ marginBottom: 0 }}>
+                  <h3 style={{ marginBottom: '0.4rem' }}>동시성 / Race Condition</h3>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.6rem', lineHeight: 1.6 }}>
+                    Meetup 인원 초과 방지 · PetCoin Lost Update 방지
+                  </p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+                    조건부 원자적 UPDATE · SELECT FOR UPDATE 비관적 락
+                  </p>
+                  <Link to="/domains/refactoring#concurrency" className="text-link" style={{ fontSize: '0.88rem', fontWeight: 500 }}>
+                    대표 개선 사례 보기 →
+                  </Link>
                 </div>
-                <div className="stat-item">
-                  <div className="stat-sub">메모리</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>21MB → 6MB</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>71% 절감</div>
+                <div className="content-card" style={{ marginBottom: 0 }}>
+                  <h3 style={{ marginBottom: '0.4rem' }}>Location 검색 최적화</h3>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.6rem', lineHeight: 1.6 }}>
+                    초기 로드 22,699개 → 1,026개 · 쿼리 198~368ms → 36~53ms
+                  </p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+                    10km 반경 백엔드 필터 + 지역명 시군구 검색 우회
+                  </p>
+                  <Link to="/domains/refactoring#location" className="text-link" style={{ fontSize: '0.88rem', fontWeight: 500 }}>
+                    대표 개선 사례 보기 →
+                  </Link>
                 </div>
-              </div>
-              <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-                펫케어 요청 목록 조회 시 발생한 N+1 문제를 Fetch Join과 배치 조회로 해결 (1004개 데이터 기준)
-              </p>
-              <Link to="/domains/care" className="text-link" style={{ fontSize: '0.9rem', fontWeight: '500' }}>
-                → 상세 보기 (Care 도메인)
-              </Link>
-            </div>
-
-            {/* 케이스 2: 로그인 쿼리 최적화 */}
-            <div className="content-card">
-              <h3>케이스 2: 로그인 쿼리 최적화</h3>
-              <div className="stat-grid" style={{ gap: '1rem' }}>
-                <div className="stat-item">
-                  <div className="stat-sub">쿼리 수</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>21개 → 4개</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>80.95% 감소</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-sub">실행 시간</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>305ms → 55ms</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>81.97% 개선</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-sub">메모리</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>0.58MB → 0.13MB</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>77.24% 절감</div>
-                </div>
-              </div>
-              <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-                로그인 시 채팅방 목록 조회 과정에서 발생한 N+1 문제를 배치 조회로 해결
-              </p>
-              <Link to="/domains/user" className="text-link" style={{ fontSize: '0.9rem', fontWeight: '500' }}>
-                → 상세 보기 (User 도메인)
-              </Link>
-            </div>
-
-            {/* 케이스 3: 게시판 N+1 해결 */}
-            <div className="content-card" style={{ marginBottom: 0 }}>
-              <h3>케이스 3: 게시판 N+1 문제 해결</h3>
-              <div className="stat-grid" style={{ gap: '1rem' }}>
-                <div className="stat-item">
-                  <div className="stat-sub">쿼리 수</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>301개 → 3개</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>99.00% 감소</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-sub">실행 시간</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>745ms → 30ms</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>24.83배 개선</div>
-                </div>
-                <div className="stat-item">
-                  <div className="stat-sub">메모리 사용량</div>
-                  <div className="stat-label" style={{ fontSize: '1.2rem', fontWeight: 'bold', color: 'var(--text-color)' }}>22.50 MB → 2 MB</div>
-                  <div className="stat-sub" style={{ color: 'var(--link-color)' }}>91% 감소</div>
+                <div className="content-card" style={{ marginBottom: 0 }}>
+                  <h3 style={{ marginBottom: '0.4rem' }}>보안 / 인가 계약 정리</h3>
+                  <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginBottom: '0.6rem', lineHeight: 1.6 }}>
+                    Chat IDOR 제거 · JWT principal 기반 인가 · 참여자 검증
+                  </p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+                    클라이언트 userId 신뢰 제거 → 서버 인증 주체 기준으로 전환
+                  </p>
+                  <Link to="/domains/refactoring#security" className="text-link" style={{ fontSize: '0.88rem', fontWeight: 500 }}>
+                    대표 개선 사례 보기 →
+                  </Link>
                 </div>
               </div>
-              <p style={{ fontSize: '0.9rem', marginBottom: '1rem' }}>
-                게시글 목록 조회 시 발생한 N+1 문제를 배치 조회와 Fetch Join으로 해결
-              </p>
-              <Link to="/domains/board" className="text-link" style={{ fontSize: '0.9rem', fontWeight: '500' }}>
-                → 상세 보기 (Board 도메인)
-              </Link>
-            </div>
             </div>
           </section>
 

@@ -656,22 +656,12 @@ public void releaseExpiredSuspensions() {
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/user/optimization"
+                    to="/domains/refactoring#n-plus-one"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
-                    User 성능 최적화
+                    대표 개선 사례 보기
                   </Link>
-                  {' — 로그인 N+1 상세, Before/After'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/user/refactoring"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    User 리팩토링
-                  </Link>
-                  {' — DTO record, 코드 구조'}
+                  {' — N+1 성능 개선 (Board · Care · Chat · MissingPet)'}
                 </li>
                 <li>
                   •{' '}

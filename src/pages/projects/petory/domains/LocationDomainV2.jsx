@@ -734,28 +734,15 @@ lat/lng 없음 + 지역 없음 + keyword 있음 -> FULLTEXT 검색
                 <li>
                   •{" "}
                   <Link
-                    to="/domains/location/optimization"
+                    to="/domains/refactoring#location"
                     style={{
                       color: "var(--link-color)",
                       textDecoration: "none",
                     }}
                   >
-                    Location 성능 최적화
+                    대표 개선 사례 보기
                   </Link>
-                  {" — 초기 로드 Before/After, 인덱스"}
-                </li>
-                <li>
-                  •{" "}
-                  <Link
-                    to="/domains/location/refactoring"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Location 리팩토링
-                  </Link>
-                  {" — 검색 분기 구조, 워크플로우 정리"}
+                  {" — Location 검색/초기 로드 최적화"}
                 </li>
                 <li>
                   •{" "}
