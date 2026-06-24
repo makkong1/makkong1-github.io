@@ -7,6 +7,7 @@ const sections = [
   { id: 'concurrency', title: '동시성 제어' },
   { id: 'location', title: 'Location 최적화' },
   { id: 'security', title: '보안/인가 정리' },
+  { id: 'notification-read', title: '알림 읽음 처리 최적화' },
 ];
 
 const cases = [
@@ -163,6 +164,50 @@ const cases = [
       { to: '/domains/care/refactoring', label: 'Care 리팩토링' },
     ],
   },
+  {
+    id: 'notification-read',
+    number: '05',
+    title: 'Notification 읽음 처리 최적화',
+    scope: 'Notification · JPA',
+    summary:
+      '전체 읽음 요청에서 모든 미읽음 알림을 엔티티로 조회한 뒤 행별로 수정하던 구조를 JPQL bulk UPDATE 한 번으로 변경했습니다.',
+    points: [
+      {
+        label: '문제',
+        text:
+          '미읽음 알림 N개를 전부 메모리에 올리고 각 엔티티의 isRead를 변경해, 사용자 조회 1회와 알림 조회 1회에 이어 UPDATE가 N번 발생했습니다.',
+      },
+      {
+        label: '원인',
+        text:
+          'saveAll 호출 한 번을 SQL UPDATE 한 번으로 오해하기 쉽지만, JPA 변경 감지는 수정된 엔티티마다 UPDATE를 실행합니다. 조회 N+1이 아니라 일괄 변경을 엔티티 단위로 처리한 row-by-row UPDATE 문제입니다.',
+      },
+      {
+        label: '해결',
+        text:
+          'userId와 isRead=false를 조건으로 JPQL bulk UPDATE를 실행하고, 목록·미읽음 목록·count 조회도 Users 엔티티를 먼저 조회하지 않고 userId로 직접 실행하도록 Repository 계약을 변경했습니다.',
+      },
+    ],
+    tableTitle: '미읽음 알림 100개 기준',
+    rows: [
+      ['항목', 'Before', 'After'],
+      ['사용자 조회', '1 SELECT', '0'],
+      ['미읽음 알림 조회', '1 SELECT / 100개 로딩', '0'],
+      ['읽음 상태 변경', '100 UPDATE', '1 bulk UPDATE'],
+      ['Prepared statements', '102', '1'],
+    ],
+    note:
+      'bulk UPDATE는 영속성 컨텍스트를 우회하므로 clearAutomatically와 flushAutomatically를 적용해 오래된 관리 엔티티가 남지 않도록 했습니다.',
+    verification:
+      'MySQL 임시 테이블과 Hibernate Statistics를 사용한 통합 테스트에서 기존 알고리즘 102 statements, 개선 후 1 statement를 측정했습니다.',
+    docs: [
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/main/docs/refactoring/notification/notification-read-performance-optimization.md',
+        label: 'Notification 읽음 처리 성능 리팩토링',
+      },
+    ],
+  },
 ];
 
 function MetricTable({ title, rows }) {
@@ -228,9 +273,20 @@ function CaseSection({ item }) {
           <span>근거 문서</span>
           <div>
             {item.docs.map((doc) => (
-              <Link key={doc.to} to={doc.to}>
-                {doc.label}
-              </Link>
+              doc.href ? (
+                <a
+                  key={doc.href}
+                  href={doc.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {doc.label}
+                </a>
+              ) : (
+                <Link key={doc.to} to={doc.to}>
+                  {doc.label}
+                </Link>
+              )
             ))}
           </div>
         </div>
@@ -269,7 +325,7 @@ export default function PetoryRefactoringPage() {
             <h1>성능 개선 & 리팩토링 대표 사례</h1>
             <p>
               도메인별 작업 기록을 전부 나열하지 않고, 면접에서 문제·원인·해결·검증을
-              설명하기 좋은 4개 사례만 선별했습니다.
+              설명하기 좋은 5개 사례만 선별했습니다.
             </p>
             <div className="refactoring-quick-links">
               {sections.map((section) => (
