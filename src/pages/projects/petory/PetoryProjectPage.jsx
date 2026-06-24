@@ -77,6 +77,27 @@ function PetoryProjectPage() {
     CORE --> EXT
 ${nodeStyles}`;
 
+  const notificationArchitectureDiagram = `flowchart LR
+    DOMAIN["Board · Care · MissingPet\\nRecommendation"] --> NS["NotificationService"]
+    NS --> DB[("MySQL\\nnotifications")]
+    NS --> REDIS[("Redis\\nnotification:{userId}")]
+    NS --> SSE["SSE\\nSseEmitter"]
+    NS --> FCM["Firebase FCM"]
+
+    CLIENT["React · Capacitor"] --> API["NotificationController"]
+    API --> NS
+    SSE --> CLIENT
+    FCM --> CLIENT
+
+    style DOMAIN fill:#e8f5e9,stroke:#40804a
+    style NS fill:#e1f5ff,stroke:#4a8fad
+    style API fill:#e1f5ff,stroke:#4a8fad
+    style DB fill:#ffe1f5,stroke:#904090
+    style REDIS fill:#ffe1f5,stroke:#904090
+    style SSE fill:#fff4e1,stroke:#a08030
+    style FCM fill:#fff4e1,stroke:#a08030
+    style CLIENT fill:#f3f4f6,stroke:#6b7280`;
+
   const domains = [
     {
       name: 'User',
@@ -265,6 +286,40 @@ ${nodeStyles}`;
                 <p>• <strong>Repository Layer</strong>: 데이터 액세스 추상화, JPA 쿼리</p>
                 <p>• <strong>Entity Layer</strong>: 도메인 모델 정의, 연관관계 관리</p>
               </div>
+            </div>
+
+            <div className="content-card">
+              <h3>알림 전달 아키텍처</h3>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 0, lineHeight: 1.7 }}>
+                Board·Care·Missing Pet·Recommendation에서 발생한 알림을 하나의 서비스가
+                영구 저장, 최신 목록 캐시, 실시간 전송, 모바일 푸시로 분기합니다.
+              </p>
+              <MermaidDiagram chart={notificationArchitectureDiagram} flat />
+              <div className="feature-points-grid">
+                <div>
+                  <h4>MySQL</h4>
+                  <p style={{ fontSize: '0.9rem' }}>
+                    전체 알림 이력과 읽음 상태를 관리하는 기준 저장소
+                  </p>
+                </div>
+                <div>
+                  <h4>Redis</h4>
+                  <p style={{ fontSize: '0.9rem' }}>
+                    사용자별 최신 50개 알림을 24시간 보관하고 DB 목록과 병합
+                  </p>
+                </div>
+                <div>
+                  <h4>SSE · FCM</h4>
+                  <p style={{ fontSize: '0.9rem' }}>
+                    앱 실행 중에는 SSE, 네이티브 백그라운드에서는 FCM으로 전달
+                  </p>
+                </div>
+              </div>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.65 }}>
+                MySQL 저장과 Redis·SSE·FCM 전달은 하나의 원자적 트랜잭션으로 묶이지 않습니다.
+                현재 구조는 캐시 미스 시 DB를 기준으로 복구하며, 다중 서버 환경에서는
+                SSE 연결 라우팅과 이벤트 전달 일관성 보완이 필요합니다.
+              </p>
             </div>
 
             <div className="content-card">
