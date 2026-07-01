@@ -156,6 +156,7 @@ npm run deploy
 
 - `build` 시 `dist/index.html`을 `dist/404.html`로 복사해 SPA 라우팅 fallback을 맞춥니다.
 - `main` 브랜치 푸시 시 GitHub Actions로도 자동 배포됩니다.
+- 배포 시 기존 hashed assets를 유지해, 사용자가 이전 JS 번들을 캐시한 상태에서도 Vite 동적 import 청크가 404로 깨지지 않도록 합니다.
 
 ## Notes
 
