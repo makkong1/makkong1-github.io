@@ -39,8 +39,6 @@ function CodeBlock({ children }) {
 
 const PETORY_CI =
   'https://github.com/makkong1/Petory/blob/main/.github/workflows/ci.yml';
-const PORTFOLIO_CD =
-  'https://github.com/makkong1/makkong1-github.io/blob/main/.github/workflows/deploy.yml';
 const PETORY_COMPOSE =
   'https://github.com/makkong1/Petory/blob/main/docker-compose.yml';
 
@@ -49,11 +47,10 @@ function InfraPage() {
     { id: 'pillars', title: '구성 요소' },
     { id: 'docker', title: 'Docker Compose' },
     { id: 'ci', title: 'GitHub Actions CI' },
-    { id: 'cd', title: 'GitHub Actions CD' },
     { id: 'next', title: '다음 단계' },
   ];
 
-  const pillars = ['Docker Compose 개발 환경', 'GitHub Actions CI', 'GitHub Actions CD'];
+  const pillars = ['Docker Compose 개발 환경', 'GitHub Actions CI'];
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
@@ -79,8 +76,7 @@ function InfraPage() {
             구성된 Docker Compose 스택을 명령어 하나로 실행할 수 있도록
             구성했습니다. 별도 프로세스로 분리된 한국어 NLP 서버(FastAPI)까지
             depends_on·healthcheck로 기동 순서를 보장하며 통합했습니다. 또한
-            GitHub Actions로 Petory 빌드 자동화와 포트폴리오 사이트 자동 배포
-            파이프라인을 구성했습니다.
+            GitHub Actions로 Petory 빌드 자동화 파이프라인을 구성했습니다.
           </p>
 
           <section
@@ -304,66 +300,6 @@ jobs:
           </section>
 
           <section
-            id="cd"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              GitHub Actions CD — 포트폴리오 사이트 자동 배포
-            </h2>
-
-            <Card>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li('트리거: main 브랜치 push')}
-                {li('Node.js 20 설치 → node_modules 캐시 → npm ci → Vite 빌드 → GitHub Pages 배포')}
-                {li('캐시 키: package-lock.json 해시 기반 — 의존성 변경 시에만 재설치')}
-                {li('peaceiris/actions-gh-pages로 dist/ 디렉토리를 gh-pages 브랜치에 자동 퍼블리시')}
-              </ul>
-              <CodeBlock>{`# .github/workflows/deploy.yml
-name: Deploy to GitHub Pages
-
-on:
-  push:
-    branches: ["main"]
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Use Node.js 20
-        uses: actions/setup-node@v3
-        with:
-          node-version: 20.19.0
-
-      - name: Cache node_modules
-        uses: actions/cache@v3
-        with:
-          path: "**/node_modules"
-          key: \${{ runner.os }}-node-\${{ hashFiles('**/package-lock.json') }}
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build project
-        run: npm run build
-
-      - uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: \${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./dist`}</CodeBlock>
-            </Card>
-          </section>
-
-          <section
             id="next"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
@@ -418,18 +354,6 @@ jobs:
                     Petory CI 워크플로우
                   </a>
                   {' — .github/workflows/ci.yml'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PORTFOLIO_CD}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    포트폴리오 CD 워크플로우
-                  </a>
-                  {' — .github/workflows/deploy.yml'}
                 </li>
                 <li>
                   •{' '}
