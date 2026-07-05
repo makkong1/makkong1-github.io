@@ -39,6 +39,8 @@ function CodeBlock({ children }) {
 
 const PETORY_CI =
   'https://github.com/makkong1/Petory/blob/main/.github/workflows/ci.yml';
+const PETORY_CD =
+  'https://github.com/makkong1/Petory/blob/main/.github/workflows/cd.yml';
 const PETORY_COMPOSE =
   'https://github.com/makkong1/Petory/blob/main/docker-compose.yml';
 
@@ -47,10 +49,11 @@ function InfraPage() {
     { id: 'pillars', title: '구성 요소' },
     { id: 'docker', title: 'Docker Compose' },
     { id: 'ci', title: 'GitHub Actions CI' },
+    { id: 'cd', title: 'GitHub Actions CD' },
     { id: 'next', title: '다음 단계' },
   ];
 
-  const pillars = ['Docker Compose 개발 환경', 'GitHub Actions CI'];
+  const pillars = ['Docker Compose 개발 환경', 'GitHub Actions CI', 'GitHub Actions CD'];
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
@@ -75,8 +78,10 @@ function InfraPage() {
             Petory는 mysql·redis·petory-nlp-server·app·nginx 5개 컨테이너로
             구성된 Docker Compose 스택을 명령어 하나로 실행할 수 있도록
             구성했습니다. 별도 프로세스로 분리된 한국어 NLP 서버(FastAPI)까지
-            depends_on·healthcheck로 기동 순서를 보장하며 통합했습니다. 또한
-            GitHub Actions로 Petory 빌드 자동화 파이프라인을 구성했습니다.
+            depends_on·healthcheck로 기동 순서를 보장하며 통합했습니다. GitHub
+            Actions로 빌드 자동화(CI)와, main에 관련 코드가 push되면 Docker
+            이미지를 GitHub Container Registry에 자동으로 빌드·게시하는
+            파이프라인(CD)까지 구성했습니다.
           </p>
 
           <section
@@ -300,6 +305,95 @@ jobs:
           </section>
 
           <section
+            id="cd"
+            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
+          >
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
+              GitHub Actions CD — Docker 이미지 자동 빌드·게시
+            </h2>
+
+            <Card>
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                  marginBottom: '0.75rem',
+                  fontSize: '0.9rem',
+                }}
+              >
+                &quot;코드를 main에 push하면 자동으로 최신 Docker 이미지가
+                만들어져 레지스트리에 올라간다&quot;까지가 지금 구현된
+                범위입니다. 그 이미지를 실제 서버가 내려받아 컨테이너를
+                교체하는 마지막 단계는 배포할 서버가 아직 없어 연결되어 있지
+                않습니다 (아래 &quot;다음 단계&quot; 참고).
+              </p>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('트리거: main 브랜치 push 중 Dockerfile·backend/**·petory-nlp-server/** 등 이미지에 영향 주는 경로만 (docs 등 무관한 push로 매번 무거운 이미지 재빌드가 도는 것 방지)')}
+                {li('matrix로 petory-app, petory-nlp-server 두 이미지를 각자의 Dockerfile로 병렬 빌드')}
+                {li('GitHub Container Registry(ghcr.io)에 :latest와 :커밋SHA 두 태그로 push — 인증은 GITHUB_TOKEN만으로, 별도 계정·시크릿 설정 불필요')}
+                {li('workflow_dispatch로 main push 전에도 수동 실행해 검증 가능 (경로 필터 무시하고 항상 실행)')}
+              </ul>
+              <CodeBlock>{`# .github/workflows/cd.yml
+name: CD (Build & Push Docker Images)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "backend/**"
+      - "petory-nlp-server/**"
+      # ... build.gradle, gradle/**, gradlew 등
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: petory-app
+            context: .
+            dockerfile: Dockerfile
+          - image: petory-nlp-server
+            context: ./petory-nlp-server
+            dockerfile: petory-nlp-server/Dockerfile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: \${{ github.actor }}
+          password: \${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push \${{ matrix.image }}
+        uses: docker/build-push-action@v6
+        with:
+          context: \${{ matrix.context }}
+          file: \${{ matrix.dockerfile }}
+          push: true
+          tags: |
+            ghcr.io/\${{ github.repository_owner }}/\${{ matrix.image }}:latest
+            ghcr.io/\${{ github.repository_owner }}/\${{ matrix.image }}:\${{ github.sha }}`}</CodeBlock>
+            </Card>
+          </section>
+
+          <section
             id="next"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
@@ -323,7 +417,7 @@ jobs:
                   '클라우드 배포: EC2 + RDS + ElastiCache 조합 또는 Railway/Render 등 PaaS 활용'
                 )}
                 {li(
-                  'CD 파이프라인 확장: Petory 백엔드도 main push 시 자동 배포로 연결'
+                  '배포 자동화 마무리: 실제 서버를 확보한 뒤, CD가 게시한 GHCR 이미지를 서버가 pull → docker compose up으로 교체하는 마지막 단계 연결'
                 )}
               </ul>
             </Card>
@@ -354,6 +448,18 @@ jobs:
                     Petory CI 워크플로우
                   </a>
                   {' — .github/workflows/ci.yml'}
+                </li>
+                <li>
+                  •{' '}
+                  <a
+                    href={PETORY_CD}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    Petory CD 워크플로우
+                  </a>
+                  {' — .github/workflows/cd.yml'}
                 </li>
                 <li>
                   •{' '}
