@@ -75,10 +75,10 @@ function InfraPage() {
               fontSize: '0.95rem',
             }}
           >
-            Petory와 pet-data-api의 로컬 개발 환경을 Docker Compose로 구성해
-            의존 서비스를 명령어 하나로 실행할 수 있도록 했습니다. 또한 GitHub
-            Actions로 Petory 빌드 자동화와 포트폴리오 사이트 자동 배포 파이프라인을
-            구성했습니다.
+            Petory는 mysql·redis·app·nginx 4개 컨테이너로 구성된 Docker Compose
+            스택을, pet-data-api는 Redis·MySQL·RabbitMQ 의존 서비스를 명령어
+            하나로 실행할 수 있도록 구성했습니다. 또한 GitHub Actions로 Petory
+            빌드 자동화와 포트폴리오 사이트 자동 배포 파이프라인을 구성했습니다.
           </p>
 
           <section
@@ -119,7 +119,7 @@ function InfraPage() {
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              Docker Compose — 개발 환경 통일
+              Docker Compose — 로컬 개발 &amp; 배포 스택
             </h2>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -130,7 +130,7 @@ function InfraPage() {
                   fontSize: '1rem',
                 }}
               >
-                Petory
+                Petory — mysql · redis · app · nginx 4개 컨테이너
               </h3>
               <ul
                 style={{
@@ -141,26 +141,50 @@ function InfraPage() {
                   lineHeight: '1.8',
                 }}
               >
-                {li('의존 서비스: Redis 7')}
-                {li('docker-compose up 한 번으로 로컬 Redis 실행 — 개별 설치 불필요')}
-                {li('볼륨 마운트로 컨테이너 재시작 시 데이터 유지')}
+                {li('의존 서비스: MySQL 8.0 + Redis 7, 여기에 app(Spring Boot)과 nginx까지 묶은 풀스택 Compose')}
+                {li('mysql 최초 기동 시 migration SQL이 자동 실행되어 스키마 생성')}
+                {li('app은 depends_on + healthcheck로 mysql·redis가 준비된 뒤에만 기동')}
+                {li('nginx가 frontend 정적 파일 서빙 + /api 리버스 프록시 + SSL 종료를 담당')}
               </ul>
               <CodeBlock>{`# Petory docker-compose.yml (핵심 서비스)
 services:
+  mysql:
+    image: mysql:8.0
+    container_name: petory-mysql
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./backend/main/resources/sql/migration:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p\${DB_ROOT_PASSWORD}"]
+
   redis:
     image: redis:7-alpine
     container_name: petory-redis
-    restart: unless-stopped
-    command: redis-server --requirepass \${REDIS_PASSWORD}
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
+    command: redis-server --requirepass \${REDIS_PASSWORD} --maxmemory 256mb --maxmemory-policy allkeys-lru
+
+  app:
+    build: { context: ., dockerfile: Dockerfile }
+    container_name: petory-app
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "\${REDIS_PASSWORD}", "ping"]
-      interval: 10s
-      timeout: 3s
-      retries: 3`}</CodeBlock>
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/actuator/health"]
+
+  nginx:
+    image: nginx:alpine
+    container_name: petory-nginx
+    depends_on: [app]
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./frontend/build:/usr/share/nginx/html:ro`}</CodeBlock>
             </Card>
 
             <Card>
