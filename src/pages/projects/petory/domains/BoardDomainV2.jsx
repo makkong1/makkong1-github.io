@@ -44,14 +44,6 @@ const PETORY_BOARD_ARCH_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/architecture/board/%EC%BB%A4%EB%AE%A4%EB%8B%88%ED%8B%B0%20%EA%B2%8C%EC%8B%9C%ED%8C%90%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
 const PETORY_BOARD_PERF_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/board/performance-optimization.md';
-const PETORY_BOARD_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/BoardService.java';
-const PETORY_COMMENT_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/CommentService.java';
-const PETORY_REACTION_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/ReactionService.java';
-const PETORY_POPULARITY_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/BoardPopularityService.java';
 
 function BoardDomainV2() {
   const sections = [
@@ -508,16 +500,6 @@ Map<Long, List<FileDTO>> attachmentsMap =
                 </li>
                 <li>
                   •{' '}
-                  <Link
-                    to="/domains/missing-pet"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Missing Pet 도메인
-                  </Link>
-                  {' — board 패키지 내 별도 도메인성'}
-                </li>
-                <li>
-                  •{' '}
                   <a
                     href={PETORY_BOARD_ARCH_DOC}
                     target="_blank"
@@ -547,50 +529,6 @@ Map<Long, List<FileDTO>> attachmentsMap =
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     성능 비교 문서 (performance-optimization.md)
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_BOARD_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    BoardService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_COMMENT_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    CommentService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_REACTION_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    ReactionService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_POPULARITY_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    BoardPopularityService.java
                   </a>
                 </li>
               </ul>

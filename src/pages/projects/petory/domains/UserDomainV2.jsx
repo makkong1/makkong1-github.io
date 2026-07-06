@@ -42,16 +42,6 @@ const PETORY_USER_ARCH_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/architecture/user/%EC%82%AC%EC%9A%A9%EC%9E%90%20%EC%9D%B8%EC%A6%9D%20%EB%B0%8F%20%ED%94%84%EB%A1%9C%ED%95%84%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
 const PETORY_USER_DOMAIN_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/user.md';
-const PETORY_AUTH_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/user/service/AuthService.java';
-const PETORY_OAUTH2_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/user/service/OAuth2Service.java';
-const PETORY_PET_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/user/service/PetService.java';
-const PETORY_USER_SANCTION_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/user/service/UserSanctionService.java';
-const PETORY_JWT_FILTER =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/filter/JwtAuthenticationFilter.java';
 const PETORY_REPORT_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/report.md';
 const PETORY_FILE_DOC =
@@ -609,16 +599,6 @@ public void releaseExpiredSuspensions() {
                 </li>
                 <li>
                   •{' '}
-                  <Link
-                    to="/domains/flows?tab=user"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    User 시퀀스
-                  </Link>
-                  {' — 로그인, OAuth, Pet 소유 검증 흐름'}
-                </li>
-                <li>
-                  •{' '}
                   <a
                     href={PETORY_REPORT_DOC}
                     target="_blank"
@@ -640,66 +620,6 @@ public void releaseExpiredSuspensions() {
                     File 도메인 문서
                   </a>
                   {' — Pet 프로필 이미지 첨부 동기화'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_AUTH_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    AuthService.java
-                  </a>
-                  {' — 로그인, refresh 발급'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_OAUTH2_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    OAuth2Service.java
-                  </a>
-                  {' — 소셜 계정 연결'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_PET_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    PetService.java
-                  </a>
-                  {' — Pet 소유 검증'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_USER_SANCTION_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    UserSanctionService.java
-                  </a>
-                  {' — 경고, 정지, 만료 해제'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_JWT_FILTER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    JwtAuthenticationFilter.java
-                  </a>
-                  {' — Bearer token 검증과 principal 생성'}
                 </li>
               </ul>
             </Card>

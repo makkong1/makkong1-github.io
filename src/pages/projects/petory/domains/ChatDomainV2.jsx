@@ -38,12 +38,6 @@ function CodeBlock({ children }) {
   );
 }
 
-const PETORY_CHAT_MESSAGE_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/chat/service/ChatMessageService.java';
-const PETORY_CONVERSATION_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/chat/service/ConversationService.java';
-const PETORY_CONVERSATION_CREATOR =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/chat/service/ConversationCreatorService.java';
 const PETORY_CHAT_DOMAIN_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/chat.md';
 const PETORY_CHAT_ARCH_DOC =
@@ -536,69 +530,6 @@ if (readFrom != null) {
                     대표 개선 사례 보기
                   </Link>
                   {' — 보안/인가 계약 정리 · N+1 성능 개선'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/care"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Care 도메인
-                  </Link>
-                  {' — 거래 확정과 에스크로 연결'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/meetup"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Meetup 도메인
-                  </Link>
-                  {' — 모임 생성 후 그룹 채팅방 생성'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/missing-pet"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Missing Pet 도메인
-                  </Link>
-                  {' — 실종 제보자·목격자 채팅'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_CHAT_MESSAGE_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    ChatMessageService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_CONVERSATION_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    ConversationService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_CONVERSATION_CREATOR}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    ConversationCreatorService.java
-                  </a>
                 </li>
                 <li>
                   •{' '}

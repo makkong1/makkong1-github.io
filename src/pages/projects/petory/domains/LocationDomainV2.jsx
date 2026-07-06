@@ -38,10 +38,6 @@ function CodeBlock({ children }) {
   );
 }
 
-const PETORY_LOCATION_SERVICE =
-  "https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/location/service/LocationServiceService.java";
-const PETORY_LOCATION_REPO =
-  "https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/location/repository/SpringDataJpaLocationServiceRepository.java";
 const PETORY_LOCATION_DOC =
   "https://github.com/makkong1/Petory/blob/main/docs/domains/location.md";
 const PETORY_LOCATION_ARCH =
@@ -617,47 +613,6 @@ lat/lng 없음 + 지역 없음 + keyword 있음 -> FULLTEXT 검색
                 </li>
                 <li>
                   •{" "}
-                  <Link
-                    to="/domains/recommendation"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Recommendation 도메인
-                  </Link>
-                  {
-                    " — 추천 signal과 Location 카테고리 검색 연결"
-                  }
-                </li>
-                <li>
-                  •{" "}
-                  <Link
-                    to="/domains/meetup"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Meetup 도메인
-                  </Link>
-                  {" — 통합 지도에서 공유되는 근처 모임 반경 조회"}
-                </li>
-                <li>
-                  •{" "}
-                  <Link
-                    to="/domains/care"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    Care 도메인
-                  </Link>
-                  {" — 통합 지도에서 공유되는 근처 케어 요청 조회"}
-                </li>
-                <li>
-                  •{" "}
                   <a
                     href={PETORY_LOCATION_IMPORT_DOC}
                     target="_blank"
@@ -682,34 +637,6 @@ lat/lng 없음 + 지역 없음 + keyword 있음 -> FULLTEXT 검색
                     대표 개선 사례 보기
                   </Link>
                   {" — Location 검색/초기 로드 최적화"}
-                </li>
-                <li>
-                  •{" "}
-                  <a
-                    href={PETORY_LOCATION_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    LocationServiceService.java
-                  </a>
-                </li>
-                <li>
-                  •{" "}
-                  <a
-                    href={PETORY_LOCATION_REPO}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    SpringDataJpaLocationServiceRepository.java
-                  </a>
                 </li>
               </ul>
             </Card>

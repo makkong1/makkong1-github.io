@@ -38,16 +38,6 @@ function CodeBlock({ children }) {
   );
 }
 
-const PETORY_MISSING_PET_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/MissingPetBoardService.java';
-const PETORY_MISSING_PET_COMMENT_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/service/MissingPetCommentService.java';
-const PETORY_MISSING_PET_CONTROLLER =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/controller/MissingPetBoardController.java';
-const PETORY_ADMIN_MISSING_PET_CONTROLLER =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/admin/controller/AdminMissingPetController.java';
-const PETORY_MISSING_PET_REPO =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/board/repository/SpringDataJpaMissingPetBoardRepository.java';
 const PETORY_MISSING_PET_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/missingpet.md';
 const PETORY_MISSING_PET_ARCH_DOC =
@@ -495,82 +485,6 @@ score        = 0.6 * recencyScore + 0.4 * distScore`}</CodeBlock>
                     대표 개선 사례 보기
                   </Link>
                   {' — N+1 성능 개선 (Board · Care · Chat · MissingPet)'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/board"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Board 도메인
-                  </Link>
-                  {' — 같은 패키지 내 커뮤니티 게시판'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/chat"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Chat 도메인
-                  </Link>
-                  {' — 제보자·목격자 1:1 채팅'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MISSING_PET_CONTROLLER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    MissingPetBoardController.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_ADMIN_MISSING_PET_CONTROLLER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    AdminMissingPetController.java
-                  </a>
-                  {' — /api/admin/missing-pets'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MISSING_PET_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    MissingPetBoardService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MISSING_PET_COMMENT_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    MissingPetCommentService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MISSING_PET_REPO}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    SpringDataJpaMissingPetBoardRepository.java
-                  </a>
                 </li>
                 <li>
                   •{' '}

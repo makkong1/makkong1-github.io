@@ -38,18 +38,8 @@ function CodeBlock({ children }) {
   );
 }
 
-const PETORY_MEETUP_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/service/MeetupService.java';
-const PETORY_MEETUP_REPO =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/repository/SpringDataJpaMeetupRepository.java';
 const PETORY_MEETUP_ARCH_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/architecture/meetup/%EC%82%B0%EC%B1%85%20%26%20%EC%98%A4%ED%94%84%EB%9D%BC%EC%9D%B8%20%EB%AA%A8%EC%9E%84%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
-const PETORY_MEETUP_PARTICIPANTS_REPO =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/repository/SpringDataJpaMeetupParticipantsRepository.java';
-const PETORY_MEETUP_CHAT_CREATION_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/service/MeetupChatRoomCreationService.java';
-const PETORY_MEETUP_CHAT_RECOVERY_SCHEDULER =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/meetup/service/MeetupChatRoomRecoveryScheduler.java';
 
 function MeetupDomainV2() {
   const sections = [
@@ -533,16 +523,6 @@ ORDER BY m.date ASC
                 </li>
                 <li>
                   •{' '}
-                  <Link
-                    to="/domains/chat"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Chat 도메인
-                  </Link>
-                  {' — Meetup 그룹 채팅 참가·메시지 흐름'}
-                </li>
-                <li>
-                  •{' '}
                   <a
                     href={PETORY_MEETUP_ARCH_DOC}
                     target="_blank"
@@ -550,61 +530,6 @@ ORDER BY m.date ASC
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     산책 &amp; 오프라인 모임 아키텍처
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MEETUP_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    MeetupService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MEETUP_REPO}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    SpringDataJpaMeetupRepository.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MEETUP_PARTICIPANTS_REPO}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    SpringDataJpaMeetupParticipantsRepository.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MEETUP_CHAT_CREATION_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    MeetupChatRoomCreationService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_MEETUP_CHAT_RECOVERY_SCHEDULER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    MeetupChatRoomRecoveryScheduler.java
                   </a>
                 </li>
               </ul>

@@ -38,26 +38,6 @@ function CodeBlock({ children }) {
   );
 }
 
-const PETORY_PET_RECOMMEND_CONTROLLER =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/controller/PetRecommendationController.java';
-const PETORY_PET_INTENT_CLIENT =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/client/PetIntentClient.java';
-const PETORY_INTENT_SIGNAL_ENTITY =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/entity/UserPetIntentSignal.java';
-const PETORY_SIGNAL_LISTENER =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/service/PetIntentSignalEventListener.java';
-const PETORY_SIGNAL_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/service/UserPetIntentSignalService.java';
-const PETORY_RECOMMENDATION_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/service/PetRecommendationService.java';
-const PETORY_HEALTH_ALERT_HANDLER =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/petRecommendation/service/PetHealthAlertNotificationHandler.java';
-const PETORY_NLP_INTENT_ROUTER =
-  'https://github.com/makkong1/Petory/blob/main/petory-nlp-server/app/api/pet_intent_router.py';
-const PETORY_NLP_INTENT_CLASSIFIER =
-  'https://github.com/makkong1/Petory/blob/main/petory-nlp-server/app/nlp/intent_classifier.py';
-const PETORY_NLP_TAG_EXTRACTOR =
-  'https://github.com/makkong1/Petory/blob/main/petory-nlp-server/app/nlp/tag_extractor.py';
 const PETORY_RECOMMENDATION_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/recommendation.md';
 const PETORY_REFACTOR_DOC =
@@ -632,126 +612,6 @@ DEFAULT        -> 7일`}</CodeBlock>
                 <li>
                   •{' '}
                   <a
-                    href={PETORY_SIGNAL_LISTENER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    PetIntentSignalEventListener.java
-                  </a>
-                  {' — 이벤트 기반 signal 수집'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_SIGNAL_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    UserPetIntentSignalService.java
-                  </a>
-                  {' — threshold·TTL·중복 저장 방지'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_RECOMMENDATION_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    PetRecommendationService.java
-                  </a>
-                  {' — 즉시 시설 추천·점수 계산'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_HEALTH_ALERT_HANDLER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    PetHealthAlertNotificationHandler.java
-                  </a>
-                  {' — MEDICAL HIGH 건강 알림'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_PET_RECOMMEND_CONTROLLER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    PetRecommendationController.java
-                  </a>
-                  {' — /signals · /pet-recommend'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_PET_INTENT_CLIENT}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    PetIntentClient.java
-                  </a>
-                  {' — NLP 호출·타임아웃'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_INTENT_SIGNAL_ENTITY}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    UserPetIntentSignal.java
-                  </a>
-                  {' — signal 엔티티'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_NLP_INTENT_ROUTER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    pet_intent_router.py
-                  </a>
-                  {' — petory-nlp-server'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_NLP_INTENT_CLASSIFIER}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    intent_classifier.py
-                  </a>
-                  {' — rule first, embedding fallback'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_NLP_TAG_EXTRACTOR}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    tag_extractor.py
-                  </a>
-                  {' — 형태소 기반 오탐 방지'}
-                </li>
-                <li>
-                  •{' '}
-                  <a
                     href={PETORY_RECOMMENDATION_DOC}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -794,16 +654,6 @@ DEFAULT        -> 7일`}</CodeBlock>
                     nlp-server-issues-2026-06-09.md
                   </a>
                   {' — N1~N6 오탐·계약 이슈 트러블슈팅'}
-                </li>
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/location"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Location 도메인
-                  </Link>
-                  {' — 카드 클릭 후 category 검색·통합 지도'}
                 </li>
               </ul>
             </Card>

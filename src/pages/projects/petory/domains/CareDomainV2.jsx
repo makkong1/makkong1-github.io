@@ -46,12 +46,6 @@ const PETORY_CARE_N1_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/care/care-request-n-plus-one-analysis.md';
 const PETORY_CARE_RACE_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/troubleshooting/care/care-deal-confirmation-race-condition.md';
-const PETORY_CARE_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/care/service/CareRequestService.java';
-const PETORY_CONVERSATION_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/chat/service/ConversationService.java';
-const PETORY_ESCROW_SERVICE =
-  'https://github.com/makkong1/Petory/blob/main/backend/main/java/com/linkup/Petory/domain/payment/service/PetCoinEscrowService.java';
 
 function CareDomainV2() {
   const sections = [
@@ -562,16 +556,6 @@ if (!isRequester && !isAcceptedProvider)
                 </li>
                 <li>
                   •{' '}
-                  <Link
-                    to="/domains/chat"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    Chat 도메인
-                  </Link>
-                  {' — 거래 확정 진입점'}
-                </li>
-                <li>
-                  •{' '}
                   <a
                     href={PETORY_CARE_ARCH_DOC}
                     target="_blank"
@@ -612,39 +596,6 @@ if (!isRequester && !isAcceptedProvider)
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     Race Condition 분석 문서 (care-deal-confirmation-race-condition.md)
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_CARE_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    CareRequestService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_CONVERSATION_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    ConversationService.java
-                  </a>
-                </li>
-                <li>
-                  •{' '}
-                  <a
-                    href={PETORY_ESCROW_SERVICE}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    PetCoinEscrowService.java
                   </a>
                 </li>
               </ul>
