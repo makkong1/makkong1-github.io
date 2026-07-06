@@ -154,7 +154,11 @@ ORDER BY (6371 * acos(...)) ASC, m.date ASC`}
               borderRadius: '8px',
               border: '1px solid var(--nav-border)'
             }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>개선 효과</h3>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>개선 효과 <span style={{ fontSize: '0.85rem', fontWeight: 400, color: 'var(--text-muted)' }}>(3단계 Bounding Box 기준 측정)</span></h3>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem', lineHeight: 1.6 }}>
+                아래 수치는 1단계 대비 <strong>3단계(Bounding Box)</strong>까지의 측정값입니다.
+                이후 아래 4단계에서 공간 인덱스로 재구현했습니다.
+              </p>
               <ul style={{
                 listStyle: 'none',
                 padding: 0,
@@ -168,6 +172,44 @@ ORDER BY (6371 * acos(...)) ASC, m.date ASC`}
                 <li>• 스캔 행 수: 2958개 → 117개 <strong style={{ color: 'var(--link-color)' }}>(96% 감소)</strong></li>
                 <li>• 필터링/정렬 시간: 20ms → 0ms <strong style={{ color: 'var(--link-color)' }}>(100% 제거)</strong></li>
               </ul>
+            </div>
+
+            <div className="section-card" style={{
+              padding: '1.5rem',
+              backgroundColor: 'var(--card-bg)',
+              borderRadius: '8px',
+              border: '1px solid var(--link-color)',
+              marginTop: '1rem'
+            }}>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4단계 (현재 코드) - 공간 인덱스 ST_Within</h3>
+              <div style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
+                <p>
+                  <code>latitude/longitude</code> 컬럼과 B-tree 대신, <code>geo_point</code> POINT 컬럼(SRID 4326)에
+                  공간 인덱스를 걸었습니다. <code>ST_Within</code>으로 bounding polygon 후보를 공간 인덱스로 좁힌 뒤,
+                  <code>ST_Distance_Sphere</code>로 미터 단위 정밀 반경을 필터링합니다.
+                  (마이그레이션 <code>meetup-spatial-location.sql</code>)
+                </p>
+              </div>
+              <pre style={{
+                padding: '1rem',
+                backgroundColor: 'var(--bg-color)',
+                borderRadius: '6px',
+                overflow: 'auto',
+                fontSize: '0.8rem',
+                color: 'var(--text-secondary)'
+              }}>
+{`WHERE ST_Within(
+        m.geo_point,
+        ST_GeomFromText(CONCAT('POLYGON((...))'), 4326)  -- 공간 인덱스로 후보 축소
+      )
+  AND ST_Distance_Sphere(m.geo_point, :point) <= :radius * 1000  -- 정밀 반경(m)
+ORDER BY ST_Distance_Sphere(m.geo_point, :point) ASC
+LIMIT :limit`}
+              </pre>
+              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.6 }}>
+                Bounding Box(위경도 BETWEEN)로 인덱스를 처음 태운 뒤, 같은 "후보 축소 → 정밀 필터" 구조를
+                공간 인덱스로 옮긴 리팩토링입니다.
+              </p>
             </div>
           </section>
 

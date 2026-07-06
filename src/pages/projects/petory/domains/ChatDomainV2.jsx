@@ -89,13 +89,12 @@ function ChatDomainV2() {
               fontSize: '0.95rem',
             }}
           >
-            Chat 도메인은 Petory에서 로그인 사용자 간 실시간 소통을 담당하지만,
-            실제로는 Care·Missing Pet·Meetup의 핵심 액션을 연결하는 공용 인프라
-            역할을 합니다. 단순 WebSocket 연결보다, 각 도메인에 맞는 채팅 생성
-            규칙과 unread count 동시성 제어, 재참여 정책 같은 운영 디테일을 더
-            중요하게 다뤘습니다. REST와 WebSocket 전송은 모두
-            ChatMessageService로 모이고, 읽음 처리에서 전체 메시지를 다시 읽던
-            비효율을 제거해 참여자 상태 필드만 갱신하는 방식으로 단순화했습니다.
+            실시간 소통을 담당하지만, 실제로는 Care·Missing Pet·Meetup의 핵심
+            액션을 잇는 <strong>공용 인프라</strong>입니다. 단순 WebSocket 연결보다
+            도메인별 채팅 생성 규칙, unread count 동시성, 재참여 정책 같은 운영
+            디테일이 더 중요했습니다. REST·WebSocket 전송은 모두 ChatMessageService로
+            모으고, 읽음 처리는 전체 메시지를 다시 읽던 걸 참여자 상태 필드만
+            갱신하도록 단순화했습니다.
           </p>
 
           <section
@@ -147,16 +146,13 @@ function ChatDomainV2() {
                   margin: 0,
                 }}
               >
-                채팅 기능은 보통 "WebSocket 붙였다" 수준에서 끝나기 쉽지만,
-                실제 서비스에서는 그 다음 문제가 더 어렵습니다. 기존 1:1
-                채팅방을 재사용할 것인가, 모임에서 나간 사람이 다시 들어오면
-                이전 대화를 어디까지 보여줄 것인가, 읽음 처리 시 수천 건
-                메시지를 다시 읽는 구조를 어떻게 피할 것인가. 이 도메인은
-                단순 메시지 송수신보다, 채팅을 비즈니스 흐름의 일부로
-                설계한 점이 포트폴리오 가치입니다. REST 요청은
-                AuthenticatedUserIdResolver가 사용자 idx를 결정하고, WebSocket은
+                어려운 건 WebSocket 연결이 아니라 그 다음입니다 — 기존 1:1 방을
+                재사용할지, 모임에서 나갔다 다시 든 사람에게 이전 대화를 어디까지
+                보여줄지, 읽음 처리에서 수천 건을 다시 읽지 않으려면 어떻게 할지.
+                채팅을 비즈니스 흐름의 일부로 설계한 점이 이 도메인의 핵심입니다.
+                REST는 AuthenticatedUserIdResolver가 사용자 idx를 정하고, WebSocket은
                 Principal 로그인 ID를 UsersRepository로 다시 조회해 발신자를
-                정합니다.
+                확정합니다.
               </p>
             </Card>
 

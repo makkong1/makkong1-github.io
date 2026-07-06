@@ -94,15 +94,13 @@ function UserDomainV2() {
               fontSize: '0.95rem',
             }}
           >
-            User 도메인은 Petory에서 로그인만 담당하는 얇은 계층이 아니라,
-            인증, 소셜 계정 연결, 이메일 인증, 반려동물 소유권, 제재 상태를
-            함께 관리하는 신원 기반 도메인입니다. 거의 모든 보호 API의 입구
-            역할을 하기 때문에 보안 구조와 트레이드오프가 코드에 직접
-            반영됩니다. 현재 구조는 Access JWT와 DB 저장 Refresh Token을
-            조합하고, 보호 API에서는 <code>CustomUserDetails</code>로 사용자
-            식별자를 통일합니다. OAuth 계정은 provider 식별자와 동일 이메일
-            연결로 통합하고, 프로필·Pet·제재 흐름은 다른 도메인이 신뢰할 수
-            있는 사용자 상태를 제공합니다.
+            로그인만 담당하는 얇은 계층이 아니라, 인증·소셜 연결·이메일 인증·
+            반려동물 소유권·제재 상태를 함께 관리하는 <strong>신원 도메인</strong>입니다.
+            거의 모든 보호 API의 입구라 보안 구조와 트레이드오프가 코드에 그대로
+            드러납니다. Access JWT + DB 저장 Refresh Token을 조합하고, 보호 API는
+            <code>CustomUserDetails</code>로 사용자 식별자를 통일합니다. OAuth는
+            provider 식별자·동일 이메일 연결로 통합해, 프로필·Pet·제재 상태를
+            다른 도메인이 신뢰할 수 있게 제공합니다.
           </p>
 
           <section

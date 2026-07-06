@@ -158,10 +158,9 @@ ${nodeStyles}`;
               <h1>Petory</h1>
               <p className="subtitle">반려동물 통합 플랫폼</p>
               <p className="description">
-                반려동물 보호자를 위한 웹·모바일 통합 플랫폼입니다. User·Board·Care·Location·Recommendation
-                등 8개 도메인과 Payment·Notification·Report 공통 기능으로 구성됩니다.
-                기능 구현 이후 도메인별 성능·동시성·NLP 호출 정책 문제를 가정하고, 테스트로
-                재현한 뒤 <strong>측정 → 개선 → 재검증</strong>을 반복했습니다.
+                반려동물 보호자를 위한 웹·모바일 통합 플랫폼. 8개 핵심 도메인과
+                결제·알림·신고 공통 기능으로 구성했습니다. 기능을 만든 뒤엔 성능·동시성 병목을
+                테스트로 재현하고 <strong>측정 → 개선 → 재검증</strong>을 반복했습니다.
               </p>
               <div className="buttons-wrapper">
                 <Link
@@ -215,19 +214,16 @@ ${nodeStyles}`;
             <div className="section-card">
               <div className="about-text-block">
                 <p>
-                  실서비스 환경에서는 다수 사용자가 동시에 인증 요청을 수행하는 과정에서,
-                  연관 엔티티 조회로 인해
-                  <strong> N+1 문제와 불필요한 DB 접근이 발생할 수 있는 구조적 위험</strong>이 존재합니다.
+                  목록·상세 조회처럼 자주 밟는 흐름일수록, 연관 엔티티를 하나씩 불러오는
+                  <strong> N+1과 불필요한 DB 접근</strong>이 쌓입니다.
                 </p>
                 <p>
-                  이러한 문제는 단일 기능 단위 테스트로는 드러나기 어렵기 때문에,
-                  실제 사용자 흐름을 기준으로 한
-                  <strong> 시나리오 기반 테스트를 통해 성능 병목을 재현하고 개선</strong>했습니다.
+                  이런 병목은 단위 테스트로는 안 보여서,
+                  <strong> 실제 사용자 흐름을 재현하는 시나리오 테스트</strong>로 문제를 드러내고 개선했습니다.
                 </p>
                 <p>
-                  본 프로젝트는 <strong>포트폴리오 목적의 프로젝트로 코드 품질과 아키텍처 설계에 집중</strong>했으며,
-                  실제 운영 배포는 범위에 포함되지 않지만,&nbsp;
-                  <strong>필요 시 즉시 배포 가능한 구조를 고려하여 설계</strong>되었습니다.
+                  포트폴리오 목적이라 실제 운영 배포는 범위 밖이지만,
+                  <strong> 언제든 배포 가능한 구조</strong>를 기준으로 설계했습니다.
                 </p>
               </div>
             </div>
@@ -357,8 +353,8 @@ ${nodeStyles}`;
             </h2>
             <div className="content-card">
               <p style={{ fontSize: '0.95rem', lineHeight: 1.75, color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                도메인 V2 페이지의 시퀀스 다이어그램은 한 페이지에 모아 중복을 없앴습니다. Chat 연계
-                흐름은 Care·Missing Pet·Meetup 축별로 같은 파일에서 나란히 비교할 수 있습니다.
+                도메인별 시퀀스 다이어그램을 한 페이지에 모았습니다. Care·Missing Pet·Meetup의
+                Chat 연계 흐름을 나란히 비교할 수 있습니다.
               </p>
               <Link
                 to="/domains/flows"

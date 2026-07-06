@@ -86,17 +86,13 @@ function LocationDomainV2() {
               fontSize: "0.95rem",
             }}
           >
-            위치 서비스 도메인은 지도에서 반려 동반 시설을 찾고 리뷰까지 이어
-            주는 Petory의 탐색·검색 기능입니다. 처음에는 지도와 검색만 맞물리면
-            된다고 보였지만, 실제 구현에서는 키워드·위치·지역이 겹칠 때도 위치를
-            먼저 볼 검색 분기, 통합 지도에서 주변 목록 검색과 맞춤 추천 API를
-            나누는 정리, 지도를 옮길 때 결과가 매번 덮이는 재조회, 공공데이터
-            CSV로 시설을 채우는 배치 적재까지 함께 다뤄야 했습니다. 저는 검색
-            진입점을 좌표 반경 검색 → 지역명 fallback → keyword 단독 FULLTEXT로
-            정리하고, 주변 목록은 Location 검색 API가 맡으며 추천 카드는
-            Recommendation 도메인의 signal을 Location category 검색으로 연결하게
-            했습니다. 지도만 움직였을 때는 자동 조회 대신 「이 지역」 액션에서
-            검색 시점을 사용자에게 맡기는 방향으로 설계했습니다.
+            지도에서 반려 동반 시설을 찾고 리뷰까지 잇는 탐색·검색 도메인입니다.
+            핵심은 <strong>검색 분기</strong>였습니다 — 키워드·위치·지역이 겹쳐도
+            좌표 반경 검색 → 지역명 fallback → keyword 단독 FULLTEXT 순으로
+            정리했습니다. 주변 목록은 Location 검색 API가 맡고, 추천 카드는
+            Recommendation의 signal을 Location category 검색으로 연결합니다.
+            지도를 드래그만 했을 땐 자동 조회 대신 「이 지역」을 눌러야 다시
+            검색합니다.
           </p>
 
           <section
@@ -148,28 +144,24 @@ function LocationDomainV2() {
                   margin: 0,
                 }}
               >
-                백엔드 검색은 컨트롤러가 요청 파라미터 조합을 보고
-                <code>searchLocationServicesByLocation</code>,{" "}
-                <code>searchLocationServicesByRegion</code>,{" "}
-                <code>searchLocationServicesByKeyword</code>로 분기합니다. 좌표가
-                있으면 반경 검색을 먼저 타고, 같은 요청에 키워드가 붙어 있어도
-                우선순위는 바뀌지 않습니다. 이 경로에서는 키워드를{" "}
-                <strong>시설명에 포함되는지</strong>로만 좁히며, 설명·카테고리까지
-                도는 FULLTEXT 검색은 좌표·지역이 없을 때만 씁니다. 좌표가 없으면
-                <code>sigungu</code>/<code>sido</code> 지역 검색 → keyword 단독
-                FULLTEXT → 조건이 없으면 평점순입니다. 통합 지도 주변서비스 탭은
-                위치·반경(기본 5km), 카테고리, 추천순(
+                컨트롤러가 파라미터 조합을 보고{" "}
+                <code>searchLocationServicesByLocation</code> /{" "}
+                <code>...ByRegion</code> / <code>...ByKeyword</code>로 분기합니다.
+                좌표가 있으면 반경 검색을 먼저 타고, 키워드가 붙어도 우선순위는
+                안 바뀝니다 — 이때 키워드는 <strong>시설명 포함 여부</strong>로만
+                좁히고, 설명·카테고리까지 도는 FULLTEXT는 좌표·지역이 없을 때만
+                씁니다. 좌표가 없으면 <code>sigungu</code>/<code>sido</code> 지역
+                검색 → keyword FULLTEXT → 조건 없으면 평점순입니다. 통합 지도
+                주변서비스 탭은 위치·반경(기본 5km)·카테고리·추천순(
                 <code>sort=stable</code>)으로{" "}
-                <code>/api/location-services/search</code>를 호출하고, 응답은
-                최대 <code>size=300</code>건입니다. 지도에서는 뷰포트 중심(
-                <code>mapViewportCenter</code>)과 실제 검색 중심(
-                <code>searchCenter</code>)을 나눠, 드래그만으로는 목록이
-                갱신되지 않고 「이 지역」을 눌렀을 때만 다시 조회합니다. 맞춤
-                추천 카드는 Location 목록 API가 직접 만들지 않습니다.
-                Recommendation 도메인이 <code>/api/pet-recommend/signals</code>로
-                최근 signal을 카드로 내려주고, 사용자가 카드를 선택하면 Location
-                검색의 <code>category</code> 필터로 다시 연결됩니다. 카테고리·키워드·정렬은
-                프론트에서 걸러내지 않고 서버 쿼리에서 처리합니다.
+                <code>/api/location-services/search</code>를 호출해 최대{" "}
+                <code>size=300</code>건을 받습니다. 뷰포트 중심(
+                <code>mapViewportCenter</code>)과 검색 중심(
+                <code>searchCenter</code>)을 나눠 드래그만으로는 목록이 안 바뀌고
+                「이 지역」을 눌러야 재조회합니다. 추천 카드는 Location이 만들지
+                않고, Recommendation이 <code>/api/pet-recommend/signals</code>로
+                내려준 카드를 사용자가 고르면 <code>category</code> 필터로
+                연결됩니다. 카테고리·키워드·정렬은 서버 쿼리에서 처리합니다.
               </p>
             </Card>
 
