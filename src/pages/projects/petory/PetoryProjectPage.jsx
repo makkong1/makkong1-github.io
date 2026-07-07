@@ -1,21 +1,10 @@
-import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../components/Common/TableOfContents';
 import petoryErdImage from '../../../assets/petory-erd-0131.png';
 
 function PetoryProjectPage() {
-  const [isDarkMode, setIsDarkMode] = useState(
-    () => document.documentElement.getAttribute('data-theme') === 'dark'
-  );
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      setIsDarkMode(document.documentElement.getAttribute('data-theme') === 'dark');
-    });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
-    return () => observer.disconnect();
-  }, []);
+  const isDarkMode = true;
 
   const sections = [
     { id: 'hero', title: '프로젝트 소개' },

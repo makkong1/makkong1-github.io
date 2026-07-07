@@ -1,8 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useTheme } from '../../contexts/ThemeContext';
 
 function Navigation() {
-  const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const path = location.pathname;
 
@@ -169,13 +167,6 @@ function Navigation() {
             </>
           )}
         </div>
-        <button
-          onClick={toggleTheme}
-          className="theme-toggle-btn"
-          title={theme === 'light' ? '다크 모드로 전환' : '라이트 모드로 전환'}
-        >
-          {theme === 'light' ? '🌙' : '☀️'}
-        </button>
       </div>
     </nav>
   );
