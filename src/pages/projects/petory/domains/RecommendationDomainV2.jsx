@@ -75,6 +75,8 @@ function RecommendationDomainV2() {
         style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
+          <div className="domain-hero">
+            <span className="eyebrow">Recommendation</span>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             Recommendation 도메인
           </h1>
@@ -93,6 +95,8 @@ function RecommendationDomainV2() {
             미저장)은 이벤트와 <code>@Async</code>로 본 트랜잭션과 분리해, 분석이
             늦거나 실패해도 글 작성·케어·검색은 그대로 성공합니다.
           </p>
+
+          </div>
 
           <section
             id="pillars"

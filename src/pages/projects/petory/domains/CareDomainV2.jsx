@@ -72,6 +72,8 @@ function CareDomainV2() {
         style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
+          <div className="domain-hero">
+            <span className="eyebrow">Care</span>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             Care 도메인
           </h1>
@@ -90,6 +92,8 @@ function CareDomainV2() {
             생성을 연결합니다. 목록 조회의 N+1(요청자·반려동물·지원자 수·파일)은
             fetch join과 배치로 줄였습니다.
           </p>
+
+          </div>
 
           <section
             id="pillars"

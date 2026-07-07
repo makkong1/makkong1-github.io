@@ -71,6 +71,8 @@ function LocationDomainV2() {
         style={{ display: "flex", gap: "2rem", alignItems: "flex-start" }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
+          <div className="domain-hero">
+            <span className="eyebrow">Location</span>
           <h1 style={{ marginBottom: "0.5rem", color: "var(--text-color)" }}>
             위치 서비스 도메인
           </h1>
@@ -90,6 +92,8 @@ function LocationDomainV2() {
             지도를 드래그만 했을 땐 자동 조회 대신 「이 지역」을 눌러야 다시
             검색합니다.
           </p>
+
+          </div>
 
           <section
             id="pillars"

@@ -71,6 +71,8 @@ function BoardDomainV2() {
         style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
+          <div className="domain-hero">
+            <span className="eyebrow">Board</span>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             게시판 도메인
           </h1>
@@ -88,6 +90,8 @@ function BoardDomainV2() {
             배치 조회, 조회 로그 <code>INSERT IGNORE</code>, 인기글 스냅샷으로
             목록·상세·인기글 비용을 분리했습니다.
           </p>
+
+          </div>
 
           <section
             id="pillars"

@@ -66,6 +66,8 @@ function MeetupDomainV2() {
         style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
+          <div className="domain-hero">
+            <span className="eyebrow">Meetup</span>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             모임 도메인
           </h1>
@@ -84,6 +86,8 @@ function MeetupDomainV2() {
             줄였습니다. 근처 검색은 공간 조건으로 ID만 먼저 뽑는 2단계로 메모리
             부담을 낮췄습니다.
           </p>
+
+          </div>
 
           <section
             id="pillars"

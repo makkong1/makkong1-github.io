@@ -1595,3 +1595,34 @@ code {
   border-color: var(--accent);
   background: var(--accent-soft);
 }
+
+/* ===== 도메인 페이지 공통 헤더 ===== */
+.domain-hero {
+  position: relative;
+  overflow: hidden;
+  padding: 2.5rem 2rem;
+  border-radius: 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 2.5rem;
+}
+.domain-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    120% 130% at 12% -10%,
+    var(--accent-glow) 0%,
+    transparent 55%
+  );
+  pointer-events: none;
+}
+.domain-hero > * {
+  position: relative;
+}
+.domain-hero h1 {
+  margin-bottom: 0.75rem;
+}
+.domain-hero > p:last-child {
+  margin-bottom: 0;
+}

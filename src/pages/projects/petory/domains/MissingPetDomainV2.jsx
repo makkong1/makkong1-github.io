@@ -68,6 +68,8 @@ function MissingPetDomainV2() {
         style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
+          <div className="domain-hero">
+            <span className="eyebrow">Missing Pet</span>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             실종 제보 도메인
           </h1>
@@ -85,6 +87,8 @@ function MissingPetDomainV2() {
             경량 조회합니다. 서비스 레이어 권한 검증 공백도 JWT 주체 기준으로
             통일했습니다.
           </p>
+
+          </div>
 
           <section
             id="pillars"

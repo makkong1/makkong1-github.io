@@ -73,6 +73,8 @@ function UserDomainV2() {
         style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
+          <div className="domain-hero">
+            <span className="eyebrow">User</span>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             유저 도메인
           </h1>
@@ -92,6 +94,8 @@ function UserDomainV2() {
             provider 식별자·동일 이메일 연결로 통합해, 프로필·Pet·제재 상태를
             다른 도메인이 신뢰할 수 있게 제공합니다.
           </p>
+
+          </div>
 
           <section
             id="pillars"

@@ -72,6 +72,8 @@ function ChatDomainV2() {
         style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}
       >
         <div className="domain-page-content" style={{ flex: 1 }}>
+          <div className="domain-hero">
+            <span className="eyebrow">Chat</span>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>
             채팅 도메인
           </h1>
@@ -90,6 +92,8 @@ function ChatDomainV2() {
             모으고, 읽음 처리는 전체 메시지를 다시 읽던 걸 참여자 상태 필드만
             갱신하도록 단순화했습니다.
           </p>
+
+          </div>
 
           <section
             id="pillars"
