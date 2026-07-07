@@ -143,7 +143,8 @@ ${nodeStyles}`;
         <div className="project-main-content">
           {/* Hero Section */}
           <section id="hero" style={{ marginBottom: '4rem', scrollMarginTop: '2rem' }}>
-            <div className="project-hero">
+            <div className="project-hero glow-bg">
+              <span className="eyebrow">Backend Portfolio · 2025</span>
               <h1>Petory</h1>
               <p className="subtitle">반려동물 통합 플랫폼</p>
               <p className="description">
@@ -154,7 +155,7 @@ ${nodeStyles}`;
               <div className="buttons-wrapper">
                 <Link
                   to="/demo?project=petory"
-                  className="demo-link"
+                  className="btn-primary"
                 >
                   🎮 Live Demo
                 </Link>
@@ -162,7 +163,7 @@ ${nodeStyles}`;
                   href="https://github.com/makkong1/Petory"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="github-link"
+                  className="btn-secondary"
                 >
                   GitHub 저장소 →
                 </a>
@@ -172,8 +173,9 @@ ${nodeStyles}`;
           
           {/* 성과 숫자 카드 - 대표 지표 */}
           <section id="achievements" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <span className="eyebrow">Achievements</span>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 성과</h2>
-            <div className="section-card" style={{ border: '2px solid var(--link-color)', textAlign: 'center' }}>
+            <div className="glass" style={{ padding: '2rem', textAlign: 'center' }}>
               <div className="stat-grid">
               <div className="stat-item">
                 <div className="stat-number">99.8%</div>
