@@ -594,6 +594,11 @@ code {
   z-index: 1100;
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
 }
+/* 떠 있는 드롭다운은 뒤 콘텐츠가 비치면 글자가 안 보이므로 .glass 의 반투명 배경을 불투명하게 덮음 */
+.nav-dropdown-menu.glass {
+  background: var(--surface);
+  border-color: var(--border-strong);
+}
 .nav-drop-item {
   padding: 8px 12px;
   border-radius: 8px;
