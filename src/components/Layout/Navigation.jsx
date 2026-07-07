@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 const DOMAINS = [
   ['User', '/domains/user'],
@@ -16,6 +16,7 @@ function Navigation() {
   const location = useLocation();
   const path = location.pathname;
   const [openDomains, setOpenDomains] = useState(false);
+  const dropdownRef = useRef(null);
 
   const isHome = path === '/';
   const isPetoryProject = path === '/portfolio/petory';
@@ -37,6 +38,25 @@ function Navigation() {
   useEffect(() => {
     setOpenDomains(false);
   }, [path]);
+
+  // 바깥 클릭 / ESC 시 드롭다운 닫기
+  useEffect(() => {
+    if (!openDomains) return;
+    const onPointerDown = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setOpenDomains(false);
+      }
+    };
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpenDomains(false);
+    };
+    document.addEventListener('mousedown', onPointerDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [openDomains]);
 
   return (
     <nav className="nav">
@@ -61,10 +81,7 @@ function Navigation() {
           >
             Petory
           </Link>
-          <div
-            className="nav-dropdown"
-            onMouseLeave={() => setOpenDomains(false)}
-          >
+          <div className="nav-dropdown" ref={dropdownRef}>
             <button
               type="button"
               className={`nav-link nav-dropdown-toggle ${isDomainPage ? 'active' : ''}`}
