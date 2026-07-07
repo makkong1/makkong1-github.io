@@ -24,6 +24,12 @@ function Navigation() {
   const isFlowsPage = path === '/domains/flows';
   const isDomainPage = path.startsWith('/domains/') && !isFlowsPage;
 
+  // 현재 보고 있는 도메인이 있으면 토글 라벨을 그 도메인명으로 표시
+  const currentDomain = DOMAINS.find(
+    ([, to]) => path === to || path.startsWith(`${to}/`),
+  );
+  const domainLabel = currentDomain ? currentDomain[0] : 'Domains';
+
   useEffect(() => {
     const onScroll = () =>
       document
@@ -88,7 +94,7 @@ function Navigation() {
               onClick={() => setOpenDomains((v) => !v)}
               aria-expanded={openDomains}
             >
-              Domains ▾
+              {domainLabel} ▾
             </button>
             {openDomains && (
               <div className="nav-dropdown-menu glass">
