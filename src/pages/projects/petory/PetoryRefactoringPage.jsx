@@ -47,11 +47,11 @@ const cases = [
       'Care 수치는 기존 비페이징 측정 기준입니다. 현재 페이징 경로는 @BatchSize와 배치 변환으로 N+1을 완화합니다.',
     verification: 'Hibernate Statistics와 성능 로그로 쿼리 수, 실행 시간, 메모리를 비교했습니다.',
     docs: [
-      { to: '/domains/board/optimization', label: 'Board 성능 최적화' },
-      { to: '/domains/care/optimization', label: 'Care 성능 최적화' },
-      { to: '/domains/user/optimization', label: 'User 성능 최적화' },
-      { to: '/domains/missing-pet/optimization', label: 'MissingPet 성능 최적화' },
-      { to: '/domains/chat/optimization', label: 'Chat 성능 최적화' },
+      { to: '/domains/board/detail', label: 'Board 성능·구조 상세' },
+      { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },
+      { to: '/domains/user/detail', label: 'User 인증·성능 상세' },
+      { to: '/domains/missing-pet/detail', label: 'MissingPet 성능·구조 상세' },
+      { to: '/domains/chat/detail', label: 'Chat 성능·보안 상세' },
     ],
   },
   {
@@ -87,9 +87,8 @@ const cases = [
     ],
     verification: 'CountDownLatch 동시성 테스트로 재현·검증했습니다(로컬 MySQL, 24 tests 통과). Meetup은 트랜잭션을 우회해 레이스를 결정론적으로 재현했습니다.',
     docs: [
-      { to: '/domains/meetup/optimization', label: 'Meetup 성능 최적화' },
-      { to: '/domains/meetup/refactoring', label: 'Meetup 리팩토링' },
-      { to: '/domains/care/refactoring', label: 'Care 리팩토링' },
+      { to: '/domains/meetup/detail', label: 'Meetup 성능·동시성 상세' },
+      { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },
     ],
   },
   {
@@ -128,8 +127,7 @@ const cases = [
       '지역명 검색은 이후 여러 번 UX가 바뀐 영역이라 본문 성과에서 제외하고 참고 기록으로만 둡니다.',
     verification: '조회 데이터 수, DB 쿼리 시간, 네트워크 전송량, 프론트 메모리 사용량을 비교했습니다.',
     docs: [
-      { to: '/domains/location/optimization', label: 'Location 성능 최적화' },
-      { to: '/domains/location/refactoring', label: 'Location 리팩토링' },
+      { to: '/domains/location/detail', label: 'Location 성능·검색 상세' },
     ],
   },
   {
@@ -160,8 +158,8 @@ const cases = [
       '이 사례는 수치 중심 성과가 아니라 API 계약과 인가 경계 개선 사례입니다.',
     verification: '메시지 조회, 검색, 상태 변경 경로가 참여자 검증을 거치도록 점검했습니다.',
     docs: [
-      { to: '/domains/chat/refactoring', label: 'Chat 리팩토링' },
-      { to: '/domains/care/refactoring', label: 'Care 리팩토링' },
+      { to: '/domains/chat/detail', label: 'Chat 성능·보안 상세' },
+      { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },
     ],
   },
   {
@@ -352,8 +350,7 @@ export default function PetoryRefactoringPage() {
                 OTHER로 정규화해 변경 범위를 줄였습니다.
               </p>
               <div className="refactoring-docs compact">
-                <Link to="/domains/recommendation/refactoring">Recommendation 리팩토링</Link>
-                <Link to="/domains/recommendation/optimization">NLP 호출·부하 제어</Link>
+                <Link to="/domains/recommendation/detail">Recommendation NLP 연동 상세</Link>
               </div>
             </div>
           </section>

@@ -312,10 +312,10 @@ function UserDomainV2() {
                 </code>{' '}
                 후 조회입니다. 일반 로그인 로직 전체의 항상값은 아니며, 상세는{' '}
                 <Link
-                  to="/domains/user/optimization"
+                  to="/domains/user/detail"
                   style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                 >
-                  성능 최적화
+                  인증·성능 상세
                 </Link>{' '}
                 페이지 참고. 최신 User 문서 기준으로 로그인/refresh 응답 DTO는
                 토큰 발급 시 이미 로드한 <code>Users</code> 엔티티에서 생성합니다.

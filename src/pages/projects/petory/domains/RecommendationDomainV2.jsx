@@ -480,10 +480,10 @@ DEFAULT        -> 7일`}</CodeBlock>
               <CodeBlock>{`"동물병원" → 생략 | "강아지 귀 긁어요" → 분석 후보`}</CodeBlock>
               <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
                 <Link
-                  to="/domains/recommendation/optimization"
+                  to="/domains/recommendation/detail"
                   style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}
                 >
-                  NLP 호출·부하 제어 상세 →
+                  NLP 연동 상세 →
                 </Link>
               </p>
             </Card>

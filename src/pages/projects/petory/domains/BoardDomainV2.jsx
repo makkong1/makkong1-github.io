@@ -357,13 +357,13 @@ Map<Long, List<FileDTO>> attachmentsMap =
                   <>
                     상세는{' '}
                     <Link
-                      to="/domains/board/optimization"
+                      to="/domains/board/detail"
                       style={{
                         color: 'var(--link-color)',
                         textDecoration: 'none',
                       }}
                     >
-                      성능 최적화
+                      성능·구조 상세
                     </Link>{' '}
                     페이지 참고
                   </>
