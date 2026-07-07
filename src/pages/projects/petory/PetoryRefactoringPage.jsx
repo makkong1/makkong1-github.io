@@ -60,7 +60,7 @@ const cases = [
     title: '동시성 / Race Condition 해결',
     scope: 'Meetup · PetCoin · Care',
     summary:
-      '동시 요청이 같은 행을 읽고 수정할 때 생기는 Lost Update와 비즈니스 제약 파괴를 도메인별로 다른 방식으로 막았습니다.',
+      '동시 요청이 같은 행을 읽고 수정할 때 생기는 Lost Update와 비즈니스 제약 파괴를 막았습니다. 핵심은 "현재 값 검증이 필요한가?"를 기준으로 시나리오마다 전략을 구분한 것입니다.',
     points: [
       {
         label: '문제',
@@ -85,7 +85,7 @@ const cases = [
       ['PetCoin 잔액', '동시 충전 5건 기대 잔액 150, 실제 110 가능', 'findByIdForUpdate'],
       ['Care 거래 확정', '두 사용자 모두 확정했는데 OPEN에 머무는 stuck state', 'Conversation PESSIMISTIC_WRITE'],
     ],
-    verification: '동시성 테스트로 예상 최종 상태와 실제 DB 상태를 비교했습니다.',
+    verification: 'CountDownLatch 동시성 테스트로 재현·검증했습니다(로컬 MySQL, 24 tests 통과). Meetup은 트랜잭션을 우회해 레이스를 결정론적으로 재현했습니다.',
     docs: [
       { to: '/domains/meetup/optimization', label: 'Meetup 성능 최적화' },
       { to: '/domains/meetup/refactoring', label: 'Meetup 리팩토링' },
