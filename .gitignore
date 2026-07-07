@@ -26,3 +26,6 @@ dist-ssr
 # Interview prep (private)
 docs/interview/
 .superpowers/
+
+# Screenshot verification artifacts
+scripts/_shots/
