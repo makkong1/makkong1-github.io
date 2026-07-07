@@ -3,23 +3,40 @@ import { Link } from "react-router-dom";
 function HomePage() {
   return (
     <div className="layout-main">
-      {/* 페이지 헤더 */}
-      <div className="page-header">
-        {/* <h1>내사진</h1> */}
-        <p>
-          안녕하세요!{" "}
-          <strong>
-            문제를 재현하고 측정하며 개선하는 백엔드 개발자 박영범
-          </strong>
-          입니다.
+      {/* 히어로 */}
+      <section
+        className="project-hero glow-bg"
+        style={{ marginBottom: "3rem" }}
+      >
+        <span className="eyebrow">Backend Engineer</span>
+        <h1>박영범</h1>
+        <p className="subtitle">문제를 재현하고 측정하며 개선하는 백엔드 개발자</p>
+        <p className="description">
+          Spring Boot · JPA · MySQL 기반으로 N+1·동시성·검색 성능 병목을 테스트로
+          재현하고, 쿼리 수·응답 시간·메모리를 기준으로{" "}
+          <strong>측정 → 개선 → 재검증</strong>합니다.
         </p>
-      </div>
+        <div className="buttons-wrapper">
+          <Link to="/portfolio/petory" className="btn-primary">
+            Petory 프로젝트 →
+          </Link>
+          <a
+            href="https://github.com/makkong1"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-secondary"
+          >
+            GitHub
+          </a>
+        </div>
+      </section>
 
       {/* About Me 섹션 */}
       <section
         id="about"
         style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
       >
+        <span className="eyebrow">소개</span>
         <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
           About Me
         </h2>
@@ -61,6 +78,7 @@ function HomePage() {
         id="portfolio"
         style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
       >
+        <span className="eyebrow">포트폴리오</span>
         <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
           Projects
         </h2>
@@ -93,6 +111,7 @@ function HomePage() {
         id="education"
         style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
       >
+        <span className="eyebrow">학력</span>
         <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
           Education
         </h2>
@@ -120,6 +139,7 @@ function HomePage() {
         id="contact"
         style={{ marginBottom: "1rem", scrollMarginTop: "1rem" }}
       >
+        <span className="eyebrow">연락처</span>
         <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
           Contact
         </h2>
