@@ -300,17 +300,17 @@ code {
 /* 공통 카드 스타일 */
 .content-card {
   padding: 2rem;
-  background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-color) 100%);
-  border-radius: 12px;
-  border: 1px solid var(--nav-border);
+  background: var(--surface-2);
+  border-radius: 14px;
+  border: 1px solid var(--border);
   margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .content-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  border-color: var(--border-strong);
 }
 
 .content-card h2 {
@@ -332,21 +332,19 @@ code {
   line-height: 1.8;
 }
 
-/* 섹션 카드 (이력서용) */
+/* 섹션 카드 (바깥 컨테이너) */
 .section-card {
   padding: 2rem;
-  background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-color) 100%);
-  border-radius: 12px;
-  border: 1px solid var(--nav-border);
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
   margin-bottom: 2rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease;
   scroll-margin-top: 80px;
 }
 
 .section-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-  transform: translateY(-2px);
+  border-color: var(--border-strong);
 }
 
 .section-card h2 {
@@ -360,13 +358,12 @@ code {
 .project-card {
   display: block;
   padding: 2rem;
-  background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-color) 100%);
-  border-radius: 12px;
-  border: 1px solid var(--nav-border);
+  background: var(--surface-2);
+  border-radius: 14px;
+  border: 1px solid var(--border);
   text-decoration: none;
   color: inherit;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
 }
@@ -387,9 +384,9 @@ code {
 }
 
 .project-card:hover {
-  border-color: var(--link-color);
+  border-color: var(--border-strong);
   transform: translateY(-4px);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
 }
 
 .project-card h2 {
@@ -1034,9 +1031,11 @@ code {
   min-width: 200px;
   max-width: 250px;
   padding: 1.5rem;
-  background-color: var(--card-bg);
-  border-radius: 8px;
-  border: 1px solid var(--nav-border);
+  background: rgba(255, 255, 255, 0.05);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 14px;
+  border: 1px solid var(--border);
   max-height: calc(100vh - 8rem);
   overflow-y: auto;
 }
@@ -1059,8 +1058,8 @@ code {
 }
 
 .toc-item:hover, .toc-item.active {
-  color: var(--link-color);
-  background-color: var(--nav-bg);
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 
 .refactoring-page .domain-page-container {
@@ -1339,14 +1338,18 @@ code {
   flex-direction: column;
   color: inherit;
   text-decoration: none;
-  background: linear-gradient(135deg, var(--card-bg) 0%, var(--bg-color) 100%);
-  border: 1px solid var(--nav-border);
-  border-radius: 8px;
-  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition:
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    border-color 0.2s ease;
 }
 
 .problem-summary-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+  border-color: var(--border-strong);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
   transform: translateY(-2px);
 }
 
