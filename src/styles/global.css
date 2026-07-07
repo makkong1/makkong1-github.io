@@ -590,12 +590,22 @@ code {
 /* Navigation */
 .nav {
   padding: 1rem;
-  background-color: var(--nav-bg);
-  border-bottom: 1px solid var(--nav-border);
-  transition: background-color 0.3s ease, border-color 0.3s ease;
+  background: transparent;
+  border-bottom: 1px solid transparent;
+  transition:
+    background 0.25s ease,
+    backdrop-filter 0.25s ease,
+    border-color 0.25s ease;
   position: sticky;
   top: 0;
   z-index: 1000;
+}
+
+.nav.scrolled {
+  background: var(--nav-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
 }
 
 /* 모바일에서 네비게이션 고정 해제 */
@@ -649,6 +659,45 @@ code {
 
 .nav-arrow {
   color: var(--text-muted);
+}
+
+/* Domains 드롭다운 */
+.nav-dropdown {
+  position: relative;
+  display: inline-block;
+}
+.nav-dropdown-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.nav-dropdown-menu {
+  position: absolute;
+  top: 150%;
+  left: 0;
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  min-width: 190px;
+  z-index: 1100;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+.nav-drop-item {
+  padding: 8px 12px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  font-size: 0.92rem;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
+}
+.nav-drop-item:hover,
+.nav-drop-item.active {
+  color: var(--text);
+  background: var(--accent-soft);
 }
 
 /* Theme Toggle Button */
