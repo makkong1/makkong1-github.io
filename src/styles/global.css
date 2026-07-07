@@ -1536,3 +1536,80 @@ code {
     padding: 0.4rem !important;
   }
 }
+
+/* ===== 프리미엄 유틸리티 ===== */
+.glass {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+}
+.glow-bg {
+  position: relative;
+  overflow: hidden;
+}
+.glow-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background: radial-gradient(
+    120% 130% at 12% -10%,
+    var(--accent-glow) 0%,
+    transparent 55%
+  );
+  pointer-events: none;
+}
+.glow-bg > * {
+  position: relative;
+  z-index: 1;
+}
+
+.card-lift {
+  transition:
+    transform 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+.card-lift:hover {
+  transform: translateY(-2px);
+  border-color: var(--border-strong);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+}
+
+.btn-primary {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  background: linear-gradient(90deg, var(--accent), var(--accent-strong));
+  color: #1a1008;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 6px 24px var(--accent-glow);
+  transition:
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+.btn-primary:hover {
+  filter: brightness(1.06);
+  transform: translateY(-1px);
+}
+.btn-secondary {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+.btn-secondary:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
