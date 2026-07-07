@@ -201,6 +201,7 @@ ${nodeStyles}`;
 
           {/* 왜 이걸 했는가 */}
           <section id="why" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <span className="eyebrow">Why</span>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>왜 이걸 했는가</h2>
             <div className="section-card">
               <div className="about-text-block">
@@ -222,6 +223,7 @@ ${nodeStyles}`;
 
           {/* 아키텍처 섹션 */}
           <section id="architecture" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <span className="eyebrow">Architecture</span>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
 
             <div className="content-card">
@@ -339,6 +341,7 @@ ${nodeStyles}`;
             id="sequence-flows"
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
+            <span className="eyebrow">Data Flow</span>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
               데이터 흐름 시퀀스
             </h2>
@@ -357,6 +360,7 @@ ${nodeStyles}`;
           </section>
 
           <section id="problem-solving" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <span className="eyebrow">Problem Solving</span>
             <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>성능 개선 & 리팩토링</h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.65 }}>
               면접에서 설명 가능한 대표 사례 4개를 선별했습니다.
@@ -390,6 +394,7 @@ ${nodeStyles}`;
           </section>
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <span className="eyebrow">Features</span>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 기능</h2>
             <div className="section-card">
               <div className="domain-link-grid">
@@ -455,6 +460,7 @@ ${nodeStyles}`;
           </section>
 
           <section id="tech-stack" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <span className="eyebrow">Tech Stack</span>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>기술 스택</h2>
             <div className="section-card">
               <div className="feature-points-grid">
@@ -506,6 +512,7 @@ ${nodeStyles}`;
           </section>
 
         <section id="links" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <span className="eyebrow">Links</span>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 링크</h2>
             <div className="section-card">
               <div className="domain-link-grid">

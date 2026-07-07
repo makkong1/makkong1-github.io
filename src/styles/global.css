@@ -1268,8 +1268,9 @@ code {
 
 .problem-summary-card span {
   margin-bottom: 0.6rem;
-  color: var(--link-color);
-  font-size: 0.78rem;
+  color: var(--accent);
+  font-family: "Menlo", "Monaco", monospace;
+  font-size: 1.4rem;
   font-weight: 700;
 }
 
