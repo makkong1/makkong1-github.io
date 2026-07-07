@@ -78,14 +78,14 @@ ${nodeStyles}`;
     SSE --> CLIENT
     FCM --> CLIENT
 
-    style DOMAIN fill:#e8f5e9,stroke:#40804a
-    style NS fill:#e1f5ff,stroke:#4a8fad
-    style API fill:#e1f5ff,stroke:#4a8fad
-    style DB fill:#ffe1f5,stroke:#904090
-    style REDIS fill:#ffe1f5,stroke:#904090
-    style SSE fill:#fff4e1,stroke:#a08030
-    style FCM fill:#fff4e1,stroke:#a08030
-    style CLIENT fill:#f3f4f6,stroke:#6b7280`;
+    style DOMAIN fill:#1a3a1a,color:#b0d4b0,stroke:#40804a
+    style NS fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
+    style API fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
+    style DB fill:#3a1a3a,color:#e4b0e4,stroke:#904090
+    style REDIS fill:#3a1a3a,color:#e4b0e4,stroke:#904090
+    style SSE fill:#3a3010,color:#f4e6b0,stroke:#a08030
+    style FCM fill:#3a3010,color:#f4e6b0,stroke:#a08030
+    style CLIENT fill:#2a2622,color:#d0d0d0,stroke:#6b7280`;
 
   const domains = [
     {
