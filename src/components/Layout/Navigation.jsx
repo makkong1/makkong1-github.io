@@ -71,7 +71,7 @@ function Navigation() {
           <Link to="/" className={`nav-link brand ${isHome ? 'active' : ''}`}>
             Home
           </Link>
-          {isHome && (
+          {isHome ? (
             <>
               <a href="#about" className="nav-link">
                 About
@@ -80,46 +80,49 @@ function Navigation() {
                 Projects
               </a>
             </>
-          )}
-          <Link
-            to="/portfolio/petory"
-            className={`nav-link ${isPetoryProject ? 'active' : ''}`}
-          >
-            Petory
-          </Link>
-          <div className="nav-dropdown" ref={dropdownRef}>
-            <button
-              type="button"
-              className={`nav-link nav-dropdown-toggle ${isDomainPage ? 'active' : ''}`}
-              onClick={() => setOpenDomains((v) => !v)}
-              aria-expanded={openDomains}
-            >
-              {domainLabel} ▾
-            </button>
-            {openDomains && (
-              <div className="nav-dropdown-menu glass">
-                {DOMAINS.map(([label, to]) => (
-                  <Link
-                    key={to}
-                    to={to}
-                    className={`nav-drop-item ${path.startsWith(to) ? 'active' : ''}`}
-                    onClick={() => setOpenDomains(false)}
-                  >
-                    {label}
-                  </Link>
-                ))}
+          ) : (
+            <>
+              <Link
+                to="/portfolio/petory"
+                className={`nav-link ${isPetoryProject ? 'active' : ''}`}
+              >
+                Petory
+              </Link>
+              <div className="nav-dropdown" ref={dropdownRef}>
+                <button
+                  type="button"
+                  className={`nav-link nav-dropdown-toggle ${isDomainPage ? 'active' : ''}`}
+                  onClick={() => setOpenDomains((v) => !v)}
+                  aria-expanded={openDomains}
+                >
+                  {domainLabel} ▾
+                </button>
+                {openDomains && (
+                  <div className="nav-dropdown-menu glass">
+                    {DOMAINS.map(([label, to]) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        className={`nav-drop-item ${path.startsWith(to) ? 'active' : ''}`}
+                        onClick={() => setOpenDomains(false)}
+                      >
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-          <Link
-            to="/domains/flows"
-            className={`nav-link ${isFlowsPage ? 'active' : ''}`}
-          >
-            Flows
-          </Link>
-          <Link to="/infra" className={`nav-link ${isInfraPage ? 'active' : ''}`}>
-            Infra
-          </Link>
+              <Link
+                to="/domains/flows"
+                className={`nav-link ${isFlowsPage ? 'active' : ''}`}
+              >
+                Flows
+              </Link>
+              <Link to="/infra" className={`nav-link ${isInfraPage ? 'active' : ''}`}>
+                Infra
+              </Link>
+            </>
+          )}
           <Link to="/demo" className="nav-link brand">
             🎮 Live Demo
           </Link>
