@@ -41,6 +41,7 @@ function RecommendationDomainDetail() {
   const sections = [
     { id: 'intro', title: '개요' },
     { id: 'nlp-control', title: 'NLP 호출 · 부하 제어' },
+    { id: 'instant-api', title: '즉시 추천 API · 건강 알림' },
     { id: 'bugs', title: '버그 · 보안 수정' },
     { id: 'backlog', title: '리팩토링 백로그' },
     { id: 'docs', title: '원문 문서' },
@@ -147,7 +148,7 @@ function RecommendationDomainDetail() {
             <div className="section-card" style={card}>
               <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>부가 기능 실패 시 본 기능 유지 (fail-closed)</h3>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
-                <li>• Python 3초 타임아웃 · 실패 시 빈 결과 — 본 요청 무영향</li>
+                <li>• Python 3초 타임아웃 · 실패 시 <code>Optional.empty()</code> — 게시글 작성 등 signal 수집 흐름은 원 요청 무영향(즉시 추천 API는 빈 결과 대신 keyword fallback으로 대체, 아래 참고)</li>
                 <li>• Redis 중복 방지 장애 → 분석 생략(안전 쪽 차단)</li>
                 <li>• 실행 풀 거부 → 경고 로그, signal 미생성</li>
                 <li>• confidence Python 0.45 / Spring 0.60 — 2단계 품질 필터</li>
@@ -155,6 +156,67 @@ function RecommendationDomainDetail() {
               </ul>
               <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
                 이유(confidence 이중 threshold): Python 0.45 미만은 UNKNOWN으로 걸러내고, Spring은 그중에서도 0.60 이상만 저장 — 2-pass 필터로 낮은 신뢰도 signal이 쌓이는 걸 막음.
+              </p>
+            </div>
+          </section>
+
+          {/* 2.5. 즉시 추천 API · 건강 알림 */}
+          <section id="instant-api" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>즉시 추천 API · 건강 알림</h2>
+
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>GET /api/pet-recommend — 동기 호출이라 실패해도 결과는 내려준다</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                다른 3개 진입점(게시글 작성·케어 요청·주변서비스 검색)은 signal 수집이 부가 기능이라 실패해도 빈 결과로 끝나면 되지만, 이 API는 사용자가 직접 호출해 응답을 기다리는 <strong style={{ color: 'var(--text-color)' }}>동기 API</strong>라 NLP가 실패해도 결과를 줘야 합니다.
+              </p>
+              <pre style={pre}>
+{`1. PetIntentClient.analyze(text, petType) 호출
+2. NLP 실패 시 fallbackRecommend() 실행
+     → 점수 계산 없이 키워드 기반 category 추정 + 거리순 조회 결과를 그대로 반환
+3. 분석 성공 시 recommendedCategories[0]을 primary category로 사용
+4. LocationServiceRepository.findByRadius(..., category, "distance", 20)
+5. 최근 30일 장소 상호작용으로 popularity score 계산
+6. PetRecommendScoreCalculator로 점수화
+7. 점수 내림차순 상위 10개 반환`}
+              </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유: 즉시 추천 API는 사용자가 결과 화면을 기다리는 동기 호출이라 "빈 결과"를 줄 수 없음 — NLP 실패 시에도 키워드 기반 카테고리 추정 + 거리순 조회로 성능 저하 없이 대체 결과를 반환하도록 fallback 경로를 분리.
+              </p>
+              <div style={{ overflowX: 'auto', marginTop: '0.75rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <th style={th}>점수 항목</th><th style={th}>가중치</th><th style={th}>계산</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}><td style={{ ...td, color: 'var(--text-color)' }}>인기도</td><td style={td}>0.35</td><td style={td}>최근 30일 상호작용 건수를 로그 스케일로 0~1 정규화</td></tr>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}><td style={{ ...td, color: 'var(--text-color)' }}>태그 일치</td><td style={td}>0.30</td><td style={td}>intentTags 중 locationTags에 포함된 비율</td></tr>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}><td style={{ ...td, color: 'var(--text-color)' }}>거리</td><td style={td}>0.20</td><td style={td}>1 - distanceM / radiusM (반경 밖은 0)</td></tr>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}><td style={{ ...td, color: 'var(--text-color)' }}>평점</td><td style={td}>0.10</td><td style={td}>rating / 5.0</td></tr>
+                    <tr><td style={{ ...td, color: 'var(--text-color)' }}>리뷰 수</td><td style={td}>0.05</td><td style={td}>log10(reviewCount+1) / log10(1001), 상한 1.0</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', marginTop: '0.5rem', marginBottom: 0 }}>fallback 경로는 이 점수 계산을 건너뛰고 거리순 조회 결과를 그대로 반환합니다(정확도보다 응답 지속을 우선).</p>
+            </div>
+
+            <div className="section-card" style={card}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>건강 알림 연동</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                signal 저장에 성공하면 <code>SignalSavedEvent</code>를 발행하고, <code>PetHealthAlertNotificationHandler</code>가 커밋 이후 비동기로 받아 <code>intentDomain=MEDICAL</code>이면서 <code>urgency=HIGH</code>인 경우에만 알림을 생성합니다.
+              </p>
+              <pre style={pre}>
+{`type: PET_HEALTH_ALERT
+title: 반려동물 건강 알림
+content: 위급할 수 있어요. 가까운 동물병원에 바로 문의하세요.
+relatedType: PET_INTENT_SIGNAL / relatedId: signal id`}
+              </pre>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem', margin: '0.5rem 0 0' }}>
+                알림은 Notification 도메인의 SSE로 전달됩니다. 프론트는 <code>PET_HEALTH_ALERT</code> 알림 클릭 시 주변서비스 탭을 열어 <code>동물병원</code> 카테고리로 바로 이동시킵니다.
+              </p>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유: 의료 관련 긴급 신호는 사용자가 추천 카드를 눌러보길 기다리지 않고 바로 알려야 의미가 있어, signal 저장과 별도 이벤트로 분리해 즉시 알림을 발행하고 클릭 시 행동(병원 찾기)까지 한 번에 연결.
               </p>
             </div>
           </section>
