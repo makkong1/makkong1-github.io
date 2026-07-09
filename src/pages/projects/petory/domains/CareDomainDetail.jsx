@@ -9,7 +9,7 @@ function CareDomainDetail() {
     { id: 'intro', title: '개요' },
     { id: 'list-n1', title: '요청 목록 N+1 (대표)' },
     { id: 'payment', title: '펫코인 결제 연동 정리' },
-    { id: 'known', title: '알려진 개선 과제' },
+    { id: 'known', title: '페이징 경로 N+1' },
     { id: 'summary', title: '요약' }
   ];
 
@@ -95,7 +95,7 @@ function CareDomainDetail() {
                 <li>• <strong style={{ color: 'var(--text-color)' }}>예방접종</strong>: 컬렉션이라 Fetch Join 시 카테시안 곱 위험 → <code>@BatchSize(50)</code>로 ~700회 → 1~2회</li>
               </ul>
               <pre style={pre}>
-{`@Query("SELECT cr FROM CareRequest cr " +
+{`@Query("SELECT DISTINCT cr FROM CareRequest cr " +
        "JOIN FETCH cr.user LEFT JOIN FETCH cr.pet " +
        "LEFT JOIN FETCH cr.applications " +
        "WHERE cr.isDeleted = false")
@@ -108,6 +108,12 @@ Map<Long, List<FileDTO>> filesByPet =
 // 예방접종은 컬렉션 → @BatchSize
 @BatchSize(size = 50) @OneToMany(mappedBy = "pet") List<PetVaccination> vaccinations;`}
               </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유(지원 내역): Hibernate는 한 쿼리에서 컬렉션(OneToMany) Fetch Join을 1개까지만 안전하게 허용 — applications는 요청의 직접 컬렉션이라 메인 쿼리에서 Fetch Join(중복 행은 DISTINCT로 제거)하고, 예방접종까지 같이 fetch join하면 두 컬렉션이 곱해져 폭발하므로 BatchSize로 분리.
+              </p>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.3rem 0 0', fontSize: '0.8rem' }}>
+                이유(첨부파일): File이 Pet과 JPA 연관관계가 없는 별도 도메인 소속 엔티티라 Fetch Join 자체가 불가능 → 서비스 간 IN절 배치 조회로 해결.
+              </p>
             </div>
 
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
@@ -154,6 +160,9 @@ Map<Long, List<FileDTO>> filesByPet =
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
                 <code>chargeCoins/payoutCoins/refundCoins</code>가 락 없는 <code>findById</code>를 써서 동시 요청 시 Lost Update·Deadlock(예: 동시 충전 5건→예상 150, 실제 110). → <code>findByIdForUpdate</code>(<code>SELECT … FOR UPDATE</code>)로 행 락 걸어 순차 처리. (<code>PetCoinServiceRaceConditionTest</code>로 검증)
               </p>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: 상대방이 커밋한 최신 잔액을 읽어야 순차 처리가 성립하므로, 충돌만 사후 감지하는 낙관적 락이 아니라 대기 후 최신값을 재조회하는 비관적 락을 선택.
+              </p>
             </div>
 
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
@@ -175,17 +184,19 @@ Map<Long, List<FileDTO>> filesByPet =
             </div>
           </section>
 
-          {/* 4. 알려진 개선 과제 */}
+          {/* 4. 페이징 경로 N+1 */}
           <section id="known" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>알려진 개선 과제</h2>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>페이징 경로 N+1 (해결)</h2>
             <div className="section-card" style={card}>
-              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>페이징 경로 N+1 (미적용)</h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                비페이징 경로는 <code>LEFT JOIN FETCH cr.applications</code>로 최적화됐지만, <strong style={{ color: 'var(--text-color)' }}>페이징 쿼리</strong>엔 해당 fetch가 빠져 페이지당 20건 조회 시 지원 내역 lazy load가 재발합니다.
+                비페이징 경로는 <code>LEFT JOIN FETCH cr.applications</code>로 최적화됐지만, 초기엔 <strong style={{ color: 'var(--text-color)' }}>페이징 쿼리</strong>엔 해당 fetch가 빠져 페이지당 20건 조회 시 지원 내역 lazy load가 재발하는 문제가 있었습니다.
               </p>
-              <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
-                <li>• 검토 방안: CareRequest에 <code>@BatchSize</code> 적용 / 페이징 쿼리에 fetch join + <code>DISTINCT</code> / 목록용 DTO 분리(지원 수만 배치 계산)</li>
-              </ul>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                → 페이징 쿼리는 fetch join을 추가하는 대신 <code>CareRequest.applications</code>에 <code>@BatchSize(50)</code>을 적용해 해결했습니다.
+              </p>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: 페이징 쿼리에 컬렉션 fetch join을 추가하면 DISTINCT와 함께 메모리 페이징(전체 로드 후 자르기)으로 빠지기 쉬워, DB 레벨 페이징을 유지한 채 @BatchSize로 지원 내역만 배치 조회하도록 분리.
+              </p>
             </div>
           </section>
 
@@ -213,7 +224,7 @@ Map<Long, List<FileDTO>> filesByPet =
                     <td style={td}>중복 조회 · 패턴</td><td style={td}>User 2~3회 → 1회, 도메인 Repository 인터페이스 통일</td>
                   </tr>
                   <tr>
-                    <td style={td}>개선 과제</td><td style={td}>페이징 경로 N+1 (검토 중)</td>
+                    <td style={td}>페이징 경로 N+1</td><td style={td}>@BatchSize(50) 적용으로 해결</td>
                   </tr>
                 </tbody>
               </table>

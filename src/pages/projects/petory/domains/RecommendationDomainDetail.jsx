@@ -31,6 +31,8 @@ const refactorRows = [
   ['R3', '(userIdx, intentDomain) 유효 signal 있으면 저장 스킵'],
   ['R4', 'Object[] → LocationInteractionCount record (프로젝션 타입 안전)'],
   ['R5', 'NLP 응답 DTO @Data 제거 → @Getter (setter 노출 차단)'],
+  ['R6', '(미적용) intent_tags.yml 로드하지만 사실상 미사용 — 정리 후보'],
+  ['R7', 'petType 파라미터를 분류 로직에서 쓰지 않는다는 의도적 결정을 docstring으로 명시'],
   ['R8', '임베딩 모델 warmup (첫 요청 타임아웃 방지)'],
   ['R9', 'confidence 이중 threshold(Python 0.45 / Spring 0.60) 문서화'],
 ];
@@ -111,6 +113,9 @@ function RecommendationDomainDetail() {
   → 통과 시에만 PetIntentClient.analyze()`}
               </pre>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', marginTop: '0.5rem', marginBottom: 0 }}>MVP 한계: 공백 없는 자연어(`강아지가귀를긁어요`)는 필터 통과 불가 — 과호출 방지를 우선한 타협.</p>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유: 대규모 트래픽 버스트가 아니라 검색 파라미터만 바꿔도 같은 검색 의도로 반복 호출되는 게 문제라, 트래픽 제한이 아니라 호출 자체를 앞단에서 걸러내는 정책(휴리스틱+dedup)을 택함.
+              </p>
             </div>
 
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
@@ -134,6 +139,9 @@ function RecommendationDomainDetail() {
                   </tbody>
                 </table>
               </div>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유: 기본 @Async executor를 그대로 쓰면 NLP 작업이 알림·채팅방 생성 같은 다른 비동기 작업과 스레드를 공유해 서로 밀어낼 수 있어, 전용 풀로 격리해 자원 경합을 없앰.
+              </p>
             </div>
 
             <div className="section-card" style={card}>
@@ -145,6 +153,9 @@ function RecommendationDomainDetail() {
                 <li>• confidence Python 0.45 / Spring 0.60 — 2단계 품질 필터</li>
                 <li>• 서버 기동 시 임베딩 모델 선로딩 — 첫 요청 지연 완화</li>
               </ul>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유(confidence 이중 threshold): Python 0.45 미만은 UNKNOWN으로 걸러내고, Spring은 그중에서도 0.60 이상만 저장 — 2-pass 필터로 낮은 신뢰도 signal이 쌓이는 걸 막음.
+              </p>
             </div>
           </section>
 

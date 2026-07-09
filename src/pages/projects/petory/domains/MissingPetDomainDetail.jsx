@@ -88,9 +88,35 @@ function MissingPetDomainDetail() {
             </div>
 
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>해결 — 댓글 미접근 Converter + 댓글 수 배치</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>해결 — Fetch Join + 배치 조회 2종 + 댓글 미접근 Converter</h3>
+
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
-                댓글을 아예 건드리지 않는 <code>toBoardDTOWithoutComments()</code>를 분리하고, 필요한 댓글 수는 <code>IN</code> 절 GROUP BY로 한 번에 조회했습니다.
+                <strong style={{ color: 'var(--text-color)' }}>① 작성자</strong>: 항상 필요한 ManyToOne → <code>JOIN FETCH</code>로 함께 조회
+              </p>
+              <pre style={pre}>
+{`SELECT mpb FROM MissingPetBoard mpb JOIN FETCH mpb.user u
+WHERE mpb.isDeleted = false AND u.isDeleted = false AND u.status = 'ACTIVE'
+ORDER BY mpb.createdAt DESC`}
+              </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: ManyToOne(다대일)이라 Fetch Join해도 중복 행이 생기지 않아 바로 적용.
+              </p>
+
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: '0.75rem 0 0.5rem', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>② 첨부파일</strong>: File 도메인의 <code>getAttachmentsBatch()</code>로 게시글 ID들을 한 번에 조회
+              </p>
+              <pre style={pre}>
+{`List<Long> boardIds = boards.stream().map(MissingPetBoard::getIdx).toList();
+Map<Long, List<FileDTO>> filesByBoardId =
+    attachmentFileService.getAttachmentsBatch(FileTargetType.MISSING_PET, boardIds);
+// board별 dto.setAttachments / setImageUrl 을 메모리에서 매핑`}
+              </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: 첨부파일은 MissingPetBoard와 JPA 연관관계가 없는 File 도메인 소속 엔티티라 Fetch Join 자체가 불가능 → 도메인 간 배치 조회로 해결.
+              </p>
+
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: '0.75rem 0 0.5rem', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>③ 댓글 수</strong>: 목록에는 개수만 필요 → 댓글을 아예 건드리지 않는 <code>toBoardDTOWithoutComments()</code>를 분리하고, 개수는 <code>IN</code> 절 GROUP BY 배치로 조회
               </p>
               <pre style={pre}>
 {`// 목록용 Converter — 댓글 미접근 (LAZY 트리거 없음)
@@ -106,7 +132,10 @@ public MissingPetBoardDTO toBoardDTOWithoutComments(MissingPetBoard board) {
        "WHERE c.board.idx IN :boardIds AND c.isDeleted = false GROUP BY c.board.idx")
 List<CommentCountResult> countCommentsByBoardIds(@Param("boardIds") List<Long> boardIds);`}
               </pre>
-              <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: 댓글은 OneToMany 컬렉션이라 Fetch Join 시 카티션 곱으로 중복 행이 생기고, 목록에선 개수만 필요해 접근 자체를 없애고 IN절 배치로 우회.
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem', marginTop: '0.75rem' }}>
                 <li>• 댓글 목록 조회: 103개 → <strong style={{ color: 'var(--text-color)' }}>0개</strong> (접근 안 함) · 댓글 수: 103개 → 1개 (배치)</li>
                 <li>• 댓글이 필요하면 별도 API(<code>GET /missing-pets/{'{id}'}/comments</code>)로 조회 → 무한 스크롤도 가능</li>
               </ul>
