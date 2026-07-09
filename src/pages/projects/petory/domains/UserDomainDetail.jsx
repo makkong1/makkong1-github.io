@@ -9,6 +9,7 @@ function UserDomainDetail() {
     { id: 'intro', title: '개요' },
     { id: 'login-n1', title: '로그인 목록 N+1 (대표)' },
     { id: 'sanction-bypass', title: '제재 중 인증 우회 버그' },
+    { id: 'dormant', title: '휴면 계정 처리' },
     { id: 'auth-cleanup', title: '인증 · 중복 조회 정리' },
     { id: 'summary', title: '요약' }
   ];
@@ -61,7 +62,7 @@ function UserDomainDetail() {
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>개요</h2>
             <div className="section-card" style={card}>
               <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-                로그인 직후 프론트가 부르는 채팅방 목록(<code>getMyConversations</code>) 조회에서 채팅방마다 참여자·메시지를 개별 조회해 N+1이 발생했습니다. 제재(정지·차단) 상태가 인증 경로 곳곳에서 우회되던 버그 6종과, 인증·회원가입·프로필 경로의 중복 조회도 함께 정리했습니다.
+                로그인 직후 프론트가 부르는 채팅방 목록(<code>getMyConversations</code>) 조회에서 채팅방마다 참여자·메시지를 개별 조회해 N+1이 발생했습니다. 제재(정지·차단) 상태가 인증 경로 곳곳에서 우회되던 버그 6종, 1년 미로그인 계정을 휴면 처리하는 흐름, 인증·회원가입·프로필 경로의 중복 조회도 함께 정리했습니다.
               </p>
               <div style={{ padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '6px', border: '1px solid var(--nav-border)' }}>
                 <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과 (로그인 목록 조회)</h3>
@@ -197,7 +198,48 @@ List<ConversationParticipant> findParticipantsByConversationIdxsAndUserIdx(
             </div>
           </section>
 
-          {/* 4. 인증·중복 조회 정리 */}
+          {/* 4. 휴면 계정 처리 */}
+          <section id="dormant" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>휴면 계정 처리 (2026-07-09)</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
+              탈퇴(<code>isDeleted</code>)와는 별개로, 1년간 로그인하지 않은 계정을 휴면 처리하는 흐름을 추가했습니다. 제재 상태(<code>UserStatus</code>)와 독립적인 필드라 "정지 중이면서 동시에 휴면"도 표현 가능합니다.
+            </p>
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>배치 전환 + 일반 로그인만 차단</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                매일 자정 배치가 <code>lastLoginAt</code>(없으면 <code>createdAt</code>) 기준 1년 미로그인 계정을 <code>isDormant=true</code>로 전환합니다. 휴면 계정은 <strong style={{ color: 'var(--text-color)' }}>일반 로그인에서만</strong> 막히고(OAuth2 제외), 본인이 <code>confirmReactivate=true</code>로 재시도하면 그 자리에서 즉시 해제됩니다 — 관리자가 대신 풀어줄 수 없습니다.
+              </p>
+              <pre style={pre}>
+{`@Modifying
+@Query("UPDATE Users u SET u.isDormant = true, u.dormantAt = :now " +
+       "WHERE u.isDormant = false AND u.isDeleted = false AND (" +
+       "  (u.lastLoginAt IS NOT NULL AND u.lastLoginAt < :cutoff) OR " +
+       "  (u.lastLoginAt IS NULL AND u.createdAt < :cutoff))")
+int markDormantUsers(@Param("cutoff") LocalDateTime cutoff, @Param("now") LocalDateTime now);
+
+// 로그인 시 (POST /api/auth/login)
+if (Boolean.TRUE.equals(user.getIsDormant())) {
+    if (!confirmReactivate) throw new UserDormantException();
+    user.setIsDormant(false);
+    user.setDormantAt(null);
+}`}
+              </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유: 새 엔드포인트를 만들지 않고 기존 <code>POST /api/auth/login</code>에 필드 하나만 추가 — 비밀번호는 <code>authenticationManager.authenticate()</code>에서 이미 검증되므로 재활성화에 별도 인증 절차가 필요 없다고 판단.
+              </p>
+            </div>
+            <div className="section-card" style={card}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>OAuth2는 왜 차단 없이 조용히 풀리는가</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                개인로그인과 OAuth2 로그인은 같은 <code>Users</code> row의 <code>lastLoginAt</code>을 공유해서 갱신하므로, 계정을 연동해 둔 사용자가 한쪽 채널만 꾸준히 써도 휴면 전환 자체가 발생하지 않습니다. 그런데 이미 휴면인 상태에서 OAuth2로 로그인하면 <code>UserDormantException</code> 없이 <code>isDormant</code> 플래그만 조용히 해제됩니다.
+              </p>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유: OAuth2는 이미 Google/Naver 같은 제3자 인증을 거친 뒤라 로그인 성공 자체를 본인 확인으로 볼 수 있음 — 비밀번호 탈취 위험이 있는 개인로그인과는 신뢰 수준이 다르다고 판단해 구분. OAuth2 자체의 차단/재확인 플로우는 작업량 대비 이득이 크지 않아 의도적으로 범위에서 제외.
+              </p>
+            </div>
+          </section>
+
+          {/* 5. 인증·중복 조회 정리 */}
           <section id="auth-cleanup" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인증 · 중복 조회 정리</h2>
             <div className="section-card" style={card}>
@@ -218,7 +260,7 @@ List<ConversationParticipant> findParticipantsByConversationIdxsAndUserIdx(
             </div>
           </section>
 
-          {/* 5. 요약 */}
+          {/* 6. 요약 */}
           <section id="summary" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>요약</h2>
             <div className="section-card" style={card}>
@@ -237,6 +279,9 @@ List<ConversationParticipant> findParticipantsByConversationIdxsAndUserIdx(
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>탈퇴 계정 재사용</td><td style={td}>닉네임·username·email 조회에 isDeleted 조건 추가</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    <td style={td}>휴면 계정 처리</td><td style={td}>1년 미로그인 자정 배치 전환, 일반 로그인 재시도로 즉시 해제(OAuth2는 무차단 해제)</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>Auth 로그인/Refresh</td><td style={td}>User 2회 → 1회 조회</td>

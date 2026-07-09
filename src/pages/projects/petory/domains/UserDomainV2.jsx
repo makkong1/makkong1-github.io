@@ -52,6 +52,7 @@ function UserDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
+    { id: 'limits', title: '한계와 운영 메모' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -62,6 +63,7 @@ function UserDomainV2() {
     '프로필 조합',
     'Pet 소유 검증',
     '제재 상태 동기화',
+    '휴면 계정 관리',
   ];
 
   const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
@@ -183,6 +185,8 @@ function UserDomainV2() {
                     ['내 프로필 조회', 'User + Pet + Care/Location 리뷰 요약 + Meetup 히스토리 조합'],
                     ['반려 소유 검증', 'JWT subject ↔ Pet.user.id 대조'],
                     ['제재 정리', '로그인/OAuth 진입 + 배치 스케줄러 이중 처리'],
+                    ['휴면 계정', '1년 미로그인 시 자정 배치로 isDormant 전환, 일반 로그인 재시도로 즉시 해제'],
+                    ['탈퇴 계정 중복 검사', 'findByNickname/Username/Email이 삭제되지 않은 사용자만 조회 → 탈퇴 계정의 값 재사용 가능'],
                     ['관리자 사용자 목록', 'paging API, role/status/q 필터'],
                   ].map(([label, value], i, arr) => (
                     <tr
@@ -549,6 +553,102 @@ public void releaseExpiredSuspensions() {
 }`}</CodeBlock>
             </Card>
 
+            <Card>
+              <h3
+                style={{
+                  marginBottom: '0.75rem',
+                  color: 'var(--text-color)',
+                  fontSize: '1rem',
+                }}
+              >
+                F. 휴면 계정 (2026-07-09)
+              </h3>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('isDormant는 UserStatus와 독립된 필드 — "정지 중이면서 동시에 휴면"도 가능')}
+                {li('1년간 미로그인 계정은 매일 자정 배치가 isDormant/dormantAt으로 전환')}
+                {li('일반 로그인만 차단(OAuth2 제외), confirmReactivate=true로 본인이 재시도하면 즉시 해제')}
+                {li('lastLoginAt은 개인로그인·OAuth2가 같은 Users row를 공유해 갱신 — 한쪽 채널만 꾸준히 써도 휴면 전환 자체가 없음')}
+                {li('이미 휴면 상태에서 OAuth2로 로그인하면 차단 없이 플래그만 조용히 해제')}
+              </ul>
+              <CodeBlock>{`// 로그인 시 휴면 확인 (일반 로그인만)
+if (Boolean.TRUE.equals(user.getIsDormant())) {
+    if (!confirmReactivate) throw new UserDormantException();
+    user.setIsDormant(false);
+    user.setDormantAt(null);
+}
+
+// 매일 자정 배치
+@Modifying
+@Query("UPDATE Users u SET u.isDormant = true, u.dormantAt = :now " +
+       "WHERE u.isDormant = false AND u.isDeleted = false AND (" +
+       "  (u.lastLoginAt IS NOT NULL AND u.lastLoginAt < :cutoff) OR " +
+       "  (u.lastLoginAt IS NULL AND u.createdAt < :cutoff))")
+int markDormantUsers(@Param("cutoff") LocalDateTime cutoff, @Param("now") LocalDateTime now);`}</CodeBlock>
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.85rem',
+                  lineHeight: '1.7',
+                  margin: '0.65rem 0 0',
+                }}
+              >
+                이유: OAuth2는 이미 Google/Naver 등 제3자 인증을 거쳤으므로 로그인 성공 자체를 본인 확인으로
+                볼 수 있어, 비밀번호 탈취 위험이 있는 개인로그인과 신뢰 수준을 다르게 취급했습니다. 새
+                엔드포인트 없이 기존 <code>POST /api/auth/login</code>에 <code>confirmReactivate</code> 필드만
+                추가했고, 비밀번호는 이미 <code>authenticationManager.authenticate()</code>에서 검증되므로
+                재활성화에 별도 인증 절차를 두지 않았습니다. OAuth2 자체의 차단/재확인 플로우는 작업량 대비
+                이득이 크지 않아 의도적으로 범위에서 뺐습니다.
+              </p>
+            </Card>
+
+          </section>
+
+          <section
+            id="limits"
+            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
+          >
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
+              한계와 운영 메모
+            </h2>
+            <Card>
+              <p
+                style={{
+                  color: 'var(--text-secondary)',
+                  fontSize: '0.9rem',
+                  lineHeight: '1.8',
+                  margin: '0 0 0.75rem',
+                }}
+              >
+                사이드 프로젝트 규모에서 단순성과 운영 가능성을 우선한 선택들이라, 알고 쓰는 트레이드오프입니다.
+              </p>
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.9',
+                  fontSize: '0.9rem',
+                }}
+              >
+                {li('Access JWT는 유효 기간(15분) 동안 BANNED/SUSPENDED를 매 요청 재평가하지 않음 — 제재 즉시성은 Access TTL에 의존')}
+                {li('Refresh Token 회전 없음 — 사용자당 최근 1개 문자열만 저장, refresh 성공 시 기존 값 유지')}
+                {li('OAuth 성공 redirect와 SSE 일부 경로는 헤더 대신 query parameter로 토큰을 전달 — 브라우저 history/log 노출 표면')}
+                {li('OAuth 경로의 제재 예외는 일반 로그인과 달리 도메인 예외가 아니라 redirect error 쿼리로 전달')}
+                {li('GET /api/pets/type/{petType}는 사용자 소유 필터 없이 타입 기준 전체 조회 — 사용자용 API 의도가 맞는지 검토 여지')}
+                {li('addWarning()은 경고 증가 후 최신 count 확인을 위해 user를 다시 조회')}
+                {li('관리자 상태 변경 API는 상태 필드·refresh token 제거·제재 이벤트 발행은 처리하지만, UserSanctionService를 경유하지 않아 UserSanction 이력을 항상 남기지는 않음')}
+                {li('AuthController.validateToken()/logout()은 아직 Authorization header를 컨트롤러에서 직접 파싱')}
+              </ul>
+            </Card>
           </section>
           <section
             id="docs"
