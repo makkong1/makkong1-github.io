@@ -111,6 +111,10 @@ function BoardDomainDetail() {
        "ORDER BY b.createdAt DESC")
 List<Board> findAllByIsDeletedFalseOrderByCreatedAtDesc();`}
               </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: ManyToOne(다대일)이라 Fetch Join해도 중복 행이 생기지 않아 바로 적용.
+              </p>
+
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: '0.75rem 0 0.5rem', fontSize: '0.9rem' }}>
                 <strong style={{ color: 'var(--text-color)' }}>② 반응</strong>: 게시글 ID 모아 <code>IN</code> 절 GROUP BY 배치 조회 → <code>Map</code>으로 매핑 (500개 단위 배치)
               </p>
@@ -126,6 +130,27 @@ List<Long> boardIds = boards.stream().map(Board::getIdx).toList();
 Map<Long, Map<ReactionType, Long>> reactionCounts = getReactionCountsBatch(boardIds); // 500개 단위
 // board별 dto.setLikes/ setDislikes 를 메모리에서 매핑`}
               </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: OneToMany 집계라 Fetch Join 시 카티션 곱으로 중복 행이 생김 → IN절 배치 + Map 매핑으로 우회.
+              </p>
+
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: '0.75rem 0 0.5rem', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>③ 첨부파일</strong>: File 도메인의 <code>getAttachmentsBatch()</code>로 게시글 ID들을 한 번에 조회 → <code>targetIdx</code>별 그룹핑
+              </p>
+              <pre style={pre}>
+{`// FileService: 배치 조회 + targetIdx별 그룹핑
+public Map<Long, List<FileDTO>> getAttachmentsBatch(FileTargetType targetType, List<Long> targetIndices) {
+    List<AttachmentFile> files = attachmentFileRepository
+        .findByTargetTypeAndTargetIdxIn(targetType, targetIndices);
+    return files.stream()
+        .collect(Collectors.groupingBy(AttachmentFile::getTargetIdx, /* -> FileDTO 변환 + 다운로드 URL 부여 */));
+}
+
+// Service: 게시글 ID 리스트로 한 번에 조회 → board별 dto.setAttachments 매핑`}
+              </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: 첨부파일은 Board와 JPA 연관관계가 없는 File 도메인 소속 엔티티라 Fetch Join 자체가 불가능 → 도메인 간 배치 조회로 해결.
+              </p>
             </div>
 
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
