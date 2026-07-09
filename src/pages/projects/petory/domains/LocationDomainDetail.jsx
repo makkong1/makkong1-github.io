@@ -146,6 +146,9 @@ AND (:category IS NULL OR category3 = :category
      OR category2 = :category OR category1 = :category)            -- category DB 필터
 ORDER BY ... (sort 파라미터 분기)`}
               </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유: 설계상으로는 <code>ST_Distance_Sphere</code> 단독으로도 충분해 보이지만, MySQL 공간 인덱스는 <code>ST_Within</code>에만 작동하고 <code>ST_Distance_Sphere</code> 단독으로는 Full Scan이 발생 — 성능 유지를 위해 bbox 구조를 남기고 keyword·category 필터만 얹음.
+              </p>
             </div>
 
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
@@ -154,15 +157,43 @@ ORDER BY ... (sort 파라미터 분기)`}
                 <li>• <code>findTop10…</code>이 이름과 달리 LIMIT 없이 전량 조회 가능 → 네이티브 쿼리 + <code>LIMIT 10</code>으로 메서드명과 동작 일치</li>
                 <li>• 배치 <code>saveBatch</code>가 private self-invocation이라 <code>REQUIRES_NEW</code> AOP 미적용 가능 → <code>LocationServiceBatchWriter</code> 별도 빈으로 분리해 배치 단위 독립 트랜잭션 확보</li>
               </ul>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유(Top10 LIMIT): Spring Data 파생 쿼리 이름의 <code>Top10</code>은 자동으로 LIMIT이 붙지만, 이 메서드는 <code>@Query</code>로 이름만 <code>Top10</code>을 흉내 낸 상태라 캐시 미스 시 카테고리 전체 행을 읽을 수 있어 실제 LIMIT을 추가.
+              </p>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.3rem 0 0', fontSize: '0.8rem' }}>
+                이유(배치 빈 분리): Spring <code>@Transactional</code>은 프록시를 거치는 public 메서드에만 적용되는데 private self-invocation은 프록시를 우회해 <code>REQUIRES_NEW</code>가 무시될 수 있어, 외부 빈 호출로 바꿔 AOP가 실제로 걸리도록 함.
+              </p>
             </div>
 
-            <div className="section-card" style={card}>
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>거리 계산 중복 제거 · FULLTEXT 검증</h3>
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
                 <li>• 백엔드가 거리 값을 DTO에 담아 내려주고 프론트는 이를 우선 사용(중복 계산 제거)</li>
                 <li>• FULLTEXT 인덱스 <code>ft_search</code>가 <code>name·description·category1~3</code>을 모두 포함하는지, <code>MATCH … AGAINST</code> 대상 컬럼과 정확히 일치하는지 검증</li>
-                <li>• 프론트 검색 상태: 다수 <code>useState</code> → reducer 단위로 묶고 지도 이동과 검색 확정 흐름을 분리</li>
               </ul>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                이유: 백엔드(ST_Distance_Sphere)와 프론트(Haversine)가 같은 거리를 각자 계산해 성능 낭비였고, 결과가 미세하게 어긋날 여지도 있었음 → 계산을 백엔드로 일원화하고 프론트는 받은 값을 우선 사용(값이 없을 때만 fallback 계산).
+              </p>
+            </div>
+
+            <div className="section-card" style={card}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>지도 검색 결과 안정성 (완료, 2026-05-29)</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                같은 지역을 검색했는데 지도 줌·미세한 좌표 차이만으로 결과가 달라 보이는 문제를 5가지로 나눠 정리했습니다.
+              </p>
+              <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.9', fontSize: '0.9rem' }}>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>캐시 키에서 mapLevel 제외</strong>: location 조회는 줌 레벨 변경만으로 재호출·캐시 미스가 나지 않도록 분리(meetup/care는 기존 유지)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>size 300 고정</strong>: 줌 레벨별 가변 size 대신 location만 고정값 사용 → 후보군 크기가 줌과 무관해짐</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>"이 지역 검색" 기준을 거리로 변경</strong>: 좌표 차이 0.0001도(약 11m) → Haversine <code>max(300m, radius*10%)</code>로 사용자가 체감하는 "같은 지역" 감각에 맞춤</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>반경 검색에 SQL LIMIT</strong>: Java <code>stream().limit()</code> → <code>findByRadius</code> native query에 <code>LIMIT :limit</code> 직접 적용</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>sort=stable 기본값 추가</strong>: 거리순은 좌표가 조금만 달라져도 절단선 근처 결과가 바뀌어, 기본 정렬을 <code>rating DESC, review_count DESC, idx ASC</code>(UI 라벨 "추천순")로 변경. 거리순은 사용자가 명시적으로 선택</li>
+              </ul>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem', margin: '0.75rem 0 0.25rem' }}>
+                프론트 검색 상태도 다수 <code>useState</code>를 reducer 단위로 묶어, 지도 뷰 이동과 "검색 확정" 흐름을 분리했습니다.
+              </p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', lineHeight: 1.7, marginTop: '0.75rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>검토했지만 선택하지 않은 대안:</strong> 좌표 격자 스냅핑(격자 경계에서 결과가 다시 급변), 기존 마커 점진적 머지(서버 결과 불일치를 UI로 가리는 것일 뿐), 뷰포트 bbox 쿼리(API·쿼리 구조 변경 폭이 이번 안정화 범위보다 큼).
+              </p>
             </div>
           </section>
 
@@ -175,8 +206,10 @@ ORDER BY ... (sort 파라미터 분기)`}
                 <li>• <strong style={{ color: 'var(--text-color)' }}>대표 카테고리 컬럼</strong>(계획): <code>category3 &gt; 2 &gt; 1</code> 우선순위 단일 컬럼으로 OR 조건 축소</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>sort별 쿼리 분리</strong>(계획): distance/rating/reviews 정렬을 전용 쿼리로 분리해 실행 계획 예측성 향상</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>반경 검색 bbox</strong>(모니터링): 정확도 이슈는 재현되지 않았고 성능 관점에서만 관찰</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>지도 검색 확정 UX</strong>(진행 중): 지도 뷰 상태와 검색 상태를 분리, "이 지역 검색" 명시 확정</li>
               </ul>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.75rem', marginBottom: 0 }}>
+                ※ "지도 검색 확정 UX"(mapLevel 분리·size 고정·sort=stable 등)는 계획 단계가 아니라 <strong style={{ color: 'var(--text-secondary)' }}>완료된 항목</strong>입니다 — 상세는 위 "지도 검색 결과 안정성" 참고.
+              </p>
             </div>
           </section>
 
@@ -200,8 +233,11 @@ ORDER BY ... (sort 파라미터 분기)`}
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>검색 분기 정리</td><td style={td}>keyword·category DB WHERE 일원화, Top10 LIMIT, 배치 트랜잭션 분리</td>
                   </tr>
-                  <tr>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>거리 계산 · FULLTEXT</td><td style={td}>중복 계산 제거, 인덱스·쿼리 일치 검증</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>지도 검색 결과 안정성</td><td style={td}>mapLevel 캐시키 제외, size 300 고정, "이 지역 검색" 거리 기준화, 반경 SQL LIMIT, sort=stable 기본값</td>
                   </tr>
                 </tbody>
               </table>
