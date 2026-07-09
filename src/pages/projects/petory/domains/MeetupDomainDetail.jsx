@@ -137,11 +137,36 @@ meetupRepository.save(meetup);`}
             </div>
 
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
-              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>해결</h3>
+              <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>해결 — 4중 방어 (락으로 직렬화 + 원자적 UPDATE + CHECK + 복합 PK 보정)</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                단일 기법 하나를 고른 게 아니라, 아래 4가지를 <strong style={{ color: 'var(--text-color)' }}>겹겹이</strong> 적용했습니다. 하나가 뚫려도 다음 층이 막도록 설계한 defense-in-depth입니다.
+              </p>
+
               <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>1. 원자적 조건부 UPDATE</h4>
+                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>1. 비관적 락으로 전체 흐름 직렬화</h4>
                 <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
-                  DB 레벨에서 조건 체크와 증가를 원자적으로 처리하여 초과를 구조적으로 불가능하게 만듦
+                  <code>joinMeetup()</code> 진입 시 모임 행을 <code>findByIdWithLock()</code>(<code>@Lock(PESSIMISTIC_WRITE)</code>)으로 조회해, 이후 중복 참가 체크·정원 증가·참가자 저장까지 전체 시퀀스를 직렬화합니다.
+                </p>
+                <pre style={{ ...pre, fontSize: '0.85rem' }}>
+{`// SpringDataJpaMeetupRepository
+@Lock(LockModeType.PESSIMISTIC_WRITE)
+@Query("SELECT m FROM Meetup m JOIN FETCH m.organizer WHERE m.idx = :meetupIdx")
+Optional<Meetup> findByIdWithLock(@Param("meetupIdx") Long meetupIdx);
+
+// Service — joinMeetup()
+Meetup meetup = meetupRepository.findByIdWithLock(meetupIdx)...;
+if (participantsRepository.existsByMeetupIdxAndUserIdx(meetupIdx, userId)) { ... }
+int updated = meetupRepository.incrementParticipantsIfAvailable(meetupIdx);`}
+                </pre>
+                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  이유: 락 없이 exists 체크와 증가를 따로 실행하면 그 사이에 다른 요청이 끼어드는 TOCTOU(Time-Of-Check-Time-Of-Use) 창이 생김 — 행 락으로 동일 모임에 대한 동시 요청을 줄 세워 이 창 자체를 없앰.
+                </p>
+              </div>
+
+              <div style={{ marginBottom: '1.5rem' }}>
+                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>2. 원자적 조건부 UPDATE (구조적 2차 방어)</h4>
+                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem' }}>
+                  락으로 직렬화된 상태에서도, 정원 조건 체크와 증가 자체를 DB 한 문장으로 원자화해 애플리케이션 레벨의 read-then-write를 아예 남기지 않습니다.
                 </p>
                 <pre style={{ ...pre, fontSize: '0.85rem' }}>
 {`@Modifying
@@ -158,22 +183,24 @@ if (updated == 0) {
 }`}
                 </pre>
                 <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                  <strong style={{ color: 'var(--text-color)' }}>선택 이유:</strong> 단순 조건부 증가라 DB 한 문장으로 원자화 가능. 락/데드락 관리 불필요, 코드 단순 (비관적 락은 비교 대상이며, 저경합 실측상 오히려 비관적 락이 빨랐음 — 선택 이유는 속도가 아니라 단순성).
+                  이유: 저경합 벤치마크에서는 비관적 락 단독(2.40ms)이 원자적 UPDATE 단독(8.40ms)보다 빨랐지만, 이 프로젝트는 "속도"가 아니라 "락을 깜빡 빼먹어도 정원 초과가 구조적으로 불가능하게" 만드는 걸 목표로 두 기법을 함께 적용.
                 </p>
               </div>
+
               <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>2. DB CHECK 제약 (이중 안전장치)</h4>
+                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>3. DB CHECK 제약 (3차 안전장치)</h4>
                 <pre style={{ ...pre, fontSize: '0.85rem' }}>
 {`ALTER TABLE meetup
 ADD CONSTRAINT chk_participants
 CHECK (current_participants <= max_participants);  -- MySQL 8.0.16+`}
                 </pre>
                 <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                  애플리케이션 로직을 우회하는 직접 SQL에도 데이터 무결성 보장
+                  이유: 애플리케이션 로직을 우회하는 배치 작업·직접 SQL·마이그레이션에는 위 두 방어가 미치지 않으므로, DB 스키마 레벨에서 최종 무결성을 보장.
                 </p>
               </div>
+
               <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>3. 이벤트 기반 아키텍처 (핵심/파생 도메인 분리)</h4>
+                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>4. 이벤트 기반 아키텍처 (핵심/파생 도메인 분리)</h4>
                 <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                   <strong style={{ color: 'var(--text-color)' }}>원칙:</strong> 파생 도메인(채팅방 생성) 실패가 핵심 도메인(모임 생성)을 롤백하면 안 된다.
                 </p>
@@ -193,10 +220,22 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
 }`}
                 </pre>
               </div>
+
               <div>
-                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>4. 중복 참여 방지</h4>
-                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-                  <strong style={{ color: 'var(--text-color)' }}>Unique 제약</strong> (meetup_idx, user_idx)로 중복 참여 차단
+                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>5. 중복 참여 방지 + PK 충돌 시 보정</h4>
+                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
+                  <strong style={{ color: 'var(--text-color)' }}>복합 PK</strong> (meetup_idx, user_idx)로 중복 참여를 차단합니다. 그런데 이미 정원은 <code>incrementParticipantsIfAvailable()</code>로 증가시킨 뒤라, PK 충돌로 저장이 실패하면 그 증가분이 남아버립니다.
+                </p>
+                <pre style={{ ...pre, fontSize: '0.85rem' }}>
+{`try {
+    participantsRepository.save(participant);  // 복합 PK 충돌 시 예외
+} catch (DataIntegrityViolationException e) {
+    meetupRepository.decrementParticipantsIfPositive(meetupIdx);  // 증가분 보정
+    return MeetupJoinResultDTO.alreadyJoined();
+}`}
+                </pre>
+                <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                  이유: 앱 레벨 사전 체크(existsBy...)만으로는 TOCTOU를 완전히 막을 수 없어 DB Unique/복합 PK가 최종 보증자 역할을 함 — 대신 그 대가로 남는 카운트 불일치를 보상 트랜잭션(decrement)으로 되돌림.
                 </p>
               </div>
             </div>
@@ -321,13 +360,22 @@ LIMIT :limit`}
 List<MeetupParticipants> findByUserIdxOrderByJoinedAtDesc(@Param("userIdx") Long userIdx);`}
               </pre>
             </div>
-            <div className="section-card" style={card}>
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>개선 효과</h3>
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
                 <li>• PrepareStatement: 102개 → 2개 <strong style={{ color: 'var(--link-color)' }}>(98% ↓)</strong></li>
                 <li>• N+1 100% 제거, 네트워크 라운드트립 98% 감소</li>
                 <li>• 실행 시간 102ms → 178ms (단일 쿼리 복잡도 ↑, but DB 부하·커넥션 풀 효율 향상)</li>
               </ul>
+            </div>
+            <div className="section-card" style={card}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>연관 수정: EAGER → LAZY 전환</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
+                <code>Meetup.organizer</code>, <code>MeetupParticipants.meetup</code>/<code>.user</code>에 <code>fetch</code> 타입이 선언돼 있지 않아 기본값(EAGER)으로 로드되던 걸 <code>LAZY</code>로 명시하고, 이 때문에 실제 접근이 필요한 지점(<code>findByIdWithLock</code> 등)에는 <code>JOIN FETCH</code>를 추가했습니다.
+              </p>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.4rem 0 0', fontSize: '0.8rem' }}>
+                이유: fetch 타입 미선언 시 ManyToOne/OneToOne 기본값은 EAGER라, 연관 엔티티가 필요 없는 조회에서도 항상 함께 로드됨 — LAZY로 명시하고 실제 필요한 곳만 JOIN FETCH로 챙김.
+              </p>
             </div>
           </section>
 
@@ -386,7 +434,7 @@ List<MeetupParticipants> findByUserIdxOrderByJoinedAtDesc(@Param("userIdx") Long
                 <tbody>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={{ padding: '0.75rem' }}>동시성 (인원 초과)</td>
-                    <td style={{ padding: '0.75rem' }}>원자적 UPDATE + CHECK 제약 → 초과·Lost Update 제거</td>
+                    <td style={{ padding: '0.75rem' }}>비관적 락 + 원자적 UPDATE + CHECK 제약 + PK 충돌 보정 (4중 방어) → 초과·Lost Update 제거</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={{ padding: '0.75rem' }}>반경 기반 조회</td>
