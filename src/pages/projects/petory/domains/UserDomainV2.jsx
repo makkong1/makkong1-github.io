@@ -52,7 +52,6 @@ function UserDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'design', title: '기술 결정' },
-    { id: 'limits', title: '한계와 운영 메모' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -609,46 +608,6 @@ int markDormantUsers(@Param("cutoff") LocalDateTime cutoff, @Param("now") LocalD
               </p>
             </Card>
 
-          </section>
-
-          <section
-            id="limits"
-            style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
-          >
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              한계와 운영 메모
-            </h2>
-            <Card>
-              <p
-                style={{
-                  color: 'var(--text-secondary)',
-                  fontSize: '0.9rem',
-                  lineHeight: '1.8',
-                  margin: '0 0 0.75rem',
-                }}
-              >
-                사이드 프로젝트 규모에서 단순성과 운영 가능성을 우선한 선택들이라, 알고 쓰는 트레이드오프입니다.
-              </p>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.9',
-                  fontSize: '0.9rem',
-                }}
-              >
-                {li('Access JWT는 유효 기간(15분) 동안 BANNED/SUSPENDED를 매 요청 재평가하지 않음 — 제재 즉시성은 Access TTL에 의존')}
-                {li('Refresh Token 회전 없음 — 사용자당 최근 1개 문자열만 저장, refresh 성공 시 기존 값 유지')}
-                {li('OAuth 성공 redirect와 SSE 일부 경로는 헤더 대신 query parameter로 토큰을 전달 — 브라우저 history/log 노출 표면')}
-                {li('OAuth 경로의 제재 예외는 일반 로그인과 달리 도메인 예외가 아니라 redirect error 쿼리로 전달')}
-                {li('GET /api/pets/type/{petType}는 사용자 소유 필터 없이 타입 기준 전체 조회 — 사용자용 API 의도가 맞는지 검토 여지')}
-                {li('addWarning()은 경고 증가 후 최신 count 확인을 위해 user를 다시 조회')}
-                {li('관리자 상태 변경 API는 상태 필드·refresh token 제거·제재 이벤트 발행은 처리하지만, UserSanctionService를 경유하지 않아 UserSanction 이력을 항상 남기지는 않음')}
-                {li('AuthController.validateToken()/logout()은 아직 Authorization header를 컨트롤러에서 직접 파싱')}
-              </ul>
-            </Card>
           </section>
           <section
             id="docs"
