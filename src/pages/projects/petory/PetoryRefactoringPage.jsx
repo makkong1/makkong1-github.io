@@ -8,6 +8,7 @@ const sections = [
   { id: 'location', title: 'Location 최적화' },
   { id: 'security', title: '보안/인가 정리' },
   { id: 'notification-read', title: '알림 읽음 처리 최적화' },
+  { id: 'over-fetching', title: '목록 오버페칭 제거' },
 ];
 
 const cases = [
@@ -203,6 +204,50 @@ const cases = [
         href:
           'https://github.com/makkong1/Petory/blob/main/docs/refactoring/notification/notification-read-performance-optimization.md',
         label: 'Notification 읽음 처리 성능 리팩토링',
+      },
+    ],
+  },
+  {
+    id: 'over-fetching',
+    number: '06',
+    title: '목록·지도 오버페칭 제거 (Projection)',
+    scope: 'PetCoin · User · Board · Care',
+    summary:
+      '목록/지도 API가 화면에서 쓰지 않는 컬럼·연관 엔티티까지 통째로 조회하던 오버페칭을, 목록 전용 read model + projection으로 제거했습니다. N+1(쿼리 수)과 별개로 "한 번에 가져오는 데이터의 폭"을 다룹니다.',
+    points: [
+      {
+        label: '문제',
+        text:
+          '작성자(Users) 27컬럼을 화면은 username 정도만 쓰는데 전부 조회하고, socialUsers·applications 같은 안 쓰는 연관까지 @BatchSize로 추가 쿼리를 유발했습니다.',
+      },
+      {
+        label: '원인',
+        text:
+          '엔티티당 단일 DTO/컨버터를 목록·상세가 공유해, 컨버터가 모든 연관을 항상 채우고 → 리포지토리가 목록에서도 전체 로딩을 강제당하는 구조였습니다. ("프로젝션 기술 부재"가 아니라 read model 미분리)',
+      },
+      {
+        label: '해결',
+        text:
+          '공유 컨버터·상세 경로는 그대로 두고, 목록 전용 경량 read model(ListView DTO)을 새로 만들어 JPQL 생성자 표현식·네이티브 인터페이스 projection으로 필요한 컬럼만 조회했습니다.',
+      },
+    ],
+    tableTitle: '전/후 실측 (git stash로 리팩토링만 토글)',
+    rows: [
+      ['엔드포인트', 'Before', 'After', '효과'],
+      ['지도 근처 케어요청', '17,621B / 38.3ms', '7,421B / 9.9ms', '응답 58%, 시간 74% 감소'],
+      ['관리자 사용자 목록', '8,647B / 2쿼리', '5,829B / 1쿼리', '응답 33% 감소'],
+      ['게시글 목록', '끌어오는 폭 기준 / 61.3ms', '−56% / 46.0ms', '응답시간 25% 감소'],
+    ],
+    note:
+      'Board는 응답 DTO가 불변이라 응답 바이트(9,351B)는 그대로고, 서버 내부(DB→앱) 오버페칭 제거가 응답시간으로 나타납니다. 오버페칭이 항상 응답 크기로 보이는 게 아니라는 점을 DB레벨·HTTP레벨 두 측정으로 확인했습니다.',
+    verification:
+      '동일 DB·JWT·요청에서 git stash로 리팩토링만 토글해 전/후를 측정(응답 바이트 + time_total 15회 평균)했고, 신규 경로마다 테스트(admin 6·board 3·care 2)로 런타임 검증했습니다.',
+    docs: [
+      { to: '/domains/refactoring/over-fetching', label: '오버페칭 제거 상세' },
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/dev/docs/refactoring/fetch-optimization/column-projection-review.md',
+        label: '컬럼·필드 과다조회 검토 문서',
       },
     ],
   },
