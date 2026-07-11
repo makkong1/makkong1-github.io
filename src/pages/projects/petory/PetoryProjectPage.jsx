@@ -177,24 +177,24 @@ ${nodeStyles}`;
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 성과</h2>
             <div className="glass" style={{ padding: '2rem', textAlign: 'center' }}>
               <div className="stat-grid">
-              <div className="stat-item">
+              <Link to="/domains/refactoring#n-plus-one" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="stat-number">99.8%</div>
                 <div className="stat-label">쿼리 수 감소</div>
-                <div className="stat-sub">2400개 → 4-5개</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-number">94%</div>
-                <div className="stat-label">실행 시간 개선</div>
-                <div className="stat-sub">1084ms → 66ms</div>
-              </div>
-              <div className="stat-item">
-                <div className="stat-number">71%</div>
-                <div className="stat-label">메모리 절감</div>
-                <div className="stat-sub">21MB → 6MB</div>
-              </div>
+                <div className="stat-sub">Care · N+1 · 2,400 → 4~5개</div>
+              </Link>
+              <Link to="/domains/refactoring#spatial-index" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
+                <div className="stat-number">~30배</div>
+                <div className="stat-label">p95 지연 단축</div>
+                <div className="stat-sub">Meetup · 근처검색 5만건 · 1.75s → 57.5ms</div>
+              </Link>
+              <Link to="/domains/refactoring#notification-read" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
+                <div className="stat-number">100 → 1</div>
+                <div className="stat-label">UPDATE 쿼리 수</div>
+                <div className="stat-sub">Notification · 읽음 처리 · JPQL bulk UPDATE</div>
+              </Link>
             </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '1rem' }}>
-                📌 상세 근거는 아래 "문제 해결 사례" 섹션에서 확인 가능
+                📌 서로 다른 세 가지 최적화 사례입니다. 카드를 누르면 전/후 실측 근거로 이동합니다.
               </p>
             </div>
           </section>
@@ -363,7 +363,7 @@ ${nodeStyles}`;
             <span className="eyebrow">Problem Solving</span>
             <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>성능 개선 & 리팩토링</h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.65 }}>
-              면접에서 설명 가능한 대표 사례 4개를 선별했습니다.
+              전체 7개 사례 중 면접에서 설명하기 좋은 대표 4개를 추렸습니다. 전체는 리팩토링 페이지에서 확인할 수 있습니다.
             </p>
             <div className="problem-summary-grid">
               <Link to="/domains/refactoring#n-plus-one" className="problem-summary-card">
