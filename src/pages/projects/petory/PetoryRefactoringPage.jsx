@@ -258,36 +258,35 @@ const cases = [
     title: '근처 모임 검색 — 실행계획 기반 인덱스 튜닝',
     scope: 'Meetup · Location',
     summary:
-      '전체 로드 후 애플리케이션에서 거리를 계산하던 근처 모임 조회를 EXPLAIN으로 확인하고, 반경 조건을 DB WHERE로 내려보내는 방향으로 두 세대에 걸쳐 재구현했습니다.',
+      '전체 로드 후 애플리케이션에서 거리를 계산하던 근처 모임 조회를 EXPLAIN으로 단계마다 확인하며 4단계에 걸쳐 재구현했습니다. 마지막 단계는 "인덱스 추가 = 항상 더 빠름"이 아니라 옵티마이저의 비용 기반 선택까지 확인한 사례입니다.',
     points: [
       {
         label: '문제',
         text:
-          '근처 모임 조회가 전체 데이터를 불러온 뒤 애플리케이션에서 Haversine 공식으로 거리를 계산해 걸러, 모임 수가 늘수록 DB 스캔·네트워크·메모리 부담이 선형으로 늘었습니다.',
+          '근처 모임 조회(1단계)가 전체 데이터를 불러온 뒤 애플리케이션에서 Haversine 공식으로 거리를 계산해 걸러, 모임 수가 늘수록 스캔·메모리 부담이 선형으로 늘었습니다.',
       },
       {
         label: '원인',
         text:
-          '반경 조건이 SQL WHERE로 내려가지 않아 인덱스를 탈 수 없는 구조였습니다. EXPLAIN으로 확인하니 type: ALL, key: NULL로 풀스캔이 찍혔습니다.',
+          'DB 쿼리로만 바꾼 2단계도 반경 조건에 IS NOT NULL이 섞여 인덱스를 못 탔습니다. EXPLAIN으로 확인하니 type: ALL, key: NULL, rows: 2,958(풀스캔)이 그대로였습니다.',
       },
       {
         label: '해결',
         text:
-          '1세대는 위경도 BETWEEN bounding box 조건과 기존 복합 인덱스(idx_meetup_location)를 조합해 인덱스를 태웠습니다. 이후 2세대에서는 정밀한 반경 계산과 확장성을 위해 공간 컬럼(geo_point, SRID 4326)에 공간 인덱스를 걸고 ST_Within으로 bounding polygon 후보를 좁힌 뒤 ST_Distance_Sphere로 정밀 반경 필터, 거리·날짜순 정렬까지 DB에서 처리하도록 재구현했습니다.',
+          '3단계는 IS NOT NULL을 BETWEEN bounding box로 바꿔 복합 인덱스(idx_meetup_location)를 태웠습니다(스캔 96%↓). 4단계(현재)는 위경도를 좁히기만 하고 세로축은 사후 필터링하던 B-tree의 한계를 넘으려 geo_point 공간 컬럼 + 공간 인덱스(R-Tree)를 추가하고 ST_Within/ST_Distance_Sphere로 재구현했습니다. EXPLAIN ANALYZE로 실측하니 지금 데이터량에서는 date 조건이 이미 충분히 선택적이라 옵티마이저가 공간 인덱스 대신 idx_meetup_date를 고르고, 공간 조건은 사후 필터로 처리됨을 확인했습니다.',
       },
     ],
-    tableTitle: 'EXPLAIN 실행계획 (1세대: bounding box + B-tree 인덱스)',
+    tableTitle: '단계별 실행계획 (1,000건 테스트 데이터 기준)',
     rows: [
-      ['항목', 'Before (풀스캔)', 'After (Bounding Box)'],
-      ['type', 'ALL', 'range'],
-      ['key', 'NULL', 'idx_meetup_location'],
-      ['rows', '2,958', '117 (스캔 96% 감소)'],
-      ['Extra', 'Using where; Using filesort', 'Using index condition; Using where; Using filesort'],
+      ['단계', '실행시간', '스캔 행 수', '인덱스 사용'],
+      ['1단계 · 인메모리 필터링', '486ms', '2,958 (전체 로드)', '없음'],
+      ['2단계 · DB 쿼리 전환', '301ms', '2,958 (미사용)', '없음'],
+      ['3단계 · Bounding Box', '273ms', '117 (96%↓)', 'idx_meetup_location (B-tree)'],
     ],
     note:
-      '위 EXPLAIN 수치는 bounding box + B-tree 인덱스로 처음 개선했을 때(1세대) 측정치입니다. 이후 공간 인덱스(ST_Within + ST_Distance_Sphere)로 한 번 더 재구현했고, 이 단계는 반경 계산 정확도·확장성 개선이 목적이라 별도로 EXPLAIN을 재측정하지 않았습니다. 면접에서는 세대를 구분해 설명합니다: "처음엔 EXPLAIN으로 풀스캔을 확인하고 bounding box + 기존 인덱스로 스캔을 96% 줄였고, 이후 반경 계산 정확도를 높이려 공간 인덱스로 다시 구현했다."',
+      '4단계(공간 인덱스)는 3단계와 동일 조건 재측정 기록이 없어 위 표에서 제외했습니다. 대신 EXPLAIN ANALYZE 실측 결과, 현재 데이터에서는 date 조건의 선택도가 더 높아 옵티마이저가 idx_meetup_date를 선택하고 ST_Within/ST_Distance_Sphere는 post-filter로 평가됩니다 — 버그가 아니라 비용 기반 정상 판단입니다. 모임 수와 미래 날짜 비중이 늘어 date 선택도가 떨어지면 공간 인덱스로 전환될 여지가 있는, 확장성을 대비한 선제적 구조 결정입니다.',
     verification:
-      'MySQL EXPLAIN으로 type·key·rows·Extra를 Before/After 비교했습니다. 조건 순서 재배치, 서브쿼리 방식은 인덱스를 타지 않는 것을 먼저 확인한 뒤 BETWEEN 기반 bounding box로 최종 결정했습니다.',
+      '단계마다 EXPLAIN(3단계까지)과 EXPLAIN ANALYZE(4단계)로 type·key·rows·선택된 인덱스를 직접 비교했습니다. FORCE INDEX로 공간 경로를 강제해 옵티마이저 기본 선택과 실측 비용을 대조할 수도 있습니다.',
     docs: [
       { to: '/domains/meetup/detail', label: 'Meetup 성능·동시성 상세' },
       {
