@@ -283,16 +283,29 @@ const cases = [
       ['2단계 · DB 쿼리 전환', '301ms', '2,958 (미사용)', '없음'],
       ['3단계 · Bounding Box', '273ms', '117 (96%↓)', 'idx_meetup_location (B-tree)'],
     ],
+    secondaryTableTitle:
+      '종단 부하테스트 — legacy(인메모리) vs 현재(DB) before/after (k6, 2026-07)',
+    secondaryRows: [
+      ['시나리오', 'Before · 인메모리 legacy', 'After · DB 튜닝', '개선'],
+      ['소규모 708건 · p95 지연 (20 VU)', '78.0ms', '37.4ms', '-52%'],
+      ['대용량 5만건 · p95 지연 (5 VU)', '1.75s', '57.5ms', '~30배'],
+      ['대용량 5만건 · 처리량', '2.11 req/s', '26.7 req/s', '~12.6배'],
+    ],
     note:
-      '4단계(공간 인덱스)는 3단계와 동일 조건 재측정 기록이 없어 위 표에서 제외했습니다. 대신 EXPLAIN ANALYZE 실측 결과, 현재 데이터에서는 date 조건의 선택도가 더 높아 옵티마이저가 idx_meetup_date를 선택하고 ST_Within/ST_Distance_Sphere는 post-filter로 평가됩니다 — 버그가 아니라 비용 기반 정상 판단입니다. 모임 수와 미래 날짜 비중이 늘어 date 선택도가 떨어지면 공간 인덱스로 전환될 여지가 있는, 확장성을 대비한 선제적 구조 결정입니다.',
+      'EXPLAIN만으로는 4단계 공간 인덱스의 효과가 잘 드러나지 않았습니다 — 현재 데이터량에선 date 조건의 선택도가 더 높아 옵티마이저가 idx_meetup_date를 고르고 ST_Within/ST_Distance_Sphere는 post-filter로 평가되기 때문입니다(버그가 아니라 비용 기반 정상 판단). 그래서 코드에 남아 있던 인메모리 로직을 임시 legacy 엔드포인트(/api/meetups/nearby-legacy)로 되살려 같은 데이터·같은 좌표에서 k6로 종단 before/after를 실측했습니다. 소규모(708건)에선 p95 -52%로 개선폭이 modest하고, 이 개선의 본질은 공간 인덱스가 아니라 전건 로드 제거였습니다. 하지만 미래 날짜 모임을 5만건으로 늘려 date 선택도를 떨어뜨리자 옵티마이저가 공간 R-Tree 인덱스로 전환했고, legacy는 결과 건수와 무관하게 매 요청 전건 로드+Haversine이라 p95 격차가 ~30배(1.75s → 57.5ms)로 폭증했습니다. "확장성을 대비한 선제적 결정"이 실측으로 확인된 셈입니다.',
     verification:
-      '단계마다 EXPLAIN(3단계까지)과 EXPLAIN ANALYZE(4단계)로 type·key·rows·선택된 인덱스를 직접 비교했습니다. FORCE INDEX로 공간 경로를 강제해 옵티마이저 기본 선택과 실측 비용을 대조할 수도 있습니다.',
+      '단계마다 EXPLAIN(3단계까지)과 EXPLAIN ANALYZE(4단계)로 type·key·rows·선택된 인덱스를 직접 비교했고, k6 부하테스트로 legacy(인메모리)와 현재(DB)를 동일 데이터·동일 좌표에서 apples-to-apples로 측정했습니다(두 엔드포인트 결과셋 일치 확인). FORCE INDEX로 공간 경로를 강제해 옵티마이저 기본 선택과 실측 비용을 대조할 수도 있습니다.',
     docs: [
       { to: '/domains/meetup/detail', label: 'Meetup 성능·동시성 상세' },
       {
         href:
           'https://github.com/makkong1/Petory/blob/main/docs/refactoring/meetup/nearby-meetups/index-analysis.md',
         label: '근처 모임 인덱스 분석 (EXPLAIN)',
+      },
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/main/docs/performance/performance-testing/k6/nearby-loadtest-results.md',
+        label: 'nearby k6 부하테스트 before/after 실측',
       },
     ],
   },
