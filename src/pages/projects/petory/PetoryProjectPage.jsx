@@ -384,11 +384,11 @@ ${nodeStyles}`;
                 <p>초기 로드 22,699개→1,026개, 지역명 검색 198~368ms→36~53ms</p>
                 <strong>반경 조회 · 시군구 검색 우회</strong>
               </Link>
-              <Link to="/domains/refactoring#security" className="problem-summary-card">
+              <Link to="/domains/refactoring#spatial-index" className="problem-summary-card">
                 <span>04</span>
-                <h3>보안/인가 계약 정리</h3>
-                <p>Chat 메시지 조회·검색·상태 변경에서 참여자 검증 경계를 정리</p>
-                <strong>JWT principal · requireActiveParticipant</strong>
+                <h3>근처 검색 인덱스 튜닝</h3>
+                <p>EXPLAIN으로 풀스캔 확인 → bounding box+인덱스로 스캔 96%↓ → 공간 인덱스로 재구현</p>
+                <strong>EXPLAIN · B-tree bounding box · ST_Within 공간 인덱스</strong>
               </Link>
             </div>
           </section>

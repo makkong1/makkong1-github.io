@@ -9,6 +9,7 @@ const sections = [
   { id: 'security', title: '보안/인가 정리' },
   { id: 'notification-read', title: '알림 읽음 처리 최적화' },
   { id: 'over-fetching', title: '목록 오버페칭 제거' },
+  { id: 'spatial-index', title: '근처 검색 인덱스 튜닝' },
 ];
 
 const cases = [
@@ -248,6 +249,51 @@ const cases = [
         href:
           'https://github.com/makkong1/Petory/blob/dev/docs/refactoring/fetch-optimization/column-projection-review.md',
         label: '컬럼·필드 과다조회 검토 문서',
+      },
+    ],
+  },
+  {
+    id: 'spatial-index',
+    number: '07',
+    title: '근처 모임 검색 — 실행계획 기반 인덱스 튜닝',
+    scope: 'Meetup · Location',
+    summary:
+      '전체 로드 후 애플리케이션에서 거리를 계산하던 근처 모임 조회를 EXPLAIN으로 확인하고, 반경 조건을 DB WHERE로 내려보내는 방향으로 두 세대에 걸쳐 재구현했습니다.',
+    points: [
+      {
+        label: '문제',
+        text:
+          '근처 모임 조회가 전체 데이터를 불러온 뒤 애플리케이션에서 Haversine 공식으로 거리를 계산해 걸러, 모임 수가 늘수록 DB 스캔·네트워크·메모리 부담이 선형으로 늘었습니다.',
+      },
+      {
+        label: '원인',
+        text:
+          '반경 조건이 SQL WHERE로 내려가지 않아 인덱스를 탈 수 없는 구조였습니다. EXPLAIN으로 확인하니 type: ALL, key: NULL로 풀스캔이 찍혔습니다.',
+      },
+      {
+        label: '해결',
+        text:
+          '1세대는 위경도 BETWEEN bounding box 조건과 기존 복합 인덱스(idx_meetup_location)를 조합해 인덱스를 태웠습니다. 이후 2세대에서는 정밀한 반경 계산과 확장성을 위해 공간 컬럼(geo_point, SRID 4326)에 공간 인덱스를 걸고 ST_Within으로 bounding polygon 후보를 좁힌 뒤 ST_Distance_Sphere로 정밀 반경 필터, 거리·날짜순 정렬까지 DB에서 처리하도록 재구현했습니다.',
+      },
+    ],
+    tableTitle: 'EXPLAIN 실행계획 (1세대: bounding box + B-tree 인덱스)',
+    rows: [
+      ['항목', 'Before (풀스캔)', 'After (Bounding Box)'],
+      ['type', 'ALL', 'range'],
+      ['key', 'NULL', 'idx_meetup_location'],
+      ['rows', '2,958', '117 (스캔 96% 감소)'],
+      ['Extra', 'Using where; Using filesort', 'Using index condition; Using where; Using filesort'],
+    ],
+    note:
+      '위 EXPLAIN 수치는 bounding box + B-tree 인덱스로 처음 개선했을 때(1세대) 측정치입니다. 이후 공간 인덱스(ST_Within + ST_Distance_Sphere)로 한 번 더 재구현했고, 이 단계는 반경 계산 정확도·확장성 개선이 목적이라 별도로 EXPLAIN을 재측정하지 않았습니다. 면접에서는 세대를 구분해 설명합니다: "처음엔 EXPLAIN으로 풀스캔을 확인하고 bounding box + 기존 인덱스로 스캔을 96% 줄였고, 이후 반경 계산 정확도를 높이려 공간 인덱스로 다시 구현했다."',
+    verification:
+      'MySQL EXPLAIN으로 type·key·rows·Extra를 Before/After 비교했습니다. 조건 순서 재배치, 서브쿼리 방식은 인덱스를 타지 않는 것을 먼저 확인한 뒤 BETWEEN 기반 bounding box로 최종 결정했습니다.',
+    docs: [
+      { to: '/domains/meetup/detail', label: 'Meetup 성능·동시성 상세' },
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/main/docs/refactoring/meetup/nearby-meetups/index-analysis.md',
+        label: '근처 모임 인덱스 분석 (EXPLAIN)',
       },
     ],
   },
