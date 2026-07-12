@@ -178,9 +178,9 @@ ${nodeStyles}`;
             <div className="glass" style={{ padding: '2rem', textAlign: 'center' }}>
               <div className="stat-grid">
               <Link to="/domains/refactoring#n-plus-one" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
-                <div className="stat-number">99.8%</div>
+                <div className="stat-number">99%</div>
                 <div className="stat-label">쿼리 수 감소</div>
-                <div className="stat-sub">Care · N+1 · 2,400 → 4~5개</div>
+                <div className="stat-sub">Board · N+1 · 301 → 3개 (실제 커밋 worktree 실측)</div>
               </Link>
               <Link to="/domains/refactoring#spatial-index" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="stat-number">~30배</div>
@@ -369,20 +369,20 @@ ${nodeStyles}`;
               <Link to="/domains/refactoring#n-plus-one" className="problem-summary-card">
                 <span>01</span>
                 <h3>JPA N+1 성능 개선</h3>
-                <p>Board 301→3 · Care ~2,400→4~5 · Chat 21→4 · MissingPet 105→3</p>
+                <p>Board 301→3 · Care 151→4 · Chat 41→4 · MissingPet 267→4 (실제 커밋 worktree 실측)</p>
                 <strong>배치 조회 · Fetch Join · Map DTO 조립</strong>
               </Link>
               <Link to="/domains/refactoring#concurrency" className="problem-summary-card">
                 <span>02</span>
                 <h3>동시성 제어</h3>
-                <p>Meetup 인원 초과와 PetCoin Lost Update 가능성을 테스트로 재현</p>
+                <p>PetCoin Lost Update(100→110)를 실제 커밋에서 3/3 재현, Meetup은 원자적 UPDATE로 인원 초과 차단</p>
                 <strong>조건부 UPDATE · SELECT FOR UPDATE</strong>
               </Link>
               <Link to="/domains/refactoring#location" className="problem-summary-card">
                 <span>03</span>
                 <h3>Location 검색 최적화</h3>
-                <p>초기 로드 22,699개→1,026개, 지역명 검색 198~368ms→36~53ms</p>
-                <strong>반경 조회 · 시군구 검색 우회</strong>
+                <p>초기 로드 22.4MB→100KB(-99.6%), 응답 531.8ms→50.9ms (반환 100건 상한)</p>
+                <strong>반경 조회 · 공간 인덱스(R-Tree)</strong>
               </Link>
               <Link to="/domains/refactoring#spatial-index" className="problem-summary-card">
                 <span>04</span>
