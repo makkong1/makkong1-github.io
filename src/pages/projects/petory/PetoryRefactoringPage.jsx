@@ -46,7 +46,7 @@ const cases = [
       ['MissingPet', '267 queries / 762ms', '4 queries / 88ms', '쿼리 -98.5% · 시간 -88%'],
     ],
     note:
-      '수치는 추정이 아니라 git worktree로 각 이전 커밋(3a7a581d·7aca5882·496e121a·9c7e0d68)을 실제로 checkout해 그 시점 코드를 재구성 없이 실행한 실측입니다. 재현의 기준은 쿼리 수이고(절대 시간은 JIT·커넥션풀 워밍업 탓에 실행마다 달라집니다), Chat은 재검증 전까지 21→4로 과소집계돼 있었지만 실제 커밋에는 참여자 조회가 한 번 더 있어 41→4였습니다. Care의 "~2,400"은 @BatchSize 도입 이전 시점 값이라 현재 재현치(151→4)로 교체했습니다. 재검증 중 file 테이블에 (target_type, target_idx) 인덱스가 없어 첨부파일 조회가 매번 풀스캔하는 별도 이슈(Care·MissingPet 공통)도 새로 발견했습니다.',
+      '수치는 추정이 아니라 git worktree로 각 이전 커밋(3a7a581d·7aca5882·496e121a·9c7e0d68)을 실제로 checkout해 그 시점 코드를 재구성 없이 실행한 실측입니다. 재현의 기준은 쿼리 수이고(절대 시간은 JIT·커넥션풀 워밍업 탓에 실행마다 달라집니다), Chat은 재검증 전까지 21→4로 과소집계돼 있었지만 실제 커밋에는 참여자 조회가 한 번 더 있어 41→4였습니다. Care의 "~2,400"은 @BatchSize 도입 이전 시점 값이라 현재 재현치(151→4)로 교체했습니다. 재검증 중 file 테이블에 (target_type, target_idx) 인덱스가 없어 첨부파일 조회가 매번 풀스캔하던 별도 이슈(Care·MissingPet 공통)를 발견해 복합 인덱스를 추가했고(조회 5~14배 단축, CI 스키마·회귀 테스트 반영), N+1과 인덱스는 별개 문제임을 확인했습니다.',
     verification:
       'git worktree로 실제 before 커밋을 checkout해 그 시점 코드를 직접 실행하고, dev(after) 코드와 동일 fixture로 비교했습니다. Hibernate Statistics API가 Spring Data 파생 쿼리·컬렉션 lazy 초기화를 누락해 실제 SQL의 절반만 보고하는 함정을 확인한 뒤로는 실제 SQL 로그(grep -c) 카운트를 최종 수치로 채택했고, 개별조회 vs 배치조회 각각의 실행계획(EXPLAIN ANALYZE)도 남겼습니다.',
     docs: [
@@ -84,14 +84,14 @@ const cases = [
     tableTitle: '사례별 처리',
     rows: [
       ['사례', '문제', '해결'],
-      ['Meetup 참가', '최대 3명 제한을 동시 요청이 초과할 수 있는 구조(트랜잭션 우회 시 재현)', '비관적 락 → 조건부 원자적 UPDATE로 전략 교체'],
+      ['Meetup 참가', '락 없던 최초 커밋(a549eb33)에선 동시 참가가 데드락으로 부당 실패(성공1/실패2). 인원 초과는 트랜잭션 우회 시에만 재현되는 이론적 위험', '락 없음 → 비관적 락 → 원자적 조건부 UPDATE (3단계 진화)'],
       ['PetCoin 잔액', '동시 충전 5건 기대 150, 실제 110 (4건 유실, 재검증 3/3 재현)', 'findByIdForUpdate 비관적 락'],
       ['Care 거래 확정', '두 사용자 모두 확정했는데 OPEN에 머무는 stuck state', 'Conversation PESSIMISTIC_WRITE'],
     ],
     note:
-      '재검증에서 Meetup의 before 커밋(a5943b18)은 이미 findByIdWithLock 비관적 락으로 안전했고, bf32d155는 "최초 수정"이 아니라 락→원자적 UPDATE 전략 교체 커밋임을 확인했습니다. 이 인원 초과 레이스는 정상적인 서비스 호출로는 재현되지 않고 트랜잭션 경계를 우회해야만 드러나는 종류입니다. 반면 PetCoin은 락이 없던 실제 커밋(60455169)을 worktree로 띄워 보니 100→110 Lost Update가 3회 모두 결정론적으로 재현됐고 after(findByIdForUpdate)는 3회 모두 150으로 정상화돼, 동시성 버그는 재구성이 아닌 실제 코드 실행으로만 같은 신뢰도를 얻는다는 점을 확인했습니다.',
+      '재검증에서 Meetup의 진짜 최초 버그 커밋(a549eb33, 락 없음)을 찾아 worktree로 3회 재현했더니, 예상한 인원 초과가 아니라 InnoDB 암묵적 행 잠금에 의한 데드락으로 정당한 참가 요청이 부당하게 실패(성공1/실패2)했습니다. 인원 초과는 트랜잭션 경계를 우회한 별도 테스트에서만 확인되는 이론적 위험이었고, 결함은 락 없음(a549eb33) → 비관적 락(a5943b18) → 원자적 UPDATE(bf32d155) 3단계로 개선됐습니다. 반면 PetCoin은 락이 없던 실제 커밋(60455169)에서 100→110 Lost Update가 3회 모두 결정론적으로 재현됐고 after(findByIdForUpdate)는 3회 모두 150으로 정상화돼, 동시성 버그는 재구성이 아닌 실제 코드 실행으로만 같은 신뢰도를 얻는다는 점을 확인했습니다.',
     verification:
-      'git worktree로 각 사례의 실제 before 커밋을 checkout해 그 시점 코드를 재구성 없이 직접 실행했습니다. PetCoin은 락 없는 코드에서 Lost Update(100→110)를 3/3 결정론적으로 재현하고 after는 3/3 모두 150으로 확인했으며, Meetup·Care는 CountDownLatch/ExecutorService 동시성 테스트를 로컬 MySQL에서 재실행(11개 통과)해 최종 상태(currentParticipants 3, stuck state 없음)를 확인했습니다.',
+      'git worktree로 각 사례의 실제 이전 커밋을 checkout해 그 시점 코드를 재구성 없이 직접 실행했습니다. PetCoin은 락 없는 코드에서 Lost Update(100→110)를 3/3 결정론적으로 재현하고 after는 3/3 모두 150으로 확인했으며, Meetup은 최초 버그 커밋(a549eb33)까지 거슬러 올라가 데드락에 의한 부당 실패를 3/3 재현했습니다. Care는 기존 CountDownLatch/ExecutorService 동시성 테스트를 로컬 MySQL에서 재실행(11개 통과)해 최종 상태(currentParticipants 3, stuck state 없음)를 확인했습니다.',
     docs: [
       { to: '/domains/meetup/detail', label: 'Meetup 성능·동시성 상세' },
       { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },

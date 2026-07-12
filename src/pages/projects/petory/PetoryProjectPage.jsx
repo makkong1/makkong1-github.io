@@ -375,7 +375,7 @@ ${nodeStyles}`;
               <Link to="/domains/refactoring#concurrency" className="problem-summary-card">
                 <span>02</span>
                 <h3>동시성 제어</h3>
-                <p>PetCoin Lost Update(100→110)를 실제 커밋에서 3/3 재현, Meetup은 원자적 UPDATE로 인원 초과 차단</p>
+                <p>PetCoin Lost Update(100→110) 3/3 재현, Meetup 최초 버그는 데드락 실패 → 원자적 UPDATE로 해결</p>
                 <strong>조건부 UPDATE · SELECT FOR UPDATE</strong>
               </Link>
               <Link to="/domains/refactoring#location" className="problem-summary-card">
