@@ -37,17 +37,18 @@ const cases = [
           '목록에 필요한 ID를 먼저 수집하고 IN 절 배치 조회로 한 번에 가져온 뒤 Map으로 DTO 조립 시 매핑했습니다. 항상 필요한 ManyToOne은 Fetch Join으로 처리했습니다.',
       },
     ],
-    tableTitle: '대표 수치',
+    tableTitle: '대표 수치 — git worktree로 실제 before 커밋을 checkout해 실측 (2026-07 재검증)',
     rows: [
-      ['도메인', 'Before', 'After', '효과'],
-      ['Board', '301 queries / 745ms / 22.5MB', '3 queries / 30ms / 2MB', '쿼리 99% 감소'],
-      ['Care', '~2,400 queries / 1,084ms / 21MB', '4~5 queries / 66ms / 6MB', '쿼리 99.8%, 시간 94% 감소'],
-      ['Chat login', '21 queries / 305ms / 0.58MB', '4 queries / 55ms / 0.13MB', '시간 81.97% 단축'],
-      ['MissingPet', '105 queries / 571ms / 11MB', '3 queries / 106ms / 3MB', '쿼리 97% 감소'],
+      ['도메인', 'Before (실제 커밋 코드)', 'After (dev)', '효과'],
+      ['Board', '301 queries / 787ms', '3 queries / 38ms', '쿼리 -99% · 약 20배 단축'],
+      ['Care', '151 queries / 478ms', '4 queries / 210ms', '쿼리 -97.4%'],
+      ['Chat', '41 queries / 167ms', '4 queries / 70ms', '쿼리 -90.2% · 시간 -58%'],
+      ['MissingPet', '267 queries / 762ms', '4 queries / 88ms', '쿼리 -98.5% · 시간 -88%'],
     ],
     note:
-      'Care 수치는 기존 비페이징 측정 기준입니다. 현재 페이징 경로는 @BatchSize와 배치 변환으로 N+1을 완화합니다.',
-    verification: 'Hibernate Statistics와 성능 로그로 쿼리 수, 실행 시간, 메모리를 비교했습니다.',
+      '수치는 추정이 아니라 git worktree로 각 before 커밋(3a7a581d·7aca5882·496e121a·9c7e0d68)을 실제 checkout해 그 시점 코드를 재구성 없이 실행한 실측입니다. 쿼리 수가 재현의 앵커이고(절대 시간은 JIT·커넥션풀 워밍업에 따라 매 실행 변동), Chat은 재검증 전까지 21→4로 과소집계돼 있었으나 실제 커밋은 참여자 조회가 한 번 더 있어 41→4였습니다. Care의 "~2,400"은 @BatchSize 도입 이전 시점 값이라 현재 재현치(151→4)로 교체했습니다. 재검증 중 file 테이블에 (target_type, target_idx) 인덱스가 없어 첨부파일 조회가 매번 풀스캔하는 별도 이슈(Care·MissingPet 공통)도 새로 발견했습니다.',
+    verification:
+      'git worktree로 실제 before 커밋을 checkout해 그 시점 코드를 직접 실행하고, dev(after) 코드와 동일 fixture로 비교했습니다. Hibernate Statistics API가 Spring Data 파생 쿼리·컬렉션 lazy 초기화를 누락해 실제 SQL의 절반만 보고하는 함정을 확인한 뒤로는 실제 SQL 로그(grep -c) 카운트를 최종 수치로 채택했고, 개별조회 vs 배치조회 각각의 실행계획(EXPLAIN ANALYZE)도 남겼습니다.',
     docs: [
       { to: '/domains/board/detail', label: 'Board 성능·구조 상세' },
       { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },
@@ -83,11 +84,14 @@ const cases = [
     tableTitle: '사례별 처리',
     rows: [
       ['사례', '문제', '해결'],
-      ['Meetup 참가', '최대 3명 제한인데 동시 요청으로 4명 참가 가능', '조건부 원자적 UPDATE'],
-      ['PetCoin 잔액', '동시 충전 5건 기대 잔액 150, 실제 110 가능', 'findByIdForUpdate'],
+      ['Meetup 참가', '최대 3명 제한을 동시 요청이 초과할 수 있는 구조(트랜잭션 우회 시 재현)', '비관적 락 → 조건부 원자적 UPDATE로 전략 교체'],
+      ['PetCoin 잔액', '동시 충전 5건 기대 150, 실제 110 (4건 유실, 재검증 3/3 재현)', 'findByIdForUpdate 비관적 락'],
       ['Care 거래 확정', '두 사용자 모두 확정했는데 OPEN에 머무는 stuck state', 'Conversation PESSIMISTIC_WRITE'],
     ],
-    verification: 'CountDownLatch 동시성 테스트로 재현·검증했습니다(로컬 MySQL, 24 tests 통과). Meetup은 트랜잭션을 우회해 레이스를 결정론적으로 재현했습니다.',
+    note:
+      '재검증에서 Meetup의 before 커밋(a5943b18)은 이미 findByIdWithLock 비관적 락으로 안전했고, bf32d155는 "최초 수정"이 아니라 락→원자적 UPDATE 전략 교체 커밋임을 확인했습니다. 이 인원초과 레이스는 정상 서비스 호출이 아니라 트랜잭션 경계를 우회해야만 재현되는 종류입니다. 반면 PetCoin은 실제 락 없는 커밋(60455169)을 worktree로 띄워 100→110 Lost Update가 3회 모두 결정론적으로 재현됐고 after(findByIdForUpdate)는 3회 모두 150으로 정상화돼, 동시성 버그는 재구성이 아닌 실제 코드 실행으로만 같은 신뢰도를 얻는다는 점을 확인했습니다.',
+    verification:
+      'git worktree로 각 사례의 실제 before 커밋을 checkout해 그 시점 코드를 재구성 없이 직접 실행했습니다. PetCoin은 락 없는 코드에서 Lost Update(100→110)를 3/3 결정론적으로 재현하고 after 3/3을 150으로 검증했으며, Meetup·Care는 CountDownLatch/ExecutorService 동시성 테스트를 로컬 MySQL에서 재실행(11개 통과)해 최종 상태(currentParticipants 3, stuck state 없음)를 확인했습니다.',
     docs: [
       { to: '/domains/meetup/detail', label: 'Meetup 성능·동시성 상세' },
       { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },
@@ -99,7 +103,7 @@ const cases = [
     title: 'Location 초기 로드 최적화',
     scope: 'Location',
     summary:
-      '초기 로드에서 전체 데이터를 조회하던 방식을 제거했습니다. 현재 주변서비스 기본 조회, "내 위치", "이 지역" 검색은 사용자 위치 또는 지도 중심 기준 좌표+반경 검색을 사용합니다.',
+      '초기 로드에서 전체 데이터를 조회하던 방식을 제거했습니다. 현재 주변서비스 기본 조회, "내 위치", "이 지역" 검색은 좌표+반경 검색을 쓰며, 아키텍처가 한 세대 더 진화해 공간 인덱스(R-Tree)와 결과 상한(DEFAULT_RADIUS_LIMIT=100)까지 도입돼 있습니다.',
     points: [
       {
         label: '문제',
@@ -114,20 +118,21 @@ const cases = [
       {
         label: '해결',
         text:
-          '사용자 위치 또는 지도 중심 기준 반경 조회를 백엔드에서 수행해 전체 데이터 전송을 제거했습니다.',
+          '사용자 위치 또는 지도 중심 기준 반경 조회를 백엔드에서 수행하고, 공간 인덱스(R-Tree) + ST_Within/ST_Distance_Sphere로 후보를 좁혀 전체 데이터 전송을 제거했습니다.',
       },
     ],
-    tableTitle: '초기 로드 개선',
+    tableTitle: '초기 로드 개선 — worktree로 before 커밋 서버를 띄워 HTTP 실측 (2026-07 재검증)',
     rows: [
-      ['항목', 'Before', 'After'],
-      ['초기 조회 데이터', '22,699개', '약 1,026개'],
-      ['네트워크 전송량', '약 22MB', '약 1MB'],
-      ['프론트 전체 처리', '1,484ms', '약 700ms'],
-      ['프론트 메모리', '78.90MB', '약 28.6MB'],
+      ['항목', 'Before (5ef571d9, 무제한 전체조회)', 'After (반경조회)'],
+      ['반환 건수', '22,905건(전체)', '100건 (DEFAULT_RADIUS_LIMIT)'],
+      ['응답 바이트', '약 22.4MB', '약 100KB (-99.6%)'],
+      ['평균 응답시간 (HTTP 15회)', '531.8ms', '50.9ms (-90%)'],
+      ['DB 실행시간 (EXPLAIN)', '146ms (22,905행 순회)', '81.8ms (공간 인덱스 후보 축소)'],
     ],
     note:
-      '지역명 검색은 이후 여러 번 UX가 바뀐 영역이라 본문 성과에서 제외하고 참고 기록으로만 둡니다.',
-    verification: '조회 데이터 수, DB 쿼리 시간, 네트워크 전송량, 프론트 메모리 사용량을 비교했습니다.',
+      '옛 "무제한 전체조회" 시나리오는 현재 코드엔 없습니다 — size 파라미터가 필수화됐고 반경조회에 DEFAULT_RADIUS_LIMIT=100 상한이 새로 붙었습니다. 그래서 git worktree로 before 커밋(5ef571d9)을 실제로 띄워 파라미터 없는 진짜 무제한 조회를 측정했고, size=30000 트릭 재현치(22.3MB·602ms)와 오차 1% 안에서 일치함을 확인했습니다. After 100건은 상한 때문이며, 상한 없이 반경 10km 실제 건수는 2,499건입니다. 지역명 검색은 이후 UX가 여러 번 바뀐 영역이라 참고 기록으로만 둡니다.',
+    verification:
+      'git worktree로 before 커밋을 별도 포트에 띄워 파라미터 없는 무제한 조회를, dev를 반경조회로 각각 실측했습니다. 동일 서버·동일 DB(locationservice 22,905건)·동일 JWT에서 curl로 응답 바이트와 응답시간 15회 평균을 비교하고, 두 쿼리의 EXPLAIN ANALYZE(인덱스 전체 순회 vs 공간 R-Tree 인덱스)로 실행계획도 대조했습니다.',
     docs: [
       { to: '/domains/location/detail', label: 'Location 성능·검색 상세' },
     ],
