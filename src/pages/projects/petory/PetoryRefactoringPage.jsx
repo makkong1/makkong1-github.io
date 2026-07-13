@@ -430,8 +430,8 @@ export default function PetoryRefactoringPage() {
             </Link>
             <h1>성능 개선 & 리팩토링 대표 사례</h1>
             <p>
-              도메인별 작업 기록을 전부 나열하지 않고, 면접에서 문제·원인·해결·검증을
-              설명하기 좋은 7개 사례만 선별했습니다.
+              도메인별 작업 기록을 전부 나열하지 않고, 문제·원인·해결·검증 과정이
+              잘 분석된 7개 사례만 선별했습니다.
             </p>
             <div className="refactoring-quick-links">
               {sections.map((section) => (

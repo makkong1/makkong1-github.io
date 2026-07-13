@@ -363,7 +363,7 @@ ${nodeStyles}`;
             <span className="eyebrow">Problem Solving</span>
             <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>성능 개선 & 리팩토링</h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.65 }}>
-              전체 7개 사례 중 면접에서 설명하기 좋은 대표 4개를 추렸습니다. 전체는 리팩토링 페이지에서 확인할 수 있습니다.
+              전체 7개 사례 중 분석이 잘 된 대표 4개를 추렸습니다. 전체는 리팩토링 페이지에서 확인할 수 있습니다.
             </p>
             <div className="problem-summary-grid">
               <Link to="/domains/refactoring#n-plus-one" className="problem-summary-card">
