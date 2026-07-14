@@ -10,6 +10,7 @@ const sections = [
   { id: 'notification-read', title: '알림 읽음 처리 최적화' },
   { id: 'over-fetching', title: '목록 오버페칭 제거' },
   { id: 'spatial-index', title: '근처 검색 인덱스 튜닝' },
+  { id: 'query-audit', title: '전체 쿼리 감사' },
 ];
 
 const cases = [
@@ -314,6 +315,75 @@ const cases = [
       },
     ],
   },
+  {
+    id: 'query-audit',
+    number: '08',
+    title: '전체 쿼리 감사 — 고쳤다고 믿은 것을 다시 재다',
+    scope: '12개 도메인 · 엔드포인트 62개 실호출',
+    summary:
+      '게시글 목록 쿼리를 튜닝하고 다 고쳤다고 판단했지만, 실제 API를 호출해보니 Page<>가 함께 날리는 COUNT 쿼리(180,003행 / 141ms)를 통째로 놓치고 있었습니다. SQL을 손으로 던져 측정했기 때문입니다. 그래서 12개 도메인 62개 엔드포인트를 curl로 실제 호출해 전수 감사했습니다.',
+    points: [
+      {
+        label: '문제',
+        text:
+          '"내가 짠 SQL"과 "앱이 실제로 날리는 쿼리"가 달랐습니다. Page<>는 목록 SELECT와 COUNT 두 개를 날리는데 하나만 보고 있었고, 그 COUNT(180,003행 / 141ms)가 제가 고친 목록 SELECT(120행 / 4ms)보다 35배 비쌌습니다.',
+      },
+      {
+        label: '원인',
+        text:
+          'API를 한 번도 호출하지 않고 측정했습니다. 손으로 쓴 SQL은 ORM이 생성하는 쿼리도, 그 옆에 붙어 나가는 COUNT도, 지연로딩으로 추가되는 쿼리도 보여주지 않습니다.',
+      },
+      {
+        label: '해결',
+        text:
+          '앱을 띄우고 엔드포인트를 curl로 호출한 뒤 performance_schema digest를 세 기준으로 스캔했습니다 — 검사행순(풀스캔·비싼 COUNT), 호출횟수순(N+1), 쓰기 경로(과잉 락). N+1은 개별 쿼리가 값싸고 수백 번 반복되므로 검사행순으로는 상위권에 뜨지 않습니다. 의심 쿼리는 EXPLAIN ANALYZE로 예상 행수와 실제 행수를 대조하고, 고친 뒤에는 A/B/A(적용 → 제거 → 재적용)로 인과를 증명했습니다.',
+      },
+    ],
+    tableTitle:
+      '처방 6건 — 실측 (로컬 MySQL 8.4, board 5만행 시드, 엔드포인트당 curl 1회, digest 초기화 후)',
+    rows: [
+      ['엔드포인트', 'Before', 'After', '효과'],
+      ['care 검색 (공개 + 관리자)', 'HTTP 500 (항상 실패)', 'HTTP 200', '기능 복구'],
+      ['관리자 케어요청 목록 (20건)', '66 queries', '7 queries', 'N+1 소멸'],
+      ['펫 타입별 조회 (DOG)', '7,667건 / 155 queries / 331ms', '20건 / 5 queries / 37ms', '쿼리 -97%'],
+      ['모임 검색', '500건 / 53 queries / 583ms', '20건 / 6 queries / 43ms', '13배 단축'],
+      ['관리자 사용자 목록', '10,021행 + filesort', '20행', '스캔 -99.8%'],
+      ['care 주변검색', '3,000행 풀스캔 (선택도 208배 오판)', '208행 (SPATIAL)', '스캔 -93%'],
+    ],
+    secondaryTableTitle:
+      'N+1 여부는 "쿼리가 줄었나"가 아니라 "결과 수에 비례하나"로 판정 — 관리자 케어요청 목록',
+    secondaryRows: [
+      ['page size', 'Before', 'After'],
+      ['10', '36 queries', '7 queries'],
+      ['20', '66 queries', '7 queries'],
+      ['40', '127 queries', '8 queries'],
+    ],
+    note:
+      '성능 감사를 하다 기능 버그를 찾았습니다. care 검색이 항상 HTTP 500이었는데, MATCH(title, description)을 쓰면서 FULLTEXT 인덱스가 없었기 때문입니다 — MySQL은 FULLTEXT 없이 MATCH...AGAINST를 실행하지 못합니다(느린 게 아니라 에러라, 데이터가 몇 건이든 항상 실패합니다). 인덱스 하나로 공개·관리자 두 엔드포인트가 함께 살아났습니다. 반대로 N+1이라 확신했던 것은 N+1이 아니었습니다. 모임 검색에서 참가자 쿼리가 10회 나왔는데, 숫자를 맞춰보니 결과 500건 ÷ @BatchSize(50) = 정확히 10이었습니다. 배칭은 정상이었고 진짜 원인은 결과가 500건이라는 것 자체(검색에 페이징이 없어 DB가 전량을 읽은 뒤 subList로 메모리에서 잘랐습니다)였습니다. 신호에 바로 이름을 붙였다면 이미 잘 짜인 배칭 코드를 건드릴 뻔했습니다. 진짜 N+1은 관리자 API에 딱 하나 있었고(공개 쪽은 JOIN FETCH를 넣었는데 관리자 쪽만 빠져 있었습니다), 지리 검색은 B-tree 복합 인덱스로는 고쳐지지 않아 — is_deleted는 선택도가 0이고 B-tree는 범위 조건을 선두에서 하나만 쓸 수 있어 longitude가 걸러지지 않습니다 — meetup과 동일하게 POINT + SPATIAL + 트리거로 갔습니다.',
+    verification:
+      '감사 도중 측정 도구가 네 번 고장났고, 그때마다 계기판부터 고쳤습니다. (1) SUM_LOCK_TIME으로 락을 재려 했으나 MySQL의 LOCK_TIME은 테이블 락 전용이라 InnoDB 행 락이 들어오지 않습니다(전역 카운터엔 행 락 대기가 377번 있었는데 digest는 전부 0이었습니다). (2) DIGEST_TEXT는 1024자에서 잘려 컬럼이 많은 SELECT는 FROM 절까지 도달하지 못합니다 — 테이블명은 물론 FOR UPDATE도 못 잡습니다. (3) 회귀 테스트에서 Hibernate getQueryExecutionCount()가 지연로딩 엔티티 로드를 세지 않아, 이 지표를 믿고 JOIN FETCH를 "불필요하다"고 판단해 맞는 수정을 되돌릴 뻔했습니다(getPrepareStatementCount()로 교체하니 잡혔습니다). 이건 N+1 재검증 때 겪은 함정과 같은 것이 다른 얼굴로 다시 나온 셈입니다. (4) DB 상태는 Gradle의 입력이 아니라 인덱스를 지워도 test가 UP-TO-DATE로 스킵됐습니다. 회귀 테스트 8건은 전부 2단계로 검증했습니다 — 수정 전 상태에서 테스트가 실제로 빨간불이 되는지 먼저 확인한 뒤 초록불을 확인했습니다. 이 절차가 없으면 아무것도 검증하지 않는 테스트가 초록불만 켜고 있게 됩니다.',
+    limits:
+      '미측정 범위를 "문제 없음"과 구분해 남겼습니다. 자동생성 COUNT 16건(countQuery를 명시하지 않으면 Hibernate가 본문 쿼리의 JOIN을 그대로 물고 COUNT를 만듭니다 — care 목록은 SELECT를 30행으로 고쳤지만 그 옆의 COUNT는 아직 6,000행입니다), board 깊은 페이지(page=2500에서 100,000행 검사 / 0행 반환 — 인덱스는 정상적으로 타지만 OFFSET 자체가 문제라 인덱스로는 못 고칩니다. 키셋 페이징이면 COUNT까지 사라지지만 "N페이지 점프"를 포기해야 해서 성능이 아니라 제품 결정입니다), 그리고 락 경합은 이 감사로 원리적으로 관측할 수 없습니다 — curl을 하나씩 던지므로 경합할 상대가 없습니다. 관측 가능한 건 과잉 락(요청 1개로도 보입니다)이고 경합 자체는 동시성 부하 테스트가 필요합니다.',
+    docs: [
+      { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },
+      { to: '/domains/board/detail', label: 'Board 성능·구조 상세' },
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/main/docs/analysis/query-audit/00-plan.md',
+        label: '감사 방법론 (3-패스 스캔 · 측정 원칙)',
+      },
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/main/docs/analysis/query-audit/99-summary.md',
+        label: '전체 감사 결과 종합',
+      },
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/main/docs/analysis/query-audit/fixes-2026-07-14.md',
+        label: '처방 6건 + 회귀 테스트 (A/B/A 증명)',
+      },
+    ],
+  },
 ];
 
 function MetricTable({ title, rows }) {
@@ -374,6 +444,13 @@ function CaseSection({ item }) {
           <strong>검증</strong>
           {item.verification}
         </p>
+        {/* 미측정 범위를 "문제 없음"과 구분해 남긴다. 없는 사례는 렌더링되지 않는다. */}
+        {item.limits && (
+          <p className="refactoring-verification">
+            <strong>한계 · 미측정</strong>
+            {item.limits}
+          </p>
+        )}
 
         <div className="refactoring-docs">
           <span>근거 문서</span>
