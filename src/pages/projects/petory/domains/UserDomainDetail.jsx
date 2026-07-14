@@ -11,6 +11,7 @@ function UserDomainDetail() {
     { id: 'sanction-bypass', title: '제재 중 인증 우회 버그' },
     { id: 'dormant', title: '휴면 계정 처리' },
     { id: 'auth-cleanup', title: '인증 · 중복 조회 정리' },
+    { id: 'principal-sweep', title: '인증 주체 계약 — 전 컨트롤러 스윕' },
     { id: 'audit', title: '쿼리 감사 — 펫 목록 페이징' },
     { id: 'summary', title: '요약' }
   ];
@@ -261,7 +262,77 @@ if (Boolean.TRUE.equals(user.getIsDormant())) {
             </div>
           </section>
 
-          {/* 6. 쿼리 감사 — 펫 목록 페이징 */}
+          {/* 6. 인증 주체 계약 — 전 컨트롤러 스윕 */}
+          <section id="principal-sweep" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인증 주체 계약 — 전 컨트롤러 스윕 (2026-07)</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
+              "누구의 데이터인가"를 <strong style={{ color: 'var(--text-color)' }}>클라이언트가 정하게 두면 안 된다</strong>는 계약은{' '}
+              <Link to="/domains/refactoring#security" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                보안 · 인가 계약 정리
+              </Link>
+              에서 Chat·Care를 대상으로 이미 세웠습니다. 그런데 <strong style={{ color: 'var(--text-color)' }}>그때 손댄 두 도메인만 바뀌어 있었습니다.</strong>
+            </p>
+
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>🔴 두 곳이 남아 있었다</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                <code>@PreAuthorize("isAuthenticated()")</code>는 <strong style={{ color: 'var(--text-color)' }}>"로그인했는가"만 보고 "그게 너인가"는 보지 않습니다.</strong>{' '}
+                그런데 대상 사용자를 <code>@RequestParam("userId")</code>로 받고 있으면, 로그인한 누구나 남의 데이터를 읽을 수 있습니다.
+              </p>
+              <div style={{ overflowX: 'auto', margin: '0.75rem 0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                      <th style={th}>엔드포인트</th><th style={th}>무엇이 샜나</th><th style={th}>상태</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={td}><code>GET /api/boards/my-posts</code></td>
+                      <td style={td}>남의 게시글 · 파라미터 누락 시 500</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>수정됨</td>
+                    </tr>
+                    <tr>
+                      <td style={td}><code>GET /api/activities/my</code></td>
+                      <td style={td}>남의 활동 내역 전체 (게시글·케어요청·댓글) — <strong style={{ color: 'var(--text-color)' }}>@PreAuthorize조차 없었음</strong></td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>수정됨</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <pre style={pre}>
+{`# seed_user_1 (idx 1662) 로 로그인한 뒤 남의 id 를 넣는다
+GET /api/activities/my?userId=1663
+
+수정 전 →  HTTP 200 · seed_user_2 의 활동 21건   (본인은 20건)
+수정 후 →  HTTP 200 · 본인 20건                  (파라미터 무시)
+
+# 토큰을 seed_user_2 로 바꾸면 21건 — 주체가 JWT 에서 온다는 증거`}
+              </pre>
+            </div>
+
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>✅ User 도메인은 깨끗했다</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: 0, fontSize: '0.9rem' }}>
+                고친 뒤 <strong style={{ color: 'var(--text-color)' }}>전 컨트롤러에서 클라이언트가 보낸 사용자 식별자를 받는 자리를 전수 조사</strong>했습니다.
+                <code>PetController</code>·<code>UserProfileController</code>는 모든 개인 엔드포인트가 <code>@AuthenticationPrincipal</code>을 쓰고 있어
+                이 문제가 없었습니다. 관리자 API가 <code>@PathVariable userId</code>로 남의 것을 다루는 건 <strong style={{ color: 'var(--text-color)' }}>권한상 정당</strong>하고,
+                공개 프로필 조회도 마찬가지입니다 — 문제는 <strong style={{ color: 'var(--text-color)' }}>"내 것"을 표방하면서 대상을 남이 정하게 둔 엔드포인트</strong>였습니다.
+              </p>
+            </div>
+
+            <div className="section-card" style={{ ...card, border: '1px dashed var(--nav-border)' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>교훈</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: 0, fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>"패턴을 고쳤다"와 "그 패턴이 있는 모든 곳을 고쳤다"는 다릅니다.</strong>{' '}
+                1차 정리 때 원인을 정확히 알고 있었는데도 <code>grep</code> 한 번을 안 해서 두 곳을 남겼습니다.
+                Care의 N+1을 공개 API에서만 고치고 관리자 경로를 빠뜨렸던 것과 <strong style={{ color: 'var(--text-color)' }}>정확히 같은 실수</strong>입니다 —
+                원인을 아는 것과 영향 범위를 훑는 것은 별개의 작업입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 7. 쿼리 감사 — 펫 목록 페이징 */}
           <section id="audit" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 펫 목록 페이징 (2026-07)</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
@@ -402,6 +473,9 @@ ALTER TABLE pets ADD INDEX idx_pets_type_deleted (pet_type, is_deleted);`}
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>Admin · OAuth2</td><td style={td}>삭제 role 프로젝션, 목록 페이징, ID 생성 DB 0회</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    <td style={td}>인증 주체 계약 스윕</td><td style={td}>board my-posts · activities/my IDOR 수정 (User 도메인 자체는 이미 @AuthenticationPrincipal 사용)</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>펫 타입별 조회 (쿼리 감사)</td><td style={td}>7,667건/155쿼리/331ms → 20건/5쿼리/37ms · 인덱스 머지 제거</td>

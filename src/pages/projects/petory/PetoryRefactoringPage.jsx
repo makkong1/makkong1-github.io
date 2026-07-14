@@ -142,14 +142,14 @@ const cases = [
     id: 'security',
     number: '04',
     title: '보안 / 인가 계약 정리',
-    scope: 'Chat · Care',
+    scope: 'Chat · Care · Board · Activity',
     summary:
-      '클라이언트가 넘긴 사용자 식별자를 신뢰하던 API 계약을 JWT principal과 리소스 관계 검증 기준으로 바꿨습니다.',
+      '클라이언트가 넘긴 사용자 식별자를 신뢰하던 API 계약을 JWT principal과 리소스 관계 검증 기준으로 바꿨습니다. 처음엔 Chat·Care만 고쳤고, 같은 버그가 남아 있던 Board·Activity는 1년 뒤 감사에서야 찾았습니다.',
     points: [
       {
         label: '문제',
         text:
-          '인증된 사용자가 요청 파라미터의 userId를 바꾸거나 참여자가 아닌 채팅방 ID를 지정하면 메시지 조회, 검색, 상태 변경 대상에 영향을 줄 수 있었습니다.',
+          '인증된 사용자가 요청 파라미터의 userId를 바꾸거나 참여자가 아닌 채팅방 ID를 지정하면 메시지 조회, 검색, 상태 변경 대상에 영향을 줄 수 있었습니다. @PreAuthorize("isAuthenticated()")는 "로그인했는가"만 보고 "그게 너인가"는 보지 않습니다.',
       },
       {
         label: '원인',
@@ -157,17 +157,30 @@ const cases = [
           '인증은 되어 있지만 리소스 소유자나 참여자 여부를 확인하는 인가가 API별로 흩어져 있었습니다.',
       },
       {
-        label: '해결',
+        label: '해결 (1차 — Chat · Care)',
         text:
           'Chat은 JWT principal에서 사용자를 식별하고 requireActiveParticipant로 ACTIVE 참여자 여부를 확인했습니다. Care my-requests는 userId 쿼리 파라미터를 제거했습니다.',
       },
+      {
+        label: '🔴 놓친 것 (2차 — Board · Activity)',
+        text:
+          '1차에서 "계약을 바꿨다"고 정리했지만, 실제로는 손댄 두 도메인만 바뀌어 있었습니다. 같은 형태가 GET /api/boards/my-posts와 GET /api/activities/my에 그대로 남아 있었고, 전체 쿼리 감사에서야 발견했습니다. my-posts는 파라미터를 빼면 400이 아니라 500이 나갔고, 남의 userId를 넣으면 그 사람 글이 그대로 조회됐습니다. activities/my는 더 나빴습니다 — @PreAuthorize조차 없이 SecurityConfig의 /api/** catch-all에만 기대고 있어서, 로그인한 누구나 남의 활동 내역(게시글·케어요청·댓글) 전체를 읽을 수 있었습니다. 둘 다 대상을 @AuthenticationPrincipal에서 가져오도록 고쳤습니다.',
+      },
+      {
+        label: '교훈',
+        text:
+          '"패턴을 고쳤다"와 "그 패턴이 있는 모든 곳을 고쳤다"는 다릅니다. 1차 때 이미 원인을 정확히 알고 있었는데도 grep 한 번을 안 해서 두 곳을 남겼습니다. 이번엔 고친 뒤 전 컨트롤러에서 클라이언트가 보낸 사용자 식별자를 받는 자리를 전수 조사했고, user 도메인(PetController·UserProfileController)은 전부 @AuthenticationPrincipal을 쓰고 있어 깨끗했습니다.',
+      },
     ],
     note:
-      '이 사례는 수치 중심 성과가 아니라 API 계약과 인가 경계 개선 사례입니다.',
-    verification: '메시지 조회, 검색, 상태 변경 경로가 참여자 검증을 거치도록 점검했습니다.',
+      '이 사례는 수치 중심 성과가 아니라 API 계약과 인가 경계 개선 사례입니다. 그리고 "같은 버그를 두 번에 나눠 찾은" 기록이기도 합니다.',
+    verification:
+      '2차는 실제 API를 curl로 호출해 재현하고 고쳤습니다. seed_user_1(idx 1662)로 로그인해 GET /api/activities/my?userId=1663을 호출하면 수정 전에는 seed_user_2의 활동 21건이 그대로 나왔고(본인은 20건), 수정 후에는 파라미터와 무관하게 본인 20건이 나옵니다. 토큰을 seed_user_2로 바꾸면 21건이 나오므로 주체가 JWT에서 온다는 것도 확인했습니다. my-posts도 같은 방식으로 재현·검증했습니다.',
     docs: [
       { to: '/domains/chat/detail', label: 'Chat 성능·보안 상세' },
       { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },
+      { to: '/domains/board/detail', label: 'Board 성능 상세 (my-posts IDOR)' },
+      { to: '/domains/user/detail', label: 'User 인증·보안 상세' },
     ],
   },
   {

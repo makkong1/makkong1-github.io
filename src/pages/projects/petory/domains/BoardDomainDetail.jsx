@@ -275,13 +275,46 @@ public void generateWeeklyPopularitySnapshots() {
                   Hibernate가 본문 쿼리의 JOIN을 물고 COUNT를 만듭니다. board 목록은 호출마다 <strong style={{ color: 'var(--text-color)' }}>60,001행</strong>을 검사합니다.
                   프로젝트 전체에 같은 형태가 <strong style={{ color: 'var(--text-color)' }}>16개</strong> 있어 별도 과제로 뺐습니다.
                 </li>
-                <li>
-                  • <strong style={{ color: 'var(--text-color)' }}>🐛 <code>/api/boards/my-posts</code></strong> — <code>userId</code>를
-                  <strong style={{ color: 'var(--text-color)' }}> 클라이언트가 보낸 값으로 신뢰</strong>합니다(<code>@RequestParam</code>).
-                  파라미터가 빠지면 400이어야 할 응답이 <strong style={{ color: 'var(--text-color)' }}>500</strong>으로 나가고, 남의 <code>userId</code>를 넣어도 그대로 조회됩니다.
-                  인증 주체(JWT)에서 가져오도록 바꿔야 합니다.
-                </li>
               </ul>
+            </div>
+
+            <div className="section-card" style={{ ...card, marginTop: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>✅ <code>/api/boards/my-posts</code> IDOR — 고쳤습니다</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                감사에서 <code>my-posts</code>가 대상 사용자를 <code>@RequestParam("userId")</code>로 받고 있는 걸 발견했습니다.
+                <code>@PreAuthorize("isAuthenticated()")</code>는 <strong style={{ color: 'var(--text-color)' }}>"로그인했는가"만 보고 "그게 너인가"는 보지 않습니다.</strong>{' '}
+                로그인만 하면 남의 <code>userId</code>를 넣어 그 사람 글을 읽을 수 있었습니다.
+              </p>
+              <div style={{ overflowX: 'auto', margin: '0.75rem 0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                      <th style={th}>호출 (seed_user_1 = idx 1662 로 로그인)</th><th style={th}>수정 전</th><th style={th}>수정 후</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={td}><code>/my-posts</code></td>
+                      <td style={{ ...td, color: '#e74c3c' }}>HTTP 500</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>200 · 본인(1662) 글</td>
+                    </tr>
+                    <tr>
+                      <td style={td}><code>/my-posts?userId=1663</code></td>
+                      <td style={{ ...td, color: '#e74c3c', fontWeight: 'bold' }}>200 · 남의(1663) 글 5건</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>200 · 본인 글 (파라미터 무시)</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: 0, fontSize: '0.8rem' }}>
+                대상을 <code>@AuthenticationPrincipal</code>에서 가져오도록 바꿨습니다 — 같은 컨트롤러의 <code>createBoard</code>·<code>addComment</code>가 이미 쓰던 방식입니다.
+                고친 뒤 <strong style={{ color: 'var(--text-color)' }}>같은 패턴을 전 컨트롤러에서 스윕했더니 <code>/api/activities/my</code>에서 하나 더 나왔습니다</strong> —
+                거기는 <code>@PreAuthorize</code>조차 없었습니다. 경위는{' '}
+                <Link to="/domains/refactoring#security" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                  보안 · 인가 계약 정리
+                </Link>
+                에 있습니다.
+              </p>
             </div>
           </section>
 
