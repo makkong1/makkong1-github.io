@@ -34,7 +34,7 @@ const refactorRows = [
   ['R6', '(미적용) intent_tags.yml 로드하지만 사실상 미사용 — 정리 후보'],
   ['R7', 'petType 파라미터를 분류 로직에서 쓰지 않는다는 의도적 결정을 docstring으로 명시'],
   ['R8', '임베딩 모델 warmup (첫 요청 타임아웃 방지)'],
-  ['R9', 'confidence 이중 threshold(Python 0.45 / Spring 0.60) 문서화'],
+  ['R9', 'confidence 2단계 필터(Python 0.45 하한 → Spring은 domain·urgency별 threshold) 문서화'],
 ];
 
 function RecommendationDomainDetail() {
@@ -151,11 +151,22 @@ function RecommendationDomainDetail() {
                 <li>• Python 3초 타임아웃 · 실패 시 <code>Optional.empty()</code> — 게시글 작성 등 signal 수집 흐름은 원 요청 무영향(즉시 추천 API는 빈 결과 대신 keyword fallback으로 대체, 아래 참고)</li>
                 <li>• Redis 중복 방지 장애 → 분석 생략(안전 쪽 차단)</li>
                 <li>• 실행 풀 거부 → 경고 로그, signal 미생성</li>
-                <li>• confidence Python 0.45 / Spring 0.60 — 2단계 품질 필터</li>
+                <li>• confidence 2단계 필터 — Python 0.45 하한 → Spring 저장 단계에서 <strong style={{ color: 'var(--text-color)' }}>domain·urgency별</strong> threshold</li>
                 <li>• 서버 기동 시 임베딩 모델 선로딩 — 첫 요청 지연 완화</li>
               </ul>
+              <pre style={{ padding: '0.85rem', backgroundColor: 'var(--bg-color)', borderRadius: '6px', overflow: 'auto', fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0.6rem 0 0' }}>
+{`// Spring 저장 threshold (UserPetIntentSignalService)
+MEDICAL                  -> 0.65   (urgency=HIGH 면 0.55 로 완화)
+FOOD_SNACK / SUPPLIES
+  / WALK_OUTING / CAFE_DINING -> 0.45
+DEFAULT (맵에 없는 도메인)     -> 0.60`}
+              </pre>
               <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
-                이유(confidence 이중 threshold): Python 0.45 미만은 UNKNOWN으로 걸러내고, Spring은 그중에서도 0.60 이상만 저장 — 2-pass 필터로 낮은 신뢰도 signal이 쌓이는 걸 막음.
+                이유: 두 단계의 목적이 다릅니다. Python 0.45는 <strong style={{ color: 'var(--text-color)' }}>분류 자체의 하한</strong>(미만은 UNKNOWN)이고,
+                Spring은 <strong style={{ color: 'var(--text-color)' }}>signal 로 저장할 가치가 있는가</strong>를 도메인별 오탐 비용으로 다시 판단합니다.
+                오탐 비용이 낮은 FOOD_SNACK·SUPPLIES 등은 Python과 같은 0.45라 사실상 추가로 걸러내지 않고,
+                MEDICAL은 0.65로 더 엄격하되 <code>urgency=HIGH</code>일 때는 <strong style={{ color: 'var(--text-color)' }}>0.55로 완화</strong>합니다 —
+                위급 signal을 놓치는 비용이 오탐 비용보다 크기 때문입니다.
               </p>
             </div>
           </section>
