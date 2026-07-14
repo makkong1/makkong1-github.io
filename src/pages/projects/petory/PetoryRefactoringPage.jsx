@@ -369,17 +369,17 @@ const cases = [
       { to: '/domains/board/detail', label: 'Board 성능·구조 상세' },
       {
         href:
-          'https://github.com/makkong1/Petory/blob/main/docs/analysis/query-audit/00-plan.md',
+          'https://github.com/makkong1/Petory/blob/dev/docs/analysis/query-audit/00-plan.md',
         label: '감사 방법론 (3-패스 스캔 · 측정 원칙)',
       },
       {
         href:
-          'https://github.com/makkong1/Petory/blob/main/docs/analysis/query-audit/99-summary.md',
+          'https://github.com/makkong1/Petory/blob/dev/docs/analysis/query-audit/99-summary.md',
         label: '전체 감사 결과 종합',
       },
       {
         href:
-          'https://github.com/makkong1/Petory/blob/main/docs/analysis/query-audit/fixes-2026-07-14.md',
+          'https://github.com/makkong1/Petory/blob/dev/docs/analysis/query-audit/fixes-2026-07-14.md',
         label: '처방 6건 + 회귀 테스트 (A/B/A 증명)',
       },
     ],
