@@ -10,6 +10,7 @@ function BoardDomainDetail() {
     { id: 'list-n1', title: '게시글 목록 N+1 (대표)' },
     { id: 'search-popular', title: '검색 · 인기글 · 동시성' },
     { id: 'cleanup', title: '부가 성능 · 구조 정리' },
+    { id: 'audit', title: '쿼리 감사 — 아직 남은 것' },
     { id: 'summary', title: '요약' }
   ];
 
@@ -75,12 +76,15 @@ function BoardDomainDetail() {
                 (대상: Board·Comment·Reaction·BoardViewLog / MissingPet 게시판 / BoardPopularitySnapshot)
               </p>
               <div style={{ padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '6px', border: '1px solid var(--nav-border)' }}>
-                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과 (목록 조회, 100개 기준)</h3>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과 (목록 조회 · worktree 실측)</h3>
                 <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
-                  <li>• 쿼리 수: <strong style={{ color: 'var(--text-color)' }}>301개 → 3개</strong> (99% 감소)</li>
-                  <li>• 실행 시간: <strong style={{ color: 'var(--text-color)' }}>745ms → 30ms</strong> (24.83배)</li>
-                  <li>• 메모리: <strong style={{ color: 'var(--text-color)' }}>22.50MB → 2MB</strong> (91% 감소)</li>
+                  <li>• 쿼리 수: <strong style={{ color: 'var(--text-color)' }}>301개 → 3개</strong> (99% 감소, 게시글 수와 무관하게 고정)</li>
+                  <li>• 실행 시간: <strong style={{ color: 'var(--text-color)' }}>787ms → 38ms</strong> (약 20배, 보조 지표)</li>
                 </ul>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.5rem', marginBottom: 0, lineHeight: 1.7 }}>
+                  ※ <code>git worktree</code>로 실제 이전 커밋을 checkout해 재측정한 값입니다. 주 지표는 쿼리 수이고,
+                  절대 시간은 JIT·커넥션풀 워밍업 탓에 실행마다 달라지므로 보조로만 씁니다.
+                </p>
               </div>
             </div>
           </section>
@@ -164,10 +168,10 @@ public Map<Long, List<FileDTO>> getAttachmentsBatch(FileTargetType targetType, L
                   </thead>
                   <tbody>
                     <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                      <td style={td}>목록 조회 (100개)</td>
-                      <td style={{ ...td, color: '#e74c3c', fontWeight: 'bold' }}>301개 / 745ms / 22.50MB</td>
-                      <td style={{ ...td, color: '#27ae60', fontWeight: 'bold' }}>3개 / 30ms / 2MB</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>99% ↓, 24.83배, 91% ↓</td>
+                      <td style={td}>목록 조회</td>
+                      <td style={{ ...td, color: '#e74c3c', fontWeight: 'bold' }}>301개 / 787ms</td>
+                      <td style={{ ...td, color: '#27ae60', fontWeight: 'bold' }}>3개 / 38ms</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>99% ↓, 약 20배</td>
                     </tr>
                     <tr>
                       <td style={td}>반응만 조회 (100개)</td>
@@ -248,6 +252,39 @@ public void generateWeeklyPopularitySnapshots() {
           </section>
 
           {/* 5. 요약 */}
+          <section id="audit" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 아직 남은 것 (2026-07)</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
+              <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                전체 쿼리 감사
+              </Link>
+              는 <strong style={{ color: 'var(--text-color)' }}>이 페이지의 게시글 목록 튜닝을 "완료"로 판단했다가 틀렸다는 걸 깨달으면서 시작됐습니다.</strong>{' '}
+              고친 건 목록 SELECT였고, <code>Page&lt;&gt;</code>가 그 옆에서 함께 날리던 COUNT 쿼리는 보고 있지도 않았습니다.
+              감사에서 board에 대해 나온 것 중 아직 안 고친 것들을 적어둡니다.
+            </p>
+
+            <div className="section-card" style={{ ...card, border: '1px dashed var(--nav-border)' }}>
+              <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.9', fontSize: '0.9rem', margin: 0 }}>
+                <li>
+                  • <strong style={{ color: 'var(--text-color)' }}>깊은 페이지 OFFSET</strong> — 뒤쪽 페이지를 요청하면
+                  <strong style={{ color: 'var(--text-color)' }}> 100,000행을 검사하고 0행을 반환</strong>합니다(129ms).
+                  키셋 페이징과 지연 조인 중 무엇을 쓸지는 <strong style={{ color: 'var(--text-color)' }}>UI가 "다음 페이지"만 쓸지 페이지 번호를 노출할지에 달려</strong> 있어서, 그 결정 전에는 고르지 않았습니다.
+                </li>
+                <li>
+                  • <strong style={{ color: 'var(--text-color)' }}>자동생성 COUNT</strong> — <code>countQuery</code>를 명시하지 않으면
+                  Hibernate가 본문 쿼리의 JOIN을 물고 COUNT를 만듭니다. board 목록은 호출마다 <strong style={{ color: 'var(--text-color)' }}>60,001행</strong>을 검사합니다.
+                  프로젝트 전체에 같은 형태가 <strong style={{ color: 'var(--text-color)' }}>16개</strong> 있어 별도 과제로 뺐습니다.
+                </li>
+                <li>
+                  • <strong style={{ color: 'var(--text-color)' }}>🐛 <code>/api/boards/my-posts</code></strong> — <code>userId</code>를
+                  <strong style={{ color: 'var(--text-color)' }}> 클라이언트가 보낸 값으로 신뢰</strong>합니다(<code>@RequestParam</code>).
+                  파라미터가 빠지면 400이어야 할 응답이 <strong style={{ color: 'var(--text-color)' }}>500</strong>으로 나가고, 남의 <code>userId</code>를 넣어도 그대로 조회됩니다.
+                  인증 주체(JWT)에서 가져오도록 바꿔야 합니다.
+                </li>
+              </ul>
+            </div>
+          </section>
+
           <section id="summary" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>요약</h2>
             <div className="section-card" style={card}>
@@ -259,7 +296,7 @@ public void generateWeeklyPopularitySnapshots() {
                 </thead>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                    <td style={td}>게시글 목록 N+1 (대표)</td><td style={td}>301개 → 3개 (99% ↓), 745ms → 30ms, 게시글 수 무관 3개 고정</td>
+                    <td style={td}>게시글 목록 N+1 (대표)</td><td style={td}>301개 → 3개 (99% ↓), 787ms → 38ms, 게시글 수 무관 3개 고정</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>인기글 · 검색</td><td style={td}>스냅샷 사전 생성(즉시 응답), FULLTEXT 검색</td>

@@ -638,6 +638,16 @@ int markDormantUsers(@Param("cutoff") LocalDateTime cutoff, @Param("now") LocalD
                 </li>
                 <li>
                   •{' '}
+                  <Link
+                    to="/domains/refactoring#query-audit"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    전체 쿼리 감사
+                  </Link>
+                  {' — 펫 목록이 7,667건을 전부 반환하던 것 · Admin 목록 정렬 인덱스'}
+                </li>
+                <li>
+                  •{' '}
                   <a
                     href={PETORY_USER_DOMAIN_DOC}
                     target="_blank"

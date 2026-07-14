@@ -527,6 +527,16 @@ ORDER BY m.date ASC
                 </li>
                 <li>
                   •{' '}
+                  <Link
+                    to="/domains/refactoring#query-audit"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    전체 쿼리 감사
+                  </Link>
+                  {' — 검색이 500건을 읽고 메모리에서 자르던 것 · N+1 오진을 피한 과정'}
+                </li>
+                <li>
+                  •{' '}
                   <a
                     href={PETORY_MEETUP_ARCH_DOC}
                     target="_blank"

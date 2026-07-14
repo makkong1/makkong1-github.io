@@ -26,10 +26,10 @@ function MissingPetDomainDetail() {
     Service->>DB: 파일 배치 조회 (IN 절) (2)
     Service->>Converter: toBoardDTO(board)
     Note over Converter: board.getComments() 접근 → LAZY 트리거
-    loop 게시글 103개
+    loop 게시글마다
         Converter->>DB: 댓글 조회 (사용도 안 하는데!)
     end
-    Note over Service,DB: 총 105개 쿼리 (댓글 103개 N+1)`;
+    Note over Service,DB: 총 267개 쿼리 (worktree 실측)`;
 
   const afterSeq = `sequenceDiagram
     participant Service as MissingPetBoardService
@@ -65,12 +65,16 @@ function MissingPetDomainDetail() {
                 목록 조회 시 Converter가 <code>board.getComments()</code>에 접근해 게시글마다 댓글 LAZY 로딩이 터졌습니다. 사용하지도 않는 댓글을 조회한 것이라, Converter 분리로 근본 해결했습니다.
               </p>
               <div style={{ padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '6px', border: '1px solid var(--nav-border)' }}>
-                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과 (목록 조회, 103개 기준)</h3>
+                <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과 (목록 조회 · worktree 실측)</h3>
                 <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
-                  <li>• 쿼리 수: <strong style={{ color: 'var(--text-color)' }}>105개 → 3개</strong> (97% 감소)</li>
-                  <li>• 백엔드 응답 시간: <strong style={{ color: 'var(--text-color)' }}>571ms → 106ms</strong> (81% 개선)</li>
-                  <li>• 메모리: <strong style={{ color: 'var(--text-color)' }}>11MB → 3MB</strong> (73% 감소)</li>
+                  <li>• 쿼리 수: <strong style={{ color: 'var(--text-color)' }}>267개 → 4개</strong> (98.5% 감소)</li>
+                  <li>• 백엔드 응답 시간: <strong style={{ color: 'var(--text-color)' }}>762ms → 88ms</strong> (88% 개선, 보조 지표)</li>
                 </ul>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.5rem', marginBottom: 0, lineHeight: 1.7 }}>
+                  ※ <code>git worktree</code>로 실제 이전 커밋을 checkout해 재측정한 값입니다. 이전에 쓰던
+                  <code> 105 → 3 / 571ms → 106ms</code>는 재구성 테스트 기반이라 재현되지 않아 교체했습니다.
+                  주 지표는 쿼리 수이고, 절대 시간은 실행마다 달라지므로 보조로만 씁니다.
+                </p>
               </div>
             </div>
           </section>
@@ -82,7 +86,7 @@ function MissingPetDomainDetail() {
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 — 사용하지 않는 댓글까지 LAZY 조회</h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                <code>toBoardDTO()</code>가 <code>board.getComments()</code>에 접근해 게시글 103개마다 댓글 조회가 실행(총 105개). 목록에선 댓글 목록이 필요 없고 <strong style={{ color: 'var(--text-color)' }}>댓글 수</strong>만 표시하면 됐습니다.
+                <code>toBoardDTO()</code>가 <code>board.getComments()</code>에 접근해 <strong style={{ color: 'var(--text-color)' }}>게시글마다</strong> 댓글 조회가 실행됐습니다. 목록에선 댓글 목록이 필요 없고 <strong style={{ color: 'var(--text-color)' }}>댓글 수</strong>만 표시하면 됐습니다.
               </p>
               <MermaidDiagram chart={beforeSeq} />
             </div>
@@ -136,7 +140,7 @@ List<CommentCountResult> countCommentsByBoardIds(@Param("boardIds") List<Long> b
                 이유: 댓글은 OneToMany 컬렉션이라 Fetch Join 시 카티션 곱으로 중복 행이 생기고, 목록에선 개수만 필요해 접근 자체를 없애고 IN절 배치로 우회.
               </p>
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem', marginTop: '0.75rem' }}>
-                <li>• 댓글 목록 조회: 103개 → <strong style={{ color: 'var(--text-color)' }}>0개</strong> (접근 안 함) · 댓글 수: 103개 → 1개 (배치)</li>
+                <li>• 댓글 목록 조회: 게시글마다 1회 → <strong style={{ color: 'var(--text-color)' }}>0개</strong> (아예 접근 안 함) · 댓글 수: 게시글마다 1회 → 1개 (배치)</li>
                 <li>• 댓글이 필요하면 별도 API(<code>GET /missing-pets/{'{id}'}/comments</code>)로 조회 → 무한 스크롤도 가능</li>
               </ul>
             </div>
@@ -152,19 +156,16 @@ List<CommentCountResult> countCommentsByBoardIds(@Param("boardIds") List<Long> b
                   </thead>
                   <tbody>
                     <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                      <td style={td}>총 쿼리 수</td><td style={td}>105개</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>3개</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>97% ↓</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                      <td style={td}>백엔드 응답 시간</td><td style={td}>571ms</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>106ms</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>81% ↓</td>
+                      <td style={td}>총 쿼리 수 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(주 지표)</span></td>
+                      <td style={td}>267개</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>4개</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>98.5% ↓</td>
                     </tr>
                     <tr>
-                      <td style={td}>메모리</td><td style={td}>11MB</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>3MB</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>73% ↓</td>
+                      <td style={td}>백엔드 응답 시간 <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>(보조)</span></td>
+                      <td style={td}>762ms</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>88ms</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>88% ↓</td>
                     </tr>
                   </tbody>
                 </table>
@@ -230,7 +231,7 @@ List<CommentCountResult> countCommentsByBoardIds(@Param("boardIds") List<Long> b
                 </thead>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                    <td style={td}>목록 N+1 (대표)</td><td style={td}>105개 → 3개 (97% ↓), 571ms → 106ms, 댓글 조회 103 → 0</td>
+                    <td style={td}>목록 N+1 (대표)</td><td style={td}>267개 → 4개 (98.5% ↓), 762ms → 88ms · worktree 실측</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>댓글 일괄 삭제</td><td style={td}>1001쿼리 → 1쿼리 (배치 UPDATE)</td>

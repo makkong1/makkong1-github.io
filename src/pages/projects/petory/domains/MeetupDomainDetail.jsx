@@ -12,6 +12,7 @@ function MeetupDomainDetail() {
     { id: 'query-n1', title: '참여자 조회 N+1' },
     { id: 'query-subquery', title: '서브쿼리 최적화' },
     { id: 'query-etc', title: 'Stream · 중복 쿼리 · AOP' },
+    { id: 'audit', title: '쿼리 감사 — 검색 페이징' },
     { id: 'summary', title: '요약' }
   ];
 
@@ -420,7 +421,77 @@ List<MeetupParticipants> findByUserIdxOrderByJoinedAtDesc(@Param("userIdx") Long
             </div>
           </section>
 
-          {/* 7. 요약 */}
+          {/* 7. 쿼리 감사 — 검색 페이징 */}
+          <section id="audit" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 검색 페이징 (2026-07)</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
+              <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                전체 쿼리 감사
+              </Link>
+              에서 모임 검색을 실제로 호출해보니, <strong style={{ color: 'var(--text-color)' }}>N+1로 보였던 것이 N+1이 아니었습니다.</strong>
+            </p>
+
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>N+1이라고 오진할 뻔했다</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                <code>/api/meetups/search</code>에서 참가자 조회가 10회 나갔습니다. 처음엔 N+1로 의심했지만,
+                결과가 500건이고 <code>@BatchSize</code>가 50이므로 <strong style={{ color: 'var(--text-color)' }}>500 ÷ 50 = 10회는 배칭이 정상 동작하는 증거</strong>였습니다.
+                여기서 배치 로직을 건드렸다면 멀쩡한 코드를 망가뜨렸을 겁니다.
+              </p>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: 0, fontSize: '0.9rem' }}>
+                실제 원인은 <strong style={{ color: 'var(--text-color)' }}>검색에 페이징이 아예 없어서 500건을 전부 읽어온 것</strong>이었습니다.
+                고칠 것은 배칭이 아니라 결과 크기였습니다.
+              </p>
+            </div>
+
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>자르는 시점이 틀렸다</h3>
+              <pre style={pre}>
+{`// 개선 전
+List<Meetup> meetups = meetupRepository.findByKeyword(keyword);   // DB 에서 전량 조회
+return converter.toDTOList(meetups.size() > MAX_LIST_SIZE
+        ? meetups.subList(0, MAX_LIST_SIZE) : meetups);           // 메모리에서 자름 ← 이미 늦었다`}
+              </pre>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
+                <code>subList</code>는 DB가 일을 다 한 뒤에 실행됩니다. FULLTEXT 2단계 쿼리의 1단계
+                (<code>findIdxByFulltextKeyword</code>)에 <code>Pageable</code>을 태워 <strong style={{ color: 'var(--text-color)' }}>DB LIMIT</strong>으로 내리고
+                <code>subList</code>를 제거했습니다. 컨트롤러에 <code>page</code>/<code>size</code>(기본 20)를 추가했습니다.
+              </p>
+            </div>
+
+            <div className="section-card" style={card}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>결과</h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>엔드포인트</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>개선 전</th>
+                      <th style={{ padding: '0.75rem', textAlign: 'left', color: 'var(--text-color)' }}>개선 후</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={{ padding: '0.75rem' }}><code>/api/meetups/search</code></td>
+                      <td style={{ padding: '0.75rem' }}>500건 · 쿼리 53 · 583ms</td>
+                      <td style={{ padding: '0.75rem', color: 'var(--link-color)', fontWeight: 'bold' }}>20건 · 쿼리 6 · 43ms (13배)</td>
+                    </tr>
+                    <tr>
+                      <td style={{ padding: '0.75rem' }}><code>/api/meetups/nearby</code></td>
+                      <td style={{ padding: '0.75rem' }}>쿼리 21 · 98ms</td>
+                      <td style={{ padding: '0.75rem', color: 'var(--link-color)', fontWeight: 'bold' }}>쿼리 6 · 40ms</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.6rem 0 0', fontSize: '0.8rem' }}>
+                주변 검색은 <code>maxResults</code> 기본값이 <strong style={{ color: 'var(--text-color)' }}>500</strong>이라 프론트가 값을 안 주면 모임 500개가 나갔습니다.
+                지도에 500개를 찍을 일은 없으므로 기본값을 20으로 내렸습니다 — 한 줄 수정입니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 8. 요약 */}
           <section id="summary" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>요약</h2>
             <div className="section-card" style={{ ...card, marginBottom: '1.5rem' }}>
@@ -452,6 +523,10 @@ List<MeetupParticipants> findByUserIdxOrderByJoinedAtDesc(@Param("userIdx") Long
                     <td style={{ padding: '0.75rem' }}>Stream · 중복 쿼리 · AOP</td>
                     <td style={{ padding: '0.75rem' }}>공통 메서드 추출, refresh 동기화, @Timed 자동 측정</td>
                   </tr>
+                  <tr>
+                    <td style={{ padding: '0.75rem' }}>검색 페이징 (쿼리 감사)</td>
+                    <td style={{ padding: '0.75rem' }}>500건/53쿼리/583ms → 20건/6쿼리/43ms (13배) · nearby 기본값 500 → 20</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -460,7 +535,7 @@ List<MeetupParticipants> findByUserIdxOrderByJoinedAtDesc(@Param("userIdx") Long
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
                 <li>• Admin 인메모리 필터링 → DB 쿼리 이동</li>
                 <li>• getMeetupById 등 @Cacheable 캐싱</li>
-                <li>• LIKE → FULLTEXT + MATCH...AGAINST 검토</li>
+                <li>• <code>MAX_LIST_SIZE = 500</code> 잔존 — 검색 경로에서만 제거했고 주최자별 조회 등은 남아 있음</li>
               </ul>
             </div>
           </section>

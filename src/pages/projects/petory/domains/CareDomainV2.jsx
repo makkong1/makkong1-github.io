@@ -223,9 +223,8 @@ function CareDomainV2() {
                 </thead>
                 <tbody>
                   {[
-                    ['목록 조회 쿼리 수', '~2,400개', '4~5개'],
-                    ['응답 시간', '1,084ms', '66ms'],
-                    ['메모리', '21MB', '6MB'],
+                    ['목록 조회 쿼리 수', '151개', '4개 (-97.4%)'],
+                    ['응답 시간', '478ms', '210ms'],
                   ].map(([label, before, after], i, arr) => (
                     <tr
                       key={label}
@@ -267,17 +266,28 @@ function CareDomainV2() {
                   lineHeight: '1.7',
                 }}
               >
-                케어 요청 목록 기준·테스트 DB·
-                <code
-                  style={{
-                    backgroundColor: 'var(--bg-color)',
-                    padding: '0.1rem 0.3rem',
-                    borderRadius: '4px',
-                  }}
+                케어 요청 목록 기준. <strong>추정이 아니라 <code>git worktree</code>로 실제 이전
+                커밋을 checkout해 그 시점 코드를 그대로 실행한 실측</strong>입니다. 주 지표는 쿼리
+                수이고, 절대 시간은 JIT·커넥션풀 워밍업 탓에 실행마다 달라지므로 보조로만 봅니다.
+              </p>
+              <p
+                style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.8rem',
+                  marginTop: '0.5rem',
+                  marginBottom: 0,
+                  lineHeight: '1.7',
+                }}
+              >
+                ※ 이전에 쓰던 <code>~2,400 → 4~5</code>는 <code>@BatchSize</code> 도입 <strong>이전 세대</strong>의
+                값이라 재검증 후 위 재현치로 교체했습니다. 경위는{' '}
+                <Link
+                  to="/domains/refactoring#n-plus-one"
+                  style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                 >
-                  entityManager.clear()
-                </code>{' '}
-                후 측정. 운영 수치는 환경에 따라 다를 수 있음.
+                  대표 개선 사례
+                </Link>
+                에 있습니다.
               </p>
             </Card>
 
@@ -517,18 +527,53 @@ if (!isRequester && !isAcceptedProvider)
                 }}
               >
                 {li('지도 표출용: 위도·경도·반경(km)·건수 제한으로 주변 요청 조회')}
-                {li('Haversine 공식 네이티브 쿼리 → 거리 계산 DB 위임')}
+                {li(
+                  <>
+                    <code>geo_point</code>(POINT, SRID 4326) + SPATIAL 인덱스 —{' '}
+                    <code>ST_Within</code>으로 후보를 좁히고{' '}
+                    <code>ST_Distance_Sphere</code>로 미터 정밀 반경 (meetup·locationservice와 같은 패턴)
+                  </>
+                )}
+                {li(
+                  <>
+                    지도 레이어가 쓰는 컬럼만 담은 projection(<code>CareRequestListView</code>)을
+                    그대로 반환 — 컨버터를 거치지 않아 작성자·펫·지원내역 오버페칭이 없음
+                  </>
+                )}
                 {li('limit은 1~500 사이로 클램핑해 과부하 방지')}
               </ul>
-              <CodeBlock>{`public List<CareRequestDTO> getNearby(
+              <CodeBlock>{`public List<CareRequestListView> getNearby(
         double lat, double lng, double radiusKm, int limit) {
     int effectiveLimit = Math.min(Math.max(limit, 1), 500);
-    return careRequestRepository
-        .findNearby(lat, lng, radiusKm, effectiveLimit)
-        .stream()
-        .map(careRequestConverter::toDTO)
-        .toList();
-}`}</CodeBlock>
+    // projection 을 그대로 반환한다. 컨버터(toDTO)를 태우면 요청마다
+    // 작성자·펫·첨부를 다시 조회해 N+1 이 된다.
+    return careRequestRepository.findNearby(lat, lng, radiusKm, effectiveLimit);
+}
+
+// 쿼리 — SPATIAL 인덱스를 타는 ST_Within + 정밀 반경 ST_Distance_Sphere
+WHERE cr.is_deleted = false
+  AND ST_Within(cr.geo_point, ST_GeomFromText(CONCAT('POLYGON((' ... ')'), 4326))
+  AND ST_Distance_Sphere(cr.geo_point, ST_GeomFromText(...)) <= :radius * 1000`}</CodeBlock>
+              <p
+                style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.8rem',
+                  lineHeight: 1.7,
+                  margin: '0.6rem 0 0',
+                }}
+              >
+                처음엔 <code>latitude</code>·<code>longitude</code>를 <code>BETWEEN</code>으로 거르는
+                B-tree 복합 인덱스를 시도했지만 효과가 없었습니다 — B-tree는 범위 조건을 선두에서
+                하나만 쓸 수 있어 <code>latitude</code> 다음의 <code>longitude</code>가 걸러지지
+                않습니다. 측정·전환 과정은{' '}
+                <Link
+                  to="/domains/refactoring#query-audit"
+                  style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                >
+                  전체 쿼리 감사
+                </Link>
+                에 있습니다.
+              </p>
             </Card>
           </section>
           <section
@@ -557,6 +602,16 @@ if (!isRequester && !isAcceptedProvider)
                     대표 개선 사례 보기
                   </Link>
                   {' — N+1 성능 개선 · 동시성/Race Condition'}
+                </li>
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/refactoring#query-audit"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    전체 쿼리 감사
+                  </Link>
+                  {' — care 검색이 HTTP 500이었던 것 · 관리자 목록 N+1 · 주변검색 SPATIAL 전환'}
                 </li>
                 <li>
                   •{' '}

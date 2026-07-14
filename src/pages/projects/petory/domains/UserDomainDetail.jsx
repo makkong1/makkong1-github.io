@@ -11,6 +11,7 @@ function UserDomainDetail() {
     { id: 'sanction-bypass', title: '제재 중 인증 우회 버그' },
     { id: 'dormant', title: '휴면 계정 처리' },
     { id: 'auth-cleanup', title: '인증 · 중복 조회 정리' },
+    { id: 'audit', title: '쿼리 감사 — 펫 목록 페이징' },
     { id: 'summary', title: '요약' }
   ];
 
@@ -260,7 +261,114 @@ if (Boolean.TRUE.equals(user.getIsDormant())) {
             </div>
           </section>
 
-          {/* 6. 요약 */}
+          {/* 6. 쿼리 감사 — 펫 목록 페이징 */}
+          <section id="audit" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 펫 목록 페이징 (2026-07)</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
+              <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                전체 쿼리 감사
+              </Link>
+              에서 나온 User 도메인 항목입니다. <strong style={{ color: 'var(--text-color)' }}>고치는 과정에서 제가 새 N+1을 만들었고, 없던 COUNT 문제도 스스로 불러왔습니다.</strong>{' '}
+              둘 다 기록으로 남깁니다.
+            </p>
+
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>문제 — 펫을 전부 반환하고 있었다</h3>
+              <pre style={pre}>
+{`GET /api/pets/type/DOG   →   강아지 7,667마리 전부 · 쿼리 155개 · 331ms`}
+              </pre>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
+                페이징도 상한도 없었습니다(meetup 검색의 <code>MAX_LIST_SIZE = 500</code>조차 없었습니다).
+                컨트롤러 → 서비스 → 어댑터 → Spring Data 4계층에 <code>Pageable</code>을 태웠습니다(기본 size 20).
+              </p>
+            </div>
+
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>🔴 수정하다가 새 N+1을 만들었다</h3>
+              <pre style={pre}>
+{`// 처음엔 이렇게 썼다
+return petRepository.findByPetTypeAndIsDeletedFalse(type, pageable)
+        .map(petConverter::toDTO);        // ← 함정`}
+              </pre>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: '0.5rem 0', fontSize: '0.9rem' }}>
+                측정해보니 20건에 쿼리가 <strong style={{ color: 'var(--text-color)' }}>24개</strong>였습니다. 첨부 조회가 행마다 나갔습니다.
+                <code>Page.map()</code>은 <strong style={{ color: 'var(--text-color)' }}>단건 변환기를 행마다 호출</strong>합니다 —
+                그리고 <code>PetConverter</code>의 javadoc이 이미 경고하고 있었습니다.
+              </p>
+              <pre style={pre}>
+{`/**
+ * Entity → DTO 변환 (단일 객체용, File 개별 조회)
+ * [주의] 리스트 변환 시에는 toDTOList() 사용 권장 (배치 조회로 N+1 방지)
+ */
+public PetDTO toDTO(Pet pet) { ... }`}
+              </pre>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', margin: '0.5rem 0 0', fontSize: '0.9rem' }}>
+                <code>toDTOList</code>는 첨부를 배치(<code>IN</code>)로 한 번에 가져옵니다. 쿼리 24 → <strong style={{ color: 'var(--text-color)' }}>5</strong>.
+                같은 실수가 <code>AdminCareAndMeetupFacade</code>에도 있어서 함께 고쳤습니다.
+              </p>
+            </div>
+
+            <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>🔴 페이징을 붙이자 없던 COUNT가 생겼다</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem', fontSize: '0.9rem' }}>
+                <code>List</code> → <code>Page&lt;&gt;</code>로 바꾸면 COUNT 쿼리가 따라옵니다. 그 COUNT가
+                <strong style={{ color: 'var(--text-color)' }}> pets 12,000행짜리 테이블에서 19,667행을 검사</strong>했습니다. EXPLAIN을 보니 인덱스 머지였습니다.
+              </p>
+              <pre style={pre}>
+{`-> Filter: (is_deleted = 0) and (pet_type = 'DOG')
+    -> Intersect rows sorted by row ID                            ← 두 인덱스를 교집합
+        -> Index range scan using idx_pets_deleted   (is_deleted=0)  → 12,000행
+        -> Index range scan using idx_pets_type      (pet_type='DOG') →  7,667행
+                                                          합계 = 19,667행
+
+-- V3__pets_type_deleted_index.sql
+ALTER TABLE pets ADD INDEX idx_pets_type_deleted (pet_type, is_deleted);`}
+              </pre>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.5rem 0 0', fontSize: '0.8rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>막다른 길 하나 —</strong> 이 저장소는 히스토그램으로 선택도 오판을 고친 전례가 있어 먼저 시도했지만
+                계획이 바뀌지 않았습니다. <strong style={{ color: 'var(--text-color)' }}>MySQL은 인덱스가 있는 컬럼에는 히스토그램을 쓰지 않습니다.</strong>{' '}
+                안 쓰이는 변경은 남기지 않으므로 히스토그램은 걷어내고 복합 인덱스만 남겼습니다.
+              </p>
+            </div>
+
+            <div className="section-card" style={card}>
+              <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>결과</h3>
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--nav-border)' }}>
+                      <th style={th}>항목</th><th style={th}>개선 전</th><th style={th}>개선 후</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={td}>반환 건수</td><td style={td}>7,667</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>20 (<code>totalElements</code>는 7,667 유지)</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={td}>쿼리 수</td><td style={td}>155</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>5 (size를 바꿔도 5로 일정)</td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                      <td style={td}>시간</td><td style={td}>331ms</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>37ms</td>
+                    </tr>
+                    <tr>
+                      <td style={td}>Admin 사용자 목록<br /><span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>idx_users_created_at</span></td>
+                      <td style={td}>10,021행 검사 · filesort</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>20행 · filesort 없음</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p style={{ color: 'var(--text-muted)', lineHeight: '1.6', margin: '0.6rem 0 0', fontSize: '0.8rem' }}>
+                <code>users</code>의 인덱스는 PRIMARY·id·email·username·nickname뿐이었고 전부 단일 컬럼 유니크라
+                <strong style={{ color: 'var(--text-color)' }}> 정렬에 쓸 수 있는 인덱스가 하나도 없었습니다.</strong> 20명을 보려고 1만 명을 정렬하고 있었습니다.
+              </p>
+            </div>
+          </section>
+
+          {/* 7. 요약 */}
           <section id="summary" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>요약</h2>
             <div className="section-card" style={card}>
@@ -292,8 +400,14 @@ if (Boolean.TRUE.equals(user.getIsDormant())) {
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>중복 검사 · 프로필</td><td style={td}>회원가입 3 → 1, 리뷰 2 → 1</td>
                   </tr>
-                  <tr>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>Admin · OAuth2</td><td style={td}>삭제 role 프로젝션, 목록 페이징, ID 생성 DB 0회</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    <td style={td}>펫 타입별 조회 (쿼리 감사)</td><td style={td}>7,667건/155쿼리/331ms → 20건/5쿼리/37ms · 인덱스 머지 제거</td>
+                  </tr>
+                  <tr>
+                    <td style={td}>Admin 사용자 목록 인덱스 (쿼리 감사)</td><td style={td}>10,021행 검사 · filesort → 20행 · filesort 없음</td>
                   </tr>
                 </tbody>
               </table>

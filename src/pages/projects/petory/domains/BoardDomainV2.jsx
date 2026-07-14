@@ -203,9 +203,8 @@ function BoardDomainV2() {
                 </thead>
                 <tbody>
                   {[
-                    ['목록 조회 쿼리 수', '301개', '3개'],
-                    ['실행 시간', '745ms', '30ms'],
-                    ['메모리', '22.50MB', '2MB'],
+                    ['목록 조회 쿼리 수', '301개', '3개 (-99%)'],
+                    ['실행 시간', '787ms', '38ms'],
                   ].map(([label, before, after], i, arr) => (
                     <tr
                       key={label}
@@ -501,6 +500,16 @@ Map<Long, List<FileDTO>> attachmentsMap =
                     대표 개선 사례 보기
                   </Link>
                   {' — N+1 성능 개선 (Board · Care · Chat · MissingPet)'}
+                </li>
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/refactoring#query-audit"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    전체 쿼리 감사
+                  </Link>
+                  {' — 이 도메인의 "완료" 판단이 틀렸던 것에서 시작된 감사 · 깊은 페이지·COUNT 잔여 과제'}
                 </li>
                 <li>
                   •{' '}
