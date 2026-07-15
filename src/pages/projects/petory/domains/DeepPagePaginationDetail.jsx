@@ -226,26 +226,26 @@ function DeepPagePaginationDetail() {
                   <tbody>
                     <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
                       <td style={td}>0 (1페이지)</td>
-                      <td style={td}>1.5ms</td>
+                      <td style={td}>0.4~0.9ms</td>
                     </tr>
                     <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
                       <td style={td}>10,000 (500페이지)</td>
-                      <td style={td}>51ms</td>
+                      <td style={td}>63~65ms</td>
                     </tr>
                     <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
                       <td style={td}>25,000</td>
-                      <td style={td}>68ms</td>
+                      <td style={td}>72~75ms</td>
                     </tr>
                     <tr style={{ borderBottom: "1px solid var(--nav-border)" }}>
                       <td style={td}>40,000</td>
-                      <td style={td}>87ms</td>
+                      <td style={td}>93~94ms</td>
                     </tr>
                     <tr>
                       <td style={{ ...td, color: "var(--text-color)" }}>
                         49,980 (맨 뒤, 2,500페이지)
                       </td>
                       <td style={{ ...td, color: "var(--text-color)" }}>
-                        114~147ms
+                        107~110ms
                       </td>
                     </tr>
                   </tbody>
@@ -488,7 +488,13 @@ function DeepPagePaginationDetail() {
                   정지(SUSPENDED)는 숨기지 않습니다
                 </strong>
                 . 정지는 일시적인 상태라, care 도메인이 이미 채택한 원칙(정지는
-                읽기 필터, 영구정지만 행 변경)과 방향을 맞췄습니다.
+                읽기 필터, 영구정지만 행 변경)과 방향은 같습니다 — 다만
+                조건까지 같지는 않습니다. care는{" "}
+                <code>u.status='ACTIVE' OR (u.status='SUSPENDED' AND
+                u.suspendedUntil &lt;= NOW())</code>{" "}
+                로 정지 기간이 끝난 회원만 다시 보이게 하는 반면, board의{" "}
+                <code>author_visible</code>은 정지 회원 글을 기간과 무관하게
+                항상 보여줍니다 — board가 더 관대한 규칙입니다.
               </p>
             </div>
 
@@ -539,12 +545,14 @@ function DeepPagePaginationDetail() {
               <pre style={pre}>
                 {`CREATE TRIGGER trg_board_author_visible AFTER UPDATE ON users
 FOR EACH ROW
+BEGIN
   IF (OLD.is_deleted <> NEW.is_deleted)
      OR ((OLD.status = 'BANNED') <> (NEW.status = 'BANNED')) THEN
     UPDATE board SET author_visible =
       IF(NEW.is_deleted = 0 AND NEW.status <> 'BANNED', 1, 0)
     WHERE user_idx = NEW.idx;
   END IF;
+END;
 
 -- 인덱스 (Flyway V6)
 ALTER TABLE board ADD INDEX idx_board_visible_created
@@ -552,6 +560,19 @@ ALTER TABLE board ADD INDEX idx_board_visible_created
 ALTER TABLE board ADD INDEX idx_board_cat_visible_created
   (category, is_deleted, author_visible, created_at DESC);`}
               </pre>
+              <p
+                style={{
+                  color: "var(--text-muted)",
+                  lineHeight: "1.6",
+                  margin: "0 0 0.75rem",
+                  fontSize: "0.8rem",
+                }}
+              >
+                Flyway의 SQL 파서는 <code>BEGIN...END</code>로 감싸지 않은
+                복합문(<code>IF...END IF</code>)의 내부 세미콜론에서 문장을
+                잘라 문법 오류(1064)를 낸다 — <code>BEGIN/END</code>로 감싸
+                하나의 문장으로 인식시켰다.
+              </p>
               <p
                 style={{
                   color: "var(--text-muted)",
