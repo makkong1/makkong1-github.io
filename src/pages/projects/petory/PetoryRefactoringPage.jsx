@@ -11,6 +11,7 @@ const sections = [
   { id: 'over-fetching', title: '목록 오버페칭 제거' },
   { id: 'spatial-index', title: '근처 검색 인덱스 튜닝' },
   { id: 'query-audit', title: '전체 쿼리 감사' },
+  { id: 'deep-page', title: '깊은 페이지 페이징 판단' },
 ];
 
 const cases = [
@@ -397,6 +398,65 @@ const cases = [
       },
     ],
   },
+  {
+    id: 'deep-page',
+    number: '09',
+    title: 'board 깊은 페이지 페이징 — 지연 조인 + author_visible 비정규화',
+    scope: 'Board',
+    summary:
+      '08번 감사에서 "성능 판단만으로 정할 수 없다"고 미뤄뒀던 board 깊은 페이지를 마저 판단했습니다. 이론적으로 가장 빠른 키셋 페이징을 채택하지 않은 이유가 핵심입니다 — 앱 전체 페이징이 총건수·번호점프·맨뒤에 의존하는 단일 공유 컴포넌트(12개 화면)로 통일돼 있었기 때문입니다.',
+    points: [
+      {
+        label: '문제',
+        text:
+          'board 목록은 OFFSET 페이징이고, 공유 페이징 컴포넌트에 "맨 뒤" 버튼(showEdges)이 있어 사용자가 실제로 OFFSET 49,980에 도달합니다. OFFSET은 건너뛰기가 아니라 "만들고 버리기"라 비용이 O(offset)로 선형 증가하고(1페이지 1.5ms → 맨뒤 114~147ms), 작성자 필터(u.status)가 조인 건너편에 있어 board 인덱스만으론 offset을 셀 수 없습니다.',
+      },
+      {
+        label: '원인',
+        text:
+          '목록이 board JOIN users 후 u.is_deleted=0 AND u.status=\'ACTIVE\'로 거르는데, 이 판정이 users에 있어서 board 인덱스로 5만 행을 훑는 매 행마다 users PK 조회가 5만 번 딸려 붙습니다. 같은 이유로 자동 COUNT도 users를 조인합니다.',
+      },
+      {
+        label: '해결',
+        text:
+          '키셋(O(1)이지만 공유 PageNavigation의 번호점프·맨뒤를 못 지원) 대신 지연 조인을 채택했습니다. 다만 지연 조인 1단계가 커버링이 되려면 작성자 필터가 board 컬럼에 있어야 해서, author_visible(=미탈퇴 AND status≠BANNED, 정지는 보임) 컬럼을 비정규화하고 users AFTER UPDATE 트리거 하나로 동기화했습니다.',
+      },
+    ],
+    tableTitle: '전/후 실측 (로컬 board 5만행, 스케줄러 끔)',
+    rows: [
+      ['측정', 'Before', 'After', '효과'],
+      ['깊은 페이지 스캔 (구코드 board JOIN users)', '133ms', '24~32ms', '약 4~5배'],
+      ['〃 (인덱스만 무시한 A/B)', '66~84ms', '24~32ms', '약 2.5배'],
+      ['COUNT', '22~32ms · users 조인 · 46,000', '7~25ms · 단일 테이블 · 48,000', '조인 제거'],
+      ['너덜너덜(비정규화 없이 skip)', '전체 2,500페이지 중 596페이지(23.8%) 누수', '누수 없음', '문제 자체 소멸'],
+    ],
+    secondaryTableTitle: 'k6 종단 (30s·20VU, 얕은/중간/맨뒤 혼합)',
+    secondaryRows: [
+      ['지표', '값'],
+      ['요청 / 성공률', '15,555건 / 100% 200'],
+      ['평균 / p90 / p95', '38.51ms / 57.94ms / 63.91ms'],
+    ],
+    note:
+      'COUNT 반환값이 46,000 → 48,000으로 늘어난 것은 버그가 아니라 의도된 동작 변화입니다. 구코드의 u.status=\'ACTIVE\' 단일 조건은 일시 정지(SUSPENDED) 회원 글까지 실수로 가려버리는 부작용이 있었고, author_visible은 탈퇴·영구정지(BANNED)만 숨기므로 정지 회원 글(400명 × 평균 5글 = 2,000건)이 이제 목록에 보입니다. care 도메인이 이미 "정지는 읽기 필터, 영구정지만 행 변경"으로 다루는 원칙과 방향을 맞췄습니다. 동기화는 트리거 하나(geo_point 비정규화와 같은 패턴)이며, 엔티티는 @Column(updatable=false)로 매핑해 JPA UPDATE가 트리거 값을 되돌리지 못하게 막았습니다.',
+    verification:
+      'EXPLAIN ANALYZE로 커버링 인덱스 A/B(인덱스 강제 무시 → 스캔 복귀 → 재적용 → 소멸)를 확인해 인과를 확정했고, 구코드 형태(board JOIN users)도 별도로 재현해 대조했습니다. 너덜너덜 증명은 전체 2,500페이지를 윈도우 함수로 한 번에 검사했고, k6로 종단 처리량·지연을 확인했습니다.',
+    limits:
+      'ORDER BY created_at DESC에 동점(tie-break) 키가 없어 같은 밀리초에 여러 글이 생성되면 페이지 경계 순서가 안정적이지 않을 수 있습니다(선재 이슈, 이번 범위 밖). 측정치를 범위(24~32ms 등)로 기록한 것은 로컬 단일 실행 환경의 버퍼풀 상태 변동 때문이며, 방향성(순서·배율)은 재현마다 일관됐습니다. missing_pet·meetup·care는 현재 규모(수천~1만 행)에서 체감되지 않아 같은 처방을 보류했습니다.',
+    docs: [
+      { to: '/domains/refactoring/deep-page', label: '판단 여정 상세 (키셋 기각 이유 포함)' },
+      { to: '/domains/board/detail', label: 'Board 성능·구조 상세' },
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/dev/docs/analysis/board-deep-page-2026-07.md',
+        label: '전/후 실측 증거 문서',
+      },
+      {
+        href:
+          'https://github.com/makkong1/Petory/blob/dev/docs/superpowers/specs/2026-07-15-board-deep-page-pagination-design.md',
+        label: '설계 문서 (대안 검토 · 트리거 · 스키마)',
+      },
+    ],
+  },
 ];
 
 function MetricTable({ title, rows }) {
@@ -521,7 +581,7 @@ export default function PetoryRefactoringPage() {
             <h1>성능 개선 & 리팩토링 대표 사례</h1>
             <p>
               도메인별 작업 기록을 전부 나열하지 않고, 문제·원인·해결·검증 과정이
-              잘 분석된 7개 사례만 선별했습니다.
+              잘 분석된 9개 사례만 선별했습니다.
             </p>
             <div className="refactoring-quick-links">
               {sections.map((section) => (
