@@ -528,12 +528,12 @@ if (readFrom != null) {
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#security"
+                    to="/domains/refactoring#n-plus-one"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     대표 개선 사례 보기
                   </Link>
-                  {' — 보안/인가 계약 정리 · N+1 성능 개선'}
+                  {' — N+1 성능 개선 · 보안/인가 계약 정리'}
                 </li>
                 <li>
                   •{' '}

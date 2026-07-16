@@ -49,7 +49,7 @@ function ChatDomainDetail() {
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Chat 도메인 — 성능 · 보안 상세</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.7 }}>
             읽음 처리 성능 개선과, 메시지 API의 보안·인가 계약 정리를 담았습니다.
-            인가 계약 정리는 <Link to="/domains/refactoring#security" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에서도 다룹니다.
+            인가 계약 정리는 <Link to="/domains/refactoring#n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에서도 다룹니다.
             (읽음 처리·보안·트랜잭션·검색: 2026-04-14 코드 리뷰 기준 / 제재 사용자 처리: 2026-06-28 추가)
           </p>
 

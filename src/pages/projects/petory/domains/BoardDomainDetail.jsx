@@ -310,8 +310,8 @@ public void generateWeeklyPopularitySnapshots() {
                 대상을 <code>@AuthenticationPrincipal</code>에서 가져오도록 바꿨습니다 — 같은 컨트롤러의 <code>createBoard</code>·<code>addComment</code>가 이미 쓰던 방식입니다.
                 고친 뒤 <strong style={{ color: 'var(--text-color)' }}>같은 패턴을 전 컨트롤러에서 스윕했더니 <code>/api/activities/my</code>에서 하나 더 나왔습니다</strong> —
                 거기는 <code>@PreAuthorize</code>조차 없었습니다. 경위는{' '}
-                <Link to="/domains/refactoring#security" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
-                  보안 · 인가 계약 정리
+                <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                  전체 쿼리 감사
                 </Link>
                 에 있습니다.
               </p>

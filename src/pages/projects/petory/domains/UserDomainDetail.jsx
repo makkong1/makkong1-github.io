@@ -267,8 +267,8 @@ if (Boolean.TRUE.equals(user.getIsDormant())) {
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인증 주체 계약 — 전 컨트롤러 스윕 (2026-07)</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
               "누구의 데이터인가"를 <strong style={{ color: 'var(--text-color)' }}>클라이언트가 정하게 두면 안 된다</strong>는 계약은{' '}
-              <Link to="/domains/refactoring#security" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
-                보안 · 인가 계약 정리
+              <Link to="/domains/refactoring#n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                N+1 성능 개선 사례
               </Link>
               에서 Chat·Care를 대상으로 이미 세웠습니다. 그런데 <strong style={{ color: 'var(--text-color)' }}>그때 손댄 두 도메인만 바뀌어 있었습니다.</strong>
             </p>

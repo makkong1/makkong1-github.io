@@ -6,7 +6,6 @@ const sections = [
   { id: 'n-plus-one', title: 'N+1 성능 개선' },
   { id: 'concurrency', title: '동시성 제어' },
   { id: 'location', title: 'Location 최적화' },
-  { id: 'security', title: '보안/인가 정리' },
   { id: 'notification-read', title: '알림 읽음 처리 최적화' },
   { id: 'over-fetching', title: '목록 오버페칭 제거' },
   { id: 'spatial-index', title: '근처 검색 인덱스 튜닝' },
@@ -48,7 +47,7 @@ const cases = [
       ['MissingPet', '267 queries / 762ms', '4 queries / 88ms', '쿼리 -98.5% · 시간 -88%'],
     ],
     note:
-      '수치는 추정이 아니라 git worktree로 각 이전 커밋(3a7a581d·7aca5882·496e121a·9c7e0d68)을 실제로 checkout해 그 시점 코드를 재구성 없이 실행한 실측입니다. 재현의 기준은 쿼리 수이고(절대 시간은 JIT·커넥션풀 워밍업 탓에 실행마다 달라집니다), Chat은 재검증 전까지 21→4로 과소집계돼 있었지만 실제 커밋에는 참여자 조회가 한 번 더 있어 41→4였습니다. Care의 "~2,400"은 @BatchSize 도입 이전 시점 값이라 현재 재현치(151→4)로 교체했습니다. 재검증 중 file 테이블에 (target_type, target_idx) 인덱스가 없어 첨부파일 조회가 매번 풀스캔하던 별도 이슈(Care·MissingPet 공통)를 발견해 복합 인덱스를 추가했고(조회 5~14배 단축, CI 스키마·회귀 테스트 반영), N+1과 인덱스는 별개 문제임을 확인했습니다.',
+      '수치는 추정이 아니라 git worktree로 각 이전 커밋(3a7a581d·7aca5882·496e121a·9c7e0d68)을 실제로 checkout해 그 시점 코드를 재구성 없이 실행한 실측입니다. 재현의 기준은 쿼리 수이고(절대 시간은 JIT·커넥션풀 워밍업 탓에 실행마다 달라집니다), Chat은 재검증 전까지 21→4로 과소집계돼 있었지만 실제 커밋에는 참여자 조회가 한 번 더 있어 41→4였습니다. Care의 "~2,400"은 @BatchSize 도입 이전 시점 값이라 현재 재현치(151→4)로 교체했습니다. 재검증 중 file 테이블에 (target_type, target_idx) 인덱스가 없어 첨부파일 조회가 매번 풀스캔하던 별도 이슈(Care·MissingPet 공통)를 발견해 복합 인덱스를 추가했고(조회 5~14배 단축, CI 스키마·회귀 테스트 반영), N+1과 인덱스는 별개 문제임을 확인했습니다. 같은 시기에 Chat·Care API도 클라이언트가 보낸 userId 대신 JWT principal로 사용자를 식별하도록 인가 계약을 정리했습니다(Chat 상세 참고).',
     verification:
       'git worktree로 실제 before 커밋을 checkout해 그 시점 코드를 직접 실행하고, dev(after) 코드와 동일 fixture로 비교했습니다. Hibernate Statistics API가 Spring Data 파생 쿼리·컬렉션 lazy 초기화를 누락해 실제 SQL의 절반만 보고하는 함정을 확인한 뒤로는 실제 SQL 로그(grep -c) 카운트를 최종 수치로 채택했고, 개별조회 vs 배치조회 각각의 실행계획(EXPLAIN ANALYZE)도 남겼습니다.',
     docs: [
@@ -140,53 +139,8 @@ const cases = [
     ],
   },
   {
-    id: 'security',
-    number: '04',
-    title: '보안 / 인가 계약 정리',
-    scope: 'Chat · Care · Board · Activity',
-    summary:
-      '클라이언트가 넘긴 사용자 식별자를 신뢰하던 API 계약을 JWT principal과 리소스 관계 검증 기준으로 바꿨습니다. 처음엔 Chat·Care만 고쳤고, 같은 버그가 남아 있던 Board·Activity는 1년 뒤 감사에서야 찾았습니다.',
-    points: [
-      {
-        label: '문제',
-        text:
-          '인증된 사용자가 요청 파라미터의 userId를 바꾸거나 참여자가 아닌 채팅방 ID를 지정하면 메시지 조회, 검색, 상태 변경 대상에 영향을 줄 수 있었습니다. @PreAuthorize("isAuthenticated()")는 "로그인했는가"만 보고 "그게 너인가"는 보지 않습니다.',
-      },
-      {
-        label: '원인',
-        text:
-          '인증은 되어 있지만 리소스 소유자나 참여자 여부를 확인하는 인가가 API별로 흩어져 있었습니다.',
-      },
-      {
-        label: '해결 (1차 — Chat · Care)',
-        text:
-          'Chat은 JWT principal에서 사용자를 식별하고 requireActiveParticipant로 ACTIVE 참여자 여부를 확인했습니다. Care my-requests는 userId 쿼리 파라미터를 제거했습니다.',
-      },
-      {
-        label: '🔴 놓친 것 (2차 — Board · Activity)',
-        text:
-          '1차에서 "계약을 바꿨다"고 정리했지만, 실제로는 손댄 두 도메인만 바뀌어 있었습니다. 같은 형태가 GET /api/boards/my-posts와 GET /api/activities/my에 그대로 남아 있었고, 전체 쿼리 감사에서야 발견했습니다. my-posts는 파라미터를 빼면 400이 아니라 500이 나갔고, 남의 userId를 넣으면 그 사람 글이 그대로 조회됐습니다. activities/my는 더 나빴습니다 — @PreAuthorize조차 없이 SecurityConfig의 /api/** catch-all에만 기대고 있어서, 로그인한 누구나 남의 활동 내역(게시글·케어요청·댓글) 전체를 읽을 수 있었습니다. 둘 다 대상을 @AuthenticationPrincipal에서 가져오도록 고쳤습니다.',
-      },
-      {
-        label: '교훈',
-        text:
-          '"패턴을 고쳤다"와 "그 패턴이 있는 모든 곳을 고쳤다"는 다릅니다. 1차 때 이미 원인을 정확히 알고 있었는데도 grep 한 번을 안 해서 두 곳을 남겼습니다. 이번엔 고친 뒤 전 컨트롤러에서 클라이언트가 보낸 사용자 식별자를 받는 자리를 전수 조사했고, user 도메인(PetController·UserProfileController)은 전부 @AuthenticationPrincipal을 쓰고 있어 깨끗했습니다.',
-      },
-    ],
-    note:
-      '이 사례는 수치 중심 성과가 아니라 API 계약과 인가 경계 개선 사례입니다. 그리고 "같은 버그를 두 번에 나눠 찾은" 기록이기도 합니다.',
-    verification:
-      '2차는 실제 API를 curl로 호출해 재현하고 고쳤습니다. seed_user_1(idx 1662)로 로그인해 GET /api/activities/my?userId=1663을 호출하면 수정 전에는 seed_user_2의 활동 21건이 그대로 나왔고(본인은 20건), 수정 후에는 파라미터와 무관하게 본인 20건이 나옵니다. 토큰을 seed_user_2로 바꾸면 21건이 나오므로 주체가 JWT에서 온다는 것도 확인했습니다. my-posts도 같은 방식으로 재현·검증했습니다.',
-    docs: [
-      { to: '/domains/chat/detail', label: 'Chat 성능·보안 상세' },
-      { to: '/domains/care/detail', label: 'Care 성능·결제 연동 상세' },
-      { to: '/domains/board/detail', label: 'Board 성능 상세 (my-posts IDOR)' },
-      { to: '/domains/user/detail', label: 'User 인증·보안 상세' },
-    ],
-  },
-  {
     id: 'notification-read',
-    number: '05',
+    number: '04',
     title: 'Notification 읽음 처리 최적화',
     scope: 'Notification · JPA',
     summary:
@@ -230,7 +184,7 @@ const cases = [
   },
   {
     id: 'over-fetching',
-    number: '06',
+    number: '05',
     title: '목록·지도 오버페칭 제거 (Projection)',
     scope: 'PetCoin · User · Board · Care',
     summary:
@@ -274,7 +228,7 @@ const cases = [
   },
   {
     id: 'spatial-index',
-    number: '07',
+    number: '06',
     title: '근처 모임 검색 — 실행계획 기반 인덱스 튜닝',
     scope: 'Meetup · Location',
     summary:
@@ -331,7 +285,7 @@ const cases = [
   },
   {
     id: 'query-audit',
-    number: '08',
+    number: '07',
     title: '전체 쿼리 감사 — 실제 API 호출 기반 재측정',
     scope: '12개 도메인 · 엔드포인트 62개 실호출',
     summary:
@@ -373,7 +327,7 @@ const cases = [
       ['40', '127 queries', '8 queries'],
     ],
     note:
-      '성능을 보려고 시작했는데 기능 버그가 먼저 나왔습니다. care 검색 API가 항상 HTTP 500이었고, 원인은 MATCH(title, description)을 쓰면서 carerequest에 FULLTEXT 인덱스를 만들지 않은 것이었습니다. MySQL은 FULLTEXT 인덱스가 없으면 MATCH...AGAINST를 실행 자체를 못 하기 때문에 데이터 양과 무관하게 항상 실패합니다. 공개 API와 관리자 API가 같은 쿼리를 쓰고 있어서 인덱스 하나로 둘 다 복구됐습니다. 반대로 N+1로 보였던 것은 N+1이 아니었습니다. 모임 검색에서 참가자 조회가 10회 나갔는데, 결과가 500건이고 @BatchSize가 50이므로 500 ÷ 50 = 10회가 맞는 동작이었습니다. 실제 원인은 검색에 페이징이 없어서 DB에서 500건을 전부 읽은 뒤 subList로 메모리에서 자르고 있던 것이었고, 여기서 N+1로 판단했다면 정상 동작하는 배치 로직을 건드렸을 겁니다. 실제 N+1은 관리자 API 한 곳에 있었는데, 공개 API에는 JOIN FETCH를 넣었지만 관리자 쪽 쿼리에는 빠져 있었습니다. 주변 검색은 B-tree 복합 인덱스로 시도했다가 효과가 없어 SPATIAL로 바꿨습니다. is_deleted는 전 행이 같은 값이라 선택도가 없고, B-tree는 범위 조건을 선두에서 하나만 쓸 수 있어 latitude 다음의 longitude가 인덱스로 걸러지지 않기 때문입니다. meetup·locationservice에서 쓰던 POINT 컬럼 + SPATIAL 인덱스 + 트리거 방식을 그대로 적용했습니다.',
+      '성능을 보려고 시작했는데 기능 버그가 먼저 나왔습니다. care 검색 API가 항상 HTTP 500이었고, 원인은 MATCH(title, description)을 쓰면서 carerequest에 FULLTEXT 인덱스를 만들지 않은 것이었습니다. MySQL은 FULLTEXT 인덱스가 없으면 MATCH...AGAINST를 실행 자체를 못 하기 때문에 데이터 양과 무관하게 항상 실패합니다. 공개 API와 관리자 API가 같은 쿼리를 쓰고 있어서 인덱스 하나로 둘 다 복구됐습니다. 반대로 N+1로 보였던 것은 N+1이 아니었습니다. 모임 검색에서 참가자 조회가 10회 나갔는데, 결과가 500건이고 @BatchSize가 50이므로 500 ÷ 50 = 10회가 맞는 동작이었습니다. 실제 원인은 검색에 페이징이 없어서 DB에서 500건을 전부 읽은 뒤 subList로 메모리에서 자르고 있던 것이었고, 여기서 N+1로 판단했다면 정상 동작하는 배치 로직을 건드렸을 겁니다. 실제 N+1은 관리자 API 한 곳에 있었는데, 공개 API에는 JOIN FETCH를 넣었지만 관리자 쪽 쿼리에는 빠져 있었습니다. 주변 검색은 B-tree 복합 인덱스로 시도했다가 효과가 없어 SPATIAL로 바꿨습니다. is_deleted는 전 행이 같은 값이라 선택도가 없고, B-tree는 범위 조건을 선두에서 하나만 쓸 수 있어 latitude 다음의 longitude가 인덱스로 걸러지지 않기 때문입니다. meetup·locationservice에서 쓰던 POINT 컬럼 + SPATIAL 인덱스 + 트리거 방식을 그대로 적용했습니다. 같은 감사 과정에서 GET /api/boards/my-posts·GET /api/activities/my가 클라이언트가 보낸 userId를 그대로 신뢰하던 인가 계약 문제(activities/my는 @PreAuthorize조차 없음)도 함께 드러나 JWT principal 기준으로 고쳤습니다(Board·User 상세 참고).',
     verification:
       '측정 도구 자체가 틀린 경우가 네 번 있었고, 그때마다 도구를 먼저 고치고 다시 측정했습니다. (1) 락을 SUM_LOCK_TIME으로 재려 했으나 MySQL의 LOCK_TIME은 테이블 락만 집계해서 InnoDB 행 락이 잡히지 않습니다. 전역 카운터에는 행 락 대기가 377회 기록돼 있었는데 digest의 SUM_LOCK_TIME은 전부 0이었습니다. (2) DIGEST_TEXT가 기본 1024자에서 잘려, 컬럼이 많은 SELECT는 FROM 절까지 도달하지 못합니다. 테이블명으로 필터링할 수 없고 FOR UPDATE도 잡히지 않아 max_digest_length를 4096으로 올렸습니다. (3) 회귀 테스트에서 Hibernate의 getQueryExecutionCount()가 지연 로딩 엔티티 조회를 집계하지 않아, 이 값만 보고 JOIN FETCH가 불필요하다고 판단해 되돌릴 뻔했습니다. getPrepareStatementCount()로 바꾸니 size 5에서 15개, size 40에서 85개로 차이가 드러났습니다. N+1 재검증(01번 사례) 때 겪은 Statistics API 문제와 같은 종류입니다. (4) DB 상태는 Gradle의 입력이 아니라서, 인덱스를 지우고 테스트를 돌려도 UP-TO-DATE로 건너뛰었습니다. 회귀 테스트 8건은 수정 전 상태에서 테스트가 실패하는지 먼저 확인한 뒤 수정 후 통과를 확인하는 순서로 검증했습니다. 이 순서를 지키지 않으면 아무것도 검증하지 않는 테스트가 통과 상태로 남습니다.',
     limits:
@@ -400,7 +354,7 @@ const cases = [
   },
   {
     id: 'deep-page',
-    number: '09',
+    number: '08',
     title: 'board 깊은 페이지 페이징 — 지연 조인 + author_visible 비정규화',
     scope: 'Board',
     summary:
@@ -581,7 +535,7 @@ export default function PetoryRefactoringPage() {
             <h1>성능 개선 & 리팩토링 대표 사례</h1>
             <p>
               도메인별 작업 기록을 전부 나열하지 않고, 문제·원인·해결·검증 과정이
-              잘 분석된 9개 사례만 선별했습니다.
+              잘 분석된 8개 사례만 선별했습니다.
             </p>
             <div className="refactoring-quick-links">
               {sections.map((section) => (

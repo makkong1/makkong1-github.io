@@ -54,6 +54,7 @@ function CareDomainDetail() {
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.7 }}>
             펫케어 요청 목록의 N+1 해결과, Care와 맞물린 펫코인(결제) 연동 리팩토링을 정리했습니다.
             거래 확정 동시성(Race Condition)은 <Link to="/domains/refactoring#concurrency" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에서 다룹니다.
+            <code>my-requests</code>가 <code>userId</code> 쿼리 파라미터로 남의 요청을 조회할 수 있던 문제도 같은 시기에 고쳤습니다(<Link to="/domains/refactoring#n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>N+1 성능 개선 사례</Link> 참고).
           </p>
 
           {/* 1. 개요 */}
@@ -348,6 +349,9 @@ ALTER TABLE carerequest
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>페이징 경로 N+1</td><td style={td}>@BatchSize(50) 적용으로 해결</td>
+                  </tr>
+                  <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+                    <td style={td}>my-requests 인가 계약</td><td style={td}>userId 쿼리 파라미터 제거 — JWT principal 기준으로 본인 요청만 조회</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>검색 API (쿼리 감사)</td><td style={td}>HTTP 500 → 200 — FULLTEXT 인덱스 부재로 기능이 죽어 있었음</td>
