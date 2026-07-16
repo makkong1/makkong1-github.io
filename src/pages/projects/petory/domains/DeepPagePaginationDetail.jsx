@@ -161,8 +161,8 @@ function DeepPagePaginationDetail() {
                     (단일 테이블), 조인 테이블 수 2 → 1
                   </li>
                   <li>
-                    • 너덜너덜 증명: 비정규화 없이 순진하게 skip 하면 전체
-                    2,500페이지 중{" "}
+                    • 페이지 결손 검증: 비정규화 없이 <code>is_deleted</code>만으로
+                    skip 하면 전체 2,500페이지 중{" "}
                     <strong style={{ color: "var(--text-color)" }}>
                       596페이지(23.8%)
                     </strong>
@@ -463,10 +463,11 @@ function DeepPagePaginationDetail() {
                 }}
               >
                 더 나쁜 경로도 있었습니다.{" "}
-                <code>is_deleted</code>만으로 board를 skip하고 작성자 필터는
-                뒤에서(애플리케이션 레벨) 거른다면 — 걸러낸 만큼 그 페이지는
-                20건을 못 채우고 비게 됩니다("너덜너덜"). 실측으로 확인한
-                결과, 전체 2,500페이지 중{" "}
+                <code>is_deleted</code>만으로 board를 skip하고 작성자 필터를
+                뒤에서(애플리케이션 레벨) 거른다면 — 걸러낸 수만큼 그 페이지는
+                요청한 20건을 채우지 못하고 <strong style={{ color: "var(--text-color)" }}>결손 페이지(size 미달)</strong>가
+                됩니다. 심하면 특정 글이 어느 페이지에서도 나오지 않아 페이지네이션으로
+                도달 불가능해집니다. 실측 결과, 전체 2,500페이지 중{" "}
                 <strong style={{ color: "var(--text-color)" }}>
                   596페이지(23.8%)
                 </strong>
@@ -736,7 +737,7 @@ ALTER TABLE board ADD INDEX idx_board_cat_visible_created
               style={{ ...card, marginBottom: "1rem" }}
             >
               <h3 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-                ③ 너덜너덜 증명 — 비정규화 없이 순진하게 skip하면
+                ③ 페이지 결손 검증 — 비정규화 없이 skip 하면
               </h3>
               <p
                 style={{
@@ -870,7 +871,7 @@ http_reqs........: 15555   518.04/s`}
                     <td style={td}>비정규화가 필요했던 이유</td>
                     <td style={td}>
                       지연 조인 1단계가 커버링이 되려면 필터가 board 컬럼에
-                      있어야 함 — 스캔·너덜너덜·COUNT 셋을 한 번에 해결
+                      있어야 함 — 스캔·페이지 결손·COUNT 셋을 한 번에 해결
                     </td>
                   </tr>
                 </tbody>
