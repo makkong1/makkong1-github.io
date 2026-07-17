@@ -42,7 +42,7 @@ function BoardDomainDetail() {
         Service->>DB: 싫어요 COUNT
         Service->>DB: 첨부파일 조회
     end
-    Note over Service,DB: 100개 기준 1+100+100+100+100 = 301개 쿼리`;
+    Note over Service,DB: 100개 기준 1+10+100+100+100 ≈ 301개 쿼리`;
 
   const afterSeq = `sequenceDiagram
     participant Service as BoardService
@@ -183,7 +183,7 @@ public Map<Long, List<FileDTO>> getAttachmentsBatch(FileTargetType targetType, L
                 </table>
               </div>
               <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>확장성:</strong> 게시글이 100개든 1000개든 쿼리 수는 <strong style={{ color: 'var(--text-color)' }}>3개로 고정</strong> (1000개 기준 이론상 2001개 → 3개).
+                <strong style={{ color: 'var(--text-color)' }}>확장성:</strong> 게시글이 100개든 1000개든 쿼리 수는 <strong style={{ color: 'var(--text-color)' }}>3개로 고정</strong>.
               </p>
               <MermaidDiagram chart={afterSeq} />
             </div>

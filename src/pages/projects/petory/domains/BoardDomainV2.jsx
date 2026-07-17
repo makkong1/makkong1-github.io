@@ -427,13 +427,9 @@ Map<Long, List<FileDTO>> attachmentsMap =
               </ul>
               <CodeBlock>{`private boolean shouldIncrementView(Board board, Long viewerId) {
     if (viewerId == null) {
-        return true;
+        return false;
     }
-    Users viewer = usersRepository.findById(viewerId).orElse(null);
-    if (viewer == null) {
-        return true;
-    }
-    return boardViewLogRepository.insertIgnore(board.getIdx(), viewer.getIdx()) > 0;
+    return boardViewLogRepository.insertIgnore(board.getIdx(), viewerId) > 0;
 }`}</CodeBlock>
             </Card>
 

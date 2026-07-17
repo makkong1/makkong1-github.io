@@ -202,7 +202,6 @@ ORDER BY ... (sort 파라미터 분기)`}
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>후속 로드맵 · 모니터링</h2>
             <div className="section-card" style={card}>
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>review_count 캐시 컬럼</strong>(계획): reviews 정렬의 상관 서브쿼리를 단순화</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>대표 카테고리 컬럼</strong>(계획): <code>category3 &gt; 2 &gt; 1</code> 우선순위 단일 컬럼으로 OR 조건 축소</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>sort별 쿼리 분리</strong>(계획): distance/rating/reviews 정렬을 전용 쿼리로 분리해 실행 계획 예측성 향상</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>반경 검색 bbox</strong>(모니터링): 정확도 이슈는 재현되지 않았고 성능 관점에서만 관찰</li>

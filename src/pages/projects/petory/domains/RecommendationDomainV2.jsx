@@ -337,7 +337,7 @@ function RecommendationDomainV2() {
                   'POST /api/pet-intent/analyze — intentDomain, intent, recommendedCategories, confidence, keywords, intentTags, urgency, message',
                 )}
                 {li(
-                  '분류 경로 1 (rule): Kiwipiepy 형태소 분석 후 키워드 exact match → 1음절 한글은 형태소 exact match, 구문/3음절+는 raw substring',
+                  '분류 경로 1 (rule): Kiwipiepy 형태소 분석 후 키워드 exact match → 1-2음절 한글은 형태소 exact match, 구문/3음절+는 raw substring',
                 )}
                 {li(
                   '분류 경로 2 (embedding): rule miss 시 jhgan/ko-sroberta-multitask 문장 임베딩 + intent centroid 코사인 유사도',
@@ -394,7 +394,7 @@ POST http://localhost:8000/api/pet-intent/analyze
                   'confidence 의미: rule hit → 0.88~0.92 고정 휴리스틱, embedding → 코사인 유사도 [-1,1]. 두 경로는 직접 비교하지 않음',
                 )}
                 {li(
-                  '2단계 필터: Python 0.45 미만 UNKNOWN(embedding path 하한) → Spring 저장 단계에서 domain·urgency별 threshold 적용',
+                  '2단계 필터: Python 0.45 미만 UNKNOWN(분류 자체의 하한, rule hit는 항상 0.88+라 사실상 embedding path에서만 작동) → Spring 저장 단계에서 domain·urgency별 threshold 적용',
                 )}
                 {li(
                   '같은 (userIdx, intentDomain) 유효 signal 있으면 저장 생략 — 카드 중복 방지',
@@ -579,7 +579,7 @@ DEFAULT        -> 7일`}</CodeBlock>
                   'N1: tokenizer VV-I/VA-I 추가 — ㅂ/ㅅ 불규칙 어간 미추출 수정 ("가렵"·"붓" 태그 정상화)',
                 )}
                 {li(
-                  'N1: _classify_by_rule 하이브리드 매칭 — 1음절 한글은 형태소, 구문/3음절+는 raw substring ("아파트"→MEDICAL 오탐 방지)',
+                  'N1: _classify_by_rule 하이브리드 매칭 — 1-2음절 한글은 형태소, 구문/3음절+는 raw substring ("아파트"→MEDICAL 오탐 방지)',
                 )}
                 {li(
                   'N2: buildCardMessage 4개 도메인 추가 — FOOD_SNACK, WALK_OUTING, DAYCARE_BOARDING, CULTURE_SPACE',

@@ -23,24 +23,25 @@ function MissingPetDomainDetail() {
     participant Converter as MissingPetConverter
     participant DB as MySQL
     Service->>DB: 게시글 + 작성자 조회 (1)
-    Service->>DB: 파일 배치 조회 (IN 절) (2)
     Service->>Converter: toBoardDTO(board)
     Note over Converter: board.getComments() 접근 → LAZY 트리거
     loop 게시글마다
         Converter->>DB: 댓글 조회 (사용도 안 하는데!)
+        Converter->>DB: 파일 개별 조회
     end
-    Note over Service,DB: 총 267개 쿼리 (worktree 실측)`;
+    Note over Service,DB: 총 267개 쿼리 (worktree 실측, 게시글 133개 기준: 1 + 133 + 133)`;
 
   const afterSeq = `sequenceDiagram
     participant Service as MissingPetBoardService
     participant Converter as MissingPetConverter
     participant DB as MySQL
     Service->>DB: 게시글 + 작성자 (JOIN FETCH) (1)
-    Service->>DB: 파일 배치 조회 (IN 절) (2)
-    Service->>DB: 댓글 수 배치 조회 (IN 절 GROUP BY) (3)
+    Service->>DB: 페이지네이션 COUNT (2)
+    Service->>DB: 파일 배치 조회 (IN 절) (3)
+    Service->>DB: 댓글 수 배치 조회 (IN 절 GROUP BY) (4)
     Service->>Converter: toBoardDTOWithoutComments(board)
     Note over Converter: 댓글 미접근 → LAZY 트리거 없음
-    Note over Service,DB: 총 3개 쿼리 (댓글 목록 0개)`;
+    Note over Service,DB: 총 4개 쿼리 (댓글 목록 0개)`;
 
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
@@ -180,7 +181,7 @@ List<CommentCountResult> countCommentsByBoardIds(@Param("boardIds") List<Long> b
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.9', fontSize: '0.9rem' }}>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>Admin 목록</strong>: 전체 메모리 로드 → <code>Specification</code> + DB 페이징(삭제글 조회도 정상화)</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>댓글 일괄 삭제</strong>: 조회 후 루프 <code>save()</code>(1001쿼리) → <code>@Modifying</code> 배치 UPDATE 1쿼리(<code>clearAutomatically</code>로 PC 정합성)</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>댓글 일괄 삭제</strong>: 조회 후 루프 <code>save()</code>(댓글 수만큼 개별 쿼리) → <code>@Modifying</code> 배치 UPDATE 1쿼리(<code>clearAutomatically</code>로 PC 정합성)</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>채팅 시작</strong>: 게시글 전체 조회 → 필요한 <code>reporterId</code>만 프로젝션 1쿼리</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>상태 변경</strong>: <code>valueOf</code> 실패 시 원시 예외 → 사용자 친화 메시지(MISSING/FOUND/RESOLVED 안내)</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>복구 API</strong>: 미구현(<code>UnsupportedOperationException</code>) → <code>restoreBoard()</code> 구현</li>
@@ -234,7 +235,7 @@ List<CommentCountResult> countCommentsByBoardIds(@Param("boardIds") List<Long> b
                     <td style={td}>목록 N+1 (대표)</td><td style={td}>267개 → 4개 (98.5% ↓), 762ms → 88ms · worktree 실측</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                    <td style={td}>댓글 일괄 삭제</td><td style={td}>1001쿼리 → 1쿼리 (배치 UPDATE)</td>
+                    <td style={td}>댓글 일괄 삭제</td><td style={td}>개별 loop save → 1쿼리 (배치 UPDATE)</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>Admin · 채팅 시작</td><td style={td}>DB 페이징, 전체 조회 → userId 프로젝션</td>

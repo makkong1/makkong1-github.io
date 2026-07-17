@@ -434,6 +434,19 @@ function OverFetchingDetail() {
        "ORDER BY b.createdAt DESC")
 Page<BoardListItemDTO> findBoardListItems(Pageable pageable);`}
               </pre>
+              <p
+                style={{
+                  color: "var(--text-muted)",
+                  fontSize: "0.82rem",
+                  marginTop: "0.5rem",
+                  lineHeight: 1.7,
+                }}
+              >
+                ※ 이 예시는 2026-07-10 시점 구현입니다. 이후 깊은 페이지 판단(
+                <Link to="/domains/refactoring/deep-page">사례 08</Link>
+                )에서 <code>findBoardListItems</code>는 ID만 먼저 조회하는
+                지연 조인 2단계 구조로 다시 바뀌었습니다.
+              </p>
             </div>
           </section>
 

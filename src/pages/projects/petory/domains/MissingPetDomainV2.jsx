@@ -142,7 +142,7 @@ function MissingPetDomainV2() {
                 목록은 빠르게 스캔돼야 하는데 댓글·파일을 붙이면 조인 비용이
                 커집니다. 그래서 목록에선 댓글을 빼고 파일·댓글 수만 배치 IN으로
                 처리했습니다. 댓글 일괄 삭제도 N번 루프 대신 배치 UPDATE 1회로
-                바꿔 1001개 쿼리를 1개로 줄였습니다. 채팅 연결은 게시글 전체 대신
+                바꿔 댓글 수만큼 걸리던 개별 쿼리를 1개로 줄였습니다. 채팅 연결은 게시글 전체 대신
                 작성자 ID 프로젝션 1회 + 인증 사용자 ID로 처리해 긴급 경로를
                 가볍게 유지합니다.
               </p>
@@ -190,7 +190,7 @@ function MissingPetDomainV2() {
                 </thead>
                 <tbody>
                   {[
-                    ['댓글 일괄 삭제 (1000개)', '1001개 쿼리', '1개 쿼리'],
+                    ['댓글 일괄 삭제', '개별 loop save (N+1)', '배치 UPDATE 1쿼리'],
                     ['채팅 연결 조회', '게시글 전체 DTO 조립', '작성자 ID 프로젝션 1회'],
                     ['관리자 목록 필터링', '전체 메모리 로드 후 필터', 'DB Specification + 페이징'],
                   ].map(([label, before, after], i, arr) => (
@@ -332,7 +332,7 @@ Map<Long, Integer> commentCountsByBoardId =
                 }}
               >
                 {li('게시글 삭제 시 하위 댓글 소프트 삭제: N번 루프 → 배치 UPDATE 1회')}
-                {li('1000개 댓글 기준 1001 쿼리 → 1 쿼리')}
+                {li('개별 loop save(N+1) → 배치 UPDATE 1쿼리')}
               </ul>
               <CodeBlock>{`// [리팩토링] N건 루프 save → 배치 UPDATE 1회
 @Transactional
@@ -423,16 +423,19 @@ public Long getUserIdByBoardIdx(Long boardIdx) {
                 {li('일반 사용자 deleteBoard의 이메일 인증 확인은 게시글 소유자 기준으로 동작')}
               </ul>
               <CodeBlock>{`private void assertOwner(Users boardOwner) {
-    Authentication auth =
-        SecurityContextHolder.getContext().getAuthentication();
-    if (!isAdmin() && !auth.getName().equals(boardOwner.getId()))
+    Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+    if (!(auth != null && auth.getPrincipal() instanceof CustomUserDetails ud)) {
         throw MissingPetForbiddenException.boardOwnerOnly();
+    }
+    if (!ud.isAdmin() && !ud.getLoginId().equals(boardOwner.getId())) {
+        throw MissingPetForbiddenException.boardOwnerOnly();
+    }
 }
 
-// createBoard: JWT principal → findActiveByIdString
-String loginId = auth.getName();
-Users user = usersRepository.findActiveByIdString(loginId)
-    .orElseThrow(() -> new UserNotFoundException());`}</CodeBlock>
+// createBoard: 컨트롤러가 @AuthenticationPrincipal에서 loginId를 꺼내 전달
+public MissingPetBoardDTO createBoard(MissingPetBoardDTO dto, String currentUserLoginId) {
+    Users user = usersRepository.findActiveByIdString(currentUserLoginId)
+        .orElseThrow(UserNotFoundException::new);`}</CodeBlock>
             </Card>
 
             <Card>

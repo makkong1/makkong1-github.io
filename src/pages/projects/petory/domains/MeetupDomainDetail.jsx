@@ -201,7 +201,7 @@ CHECK (current_participants <= max_participants);  -- MySQL 8.0.16+`}
               </div>
 
               <div style={{ marginBottom: '1.5rem' }}>
-                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>4. 이벤트 기반 아키텍처 (핵심/파생 도메인 분리)</h4>
+                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>참고 — 이벤트 기반 아키텍처 (핵심/파생 도메인 분리, 인원 초과 방지와는 별개 관심사)</h4>
                 <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
                   <strong style={{ color: 'var(--text-color)' }}>원칙:</strong> 파생 도메인(채팅방 생성) 실패가 핵심 도메인(모임 생성)을 롤백하면 안 된다.
                 </p>
@@ -223,7 +223,7 @@ public void handleMeetupCreated(MeetupCreatedEvent event) {
               </div>
 
               <div>
-                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>5. 중복 참여 방지 + PK 충돌 시 보정</h4>
+                <h4 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '0.95rem' }}>4. 중복 참여 방지 + PK 충돌 시 보정</h4>
                 <p style={{ lineHeight: '1.8', color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
                   <strong style={{ color: 'var(--text-color)' }}>복합 PK</strong> (meetup_idx, user_idx)로 중복 참여를 차단합니다. 그런데 이미 정원은 <code>incrementParticipantsIfAvailable()</code>로 증가시킨 뒤라, PK 충돌로 저장이 실패하면 그 증가분이 남아버립니다.
                 </p>
@@ -332,7 +332,7 @@ ORDER BY (6371 * acos(...)) ASC, m.date ASC`}
             <div className="section-card" style={{ ...card, border: '1px solid var(--link-color)' }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>4단계 (현재 코드) — 공간 인덱스 ST_Within</h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.5rem' }}>
-                <code>geo_point</code> POINT 컬럼(SRID 4326)에 공간 인덱스. <code>ST_Within</code>으로 후보 축소 → <code>ST_Distance_Sphere</code>로 미터 정밀 반경 필터 (마이그레이션 <code>meetup-spatial-location.sql</code>)
+                <code>geo_point</code> POINT 컬럼(SRID 4326)에 공간 인덱스. <code>ST_Within</code>으로 후보 축소 → <code>ST_Distance_Sphere</code>로 미터 정밀 반경 필터 (스키마 정본 <code>V1__baseline_schema.sql</code>)
               </p>
               <pre style={pre}>
 {`WHERE ST_Within(m.geo_point, ST_GeomFromText(CONCAT('POLYGON((...))'), 4326))  -- 공간 인덱스
@@ -409,7 +409,7 @@ List<MeetupParticipants> findByUserIdxOrderByJoinedAtDesc(@Param("userIdx") Long
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>Stream 중복 제거 · 중복 쿼리 제거 · 측정 AOP</h2>
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Stream 연산 중복 제거</h3>
-              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>동일 Stream 변환 로직이 7개 메서드에 반복 → <code>convertToDTOs()</code>, <code>convertToParticipantDTOs()</code> 공통 추출 (7 → 공통 2개)</p>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8' }}>당시 동일 Stream 변환 로직이 7개 메서드에 반복 → <code>convertToDTOs()</code>, <code>convertToParticipantDTOs()</code> 공통 추출 (7 → 공통 2개). 이후 컨버터 배치 조회(N+1 대응) 작업으로 이 헬퍼들은 <code>toDTOList()</code> 호출로 대체됐습니다.</p>
             </div>
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>중복 DB 쿼리 제거 (joinMeetup)</h3>

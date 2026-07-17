@@ -100,9 +100,9 @@ function CareDomainDetail() {
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>해결 — 연관별로 다른 전략</h3>
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem', marginBottom: '0.5rem' }}>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>지원 내역</strong>: 메인 쿼리에 <code>LEFT JOIN FETCH</code> → 1000회 조회 제거</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>첨부파일</strong>: Pet ID 모아 <code>IN</code> 절 배치 조회 → ~700회 → 1회</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>예방접종</strong>: 컬렉션이라 Fetch Join 시 카테시안 곱 위험 → <code>@BatchSize(50)</code>로 ~700회 → 1~2회</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>지원 내역</strong>: 메인 쿼리에 <code>LEFT JOIN FETCH</code> → 개별 조회 50회 제거</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>첨부파일</strong>: Pet ID 모아 <code>IN</code> 절 배치 조회 → 50회 → 1회</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>예방접종</strong>: 컬렉션이라 Fetch Join 시 카테시안 곱 위험 → <code>@BatchSize(50)</code>로 50회 → 1~2회</li>
               </ul>
               <pre style={pre}>
 {`@Query("SELECT DISTINCT cr FROM CareRequest cr " +
@@ -176,7 +176,7 @@ Map<Long, List<FileDTO>> filesByPet =
               <h3 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>거래 내역 조회 정리</h3>
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>메모리 페이징 제거</strong>: 전체 로드 후 <code>subList</code> → <code>Pageable</code> DB 페이징(응답도 Spring <code>Page</code>)</li>
-                <li>• <strong style={{ color: 'var(--text-color)' }}>Converter N+1</strong>: <code>getUser()</code> Lazy로 1+N → <code>@EntityGraph("user")</code>로 1회</li>
+                <li>• <strong style={{ color: 'var(--text-color)' }}>오버페칭 정리</strong>: Converter는 <code>getUser().getIdx()</code>만 사용(지연 로딩 프록시 — 쿼리 없음) → 불필요했던 <code>@EntityGraph("user")</code> 제거</li>
                 <li>• <strong style={{ color: 'var(--text-color)' }}>Fetch 전략</strong>: 단건 상세는 Fetch Join, 페이징 목록은 EntityGraph/BatchSize 규칙 적용</li>
               </ul>
             </div>
