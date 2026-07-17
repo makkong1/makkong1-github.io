@@ -47,7 +47,7 @@ const cases = [
       ['MissingPet', '267 queries / 762ms', '4 queries / 88ms', '쿼리 -98.5% · 시간 -88%'],
     ],
     note:
-      '수치는 추정이 아니라 git worktree로 각 이전 커밋(3a7a581d·7aca5882·496e121a·9c7e0d68)을 실제로 checkout해 그 시점 코드를 재구성 없이 실행한 실측입니다. 재현의 기준은 쿼리 수이고(절대 시간은 JIT·커넥션풀 워밍업 탓에 실행마다 달라집니다), Chat은 재검증 전까지 21→4로 과소집계돼 있었지만 실제 커밋에는 참여자 조회가 한 번 더 있어 41→4였습니다. Care의 "~2,400"은 @BatchSize 도입 이전 시점 값이라 현재 재현치(151→4)로 교체했습니다. 재검증 중 file 테이블에 (target_type, target_idx) 인덱스가 없어 첨부파일 조회가 매번 풀스캔하던 별도 이슈(Care·MissingPet 공통)를 발견해 복합 인덱스를 추가했고(조회 5~14배 단축, CI 스키마·회귀 테스트 반영), N+1과 인덱스는 별개 문제임을 확인했습니다. 같은 시기에 Chat·Care API도 클라이언트가 보낸 userId 대신 JWT principal로 사용자를 식별하도록 인가 계약을 정리했습니다(Chat 상세 참고).',
+      '수치는 추정이 아니라 git worktree로 각 이전 커밋(3a7a581d·7aca5882·496e121a·9c7e0d68)을 실제로 checkout해 그 시점 코드를 재구성 없이 실행한 실측입니다. 재현의 기준은 쿼리 수이고(절대 시간은 JIT·커넥션풀 워밍업 탓에 실행마다 달라집니다), Chat은 재검증 전까지 21→4로 과소집계돼 있었지만 실제 커밋에는 참여자 조회가 한 번 더 있어 41→4였습니다. Care의 "~2,400"은 @BatchSize 도입 이전 시점 값이라 현재 재현치(151→4)로 교체했습니다. 재검증 중 file 테이블에 (target_type, target_idx) 인덱스가 없어 첨부파일 조회가 매번 풀스캔하던 별도 이슈(Care·MissingPet 공통)를 발견해 복합 인덱스를 추가했고(조회 5~14배 단축, CI 스키마·회귀 테스트 반영), N+1과 인덱스는 별개 문제임을 확인했습니다. 이 프로젝트는 이전에(2026-04-14) Chat·Care API에서도 클라이언트가 보낸 userId 대신 JWT principal로 사용자를 식별하도록 같은 방식으로 인가 계약을 정리한 적이 있습니다(Chat 상세 참고).',
     verification:
       'git worktree로 실제 before 커밋을 checkout해 그 시점 코드를 직접 실행하고, dev(after) 코드와 동일 fixture로 비교했습니다. Hibernate Statistics API가 Spring Data 파생 쿼리·컬렉션 lazy 초기화를 누락해 실제 SQL의 절반만 보고하는 함정을 확인한 뒤로는 실제 SQL 로그(grep -c) 카운트를 최종 수치로 채택했고, 개별조회 vs 배치조회 각각의 실행계획(EXPLAIN ANALYZE)도 남겼습니다.',
     docs: [

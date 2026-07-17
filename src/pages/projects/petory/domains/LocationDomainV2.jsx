@@ -269,8 +269,7 @@ function LocationDomainV2() {
                 </code>
                 . 통합 지도는 UI 반경 기본 <strong>5km</strong>(km→m 변환 후
                 전달), 요청 <code>size=300</code> 고정(
-                <code>LOCATION_RESULT_LIMIT</code>). 백엔드 <code>radius</code>{" "}
-                생략·0 이하 시 서비스 기본은 10km.
+                <code>LOCATION_RESULT_LIMIT</code>).
               </p>
             </Card>
 
@@ -346,7 +345,7 @@ function LocationDomainV2() {
                 )}
                 {li("조건 없음 → 전체 평점순")}
                 {li(
-                  "sort=stable: rating·review_count·거리 tie-break — LocationControls·초기 locationSort 기본값",
+                  "sort=stable: rating·review_count·idx tie-break — LocationControls·초기 locationSort 기본값",
                 )}
               </ul>
               <CodeBlock>{`boolean hasLocation = latitude != null && longitude != null;
@@ -385,7 +384,7 @@ else                results = findByOrderByRatingDesc(...);`}</CodeBlock>
                   "이후: 반경 검색 + 통합 지도 size=300 고정(meetup/care만 줌별 limit)",
                 )}
                 {li(
-                  "컨트롤러 기본값 size=100, size≤0이면 상한 없음(관리자·배치용)",
+                  "컨트롤러 기본값 size=100, size≤0 지정은 서비스 레이어 fallback(반경 100 / 지역·키워드 50)으로 실제로는 상한이 유지됨",
                 )}
               </ul>
               <CodeBlock>{`// unifiedMapApi.js (Petory) — location 탭만 고정 상한

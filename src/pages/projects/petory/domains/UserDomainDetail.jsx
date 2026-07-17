@@ -32,7 +32,7 @@ function UserDomainDetail() {
         Service->>DB: 참여자 목록 조회
         Service->>DB: 전체 메시지 조회
     end
-    Note over Service,DB: 총 21개 쿼리`;
+    Note over Service,DB: 총 41개 쿼리`;
 
   const afterSeq = `sequenceDiagram
     participant Service as ConversationService
@@ -69,9 +69,8 @@ function UserDomainDetail() {
               <div style={{ padding: '1rem', backgroundColor: 'var(--bg-color)', borderRadius: '6px', border: '1px solid var(--nav-border)' }}>
                 <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>핵심 성과 (로그인 목록 조회)</h3>
                 <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.9rem' }}>
-                  <li>• 쿼리 수: <strong style={{ color: 'var(--text-color)' }}>21개 → 4개</strong> (80.95% 감소)</li>
-                  <li>• 실행 시간: <strong style={{ color: 'var(--text-color)' }}>305ms → 55ms</strong> (81.97% 감소)</li>
-                  <li>• 메모리: <strong style={{ color: 'var(--text-color)' }}>0.58MB → 0.13MB</strong> (77.24% 감소)</li>
+                  <li>• 쿼리 수: <strong style={{ color: 'var(--text-color)' }}>41개 → 4개</strong> (90.2% 감소)</li>
+                  <li>• 실행 시간: <strong style={{ color: 'var(--text-color)' }}>167ms → 70ms</strong> (58.1% 감소)</li>
                 </ul>
               </div>
             </div>
@@ -84,7 +83,7 @@ function UserDomainDetail() {
             <div className="section-card" style={{ ...card, marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>문제 — 채팅방마다 참여자·메시지 개별 조회</h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '0.75rem', fontSize: '0.9rem' }}>
-                채팅방 목록을 받은 뒤 방마다 내 참여 정보·참여자 목록·전체 메시지를 개별 조회(채팅방 10 / 참여자 3 / 메시지 20 기준 총 21개).
+                채팅방 목록을 받은 뒤 방마다 내 참여 정보·참여자 목록·전체 메시지를 개별 조회(worktree 재검증 기준 총 41개).
               </p>
               <MermaidDiagram chart={beforeSeq} />
             </div>
@@ -116,19 +115,14 @@ List<ConversationParticipant> findParticipantsByConversationIdxsAndUserIdx(
                   </thead>
                   <tbody>
                     <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                      <td style={td}>쿼리 수</td><td style={td}>21개</td>
+                      <td style={td}>쿼리 수</td><td style={td}>41개</td>
                       <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>4개</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>80.95% ↓</td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                      <td style={td}>평균 응답 시간</td><td style={td}>305ms</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>55ms</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>81.97% ↓</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>90.2% ↓</td>
                     </tr>
                     <tr>
-                      <td style={td}>메모리</td><td style={td}>0.58MB</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>0.13MB</td>
-                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>77.24% ↓</td>
+                      <td style={td}>평균 응답 시간</td><td style={td}>167ms</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>70ms</td>
+                      <td style={{ ...td, color: 'var(--link-color)', fontWeight: 'bold' }}>58.1% ↓</td>
                     </tr>
                   </tbody>
                 </table>
@@ -451,7 +445,7 @@ ALTER TABLE pets ADD INDEX idx_pets_type_deleted (pet_type, is_deleted);`}
                 </thead>
                 <tbody>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-                    <td style={td}>로그인 목록 N+1 (대표)</td><td style={td}>21개 → 4개 (80.95% ↓), 305ms → 55ms</td>
+                    <td style={td}>로그인 목록 N+1 (대표)</td><td style={td}>41개 → 4개 (90.2% ↓), 167ms → 70ms</td>
                   </tr>
                   <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
                     <td style={td}>제재 중 인증 우회 (A1~A6)</td><td style={td}>refresh/필터/WebSocket/로그인/신고매핑 5건 수정, 관리자 상태변경 token 제거 부분 수정</td>

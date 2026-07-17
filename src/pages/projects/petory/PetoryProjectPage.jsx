@@ -40,7 +40,7 @@ function PetoryProjectPage() {
 
     subgraph BOOT["Spring Boot"]
         SEC["Security · JWT"]
-        CORE["핵심 8 도메인\\nUser · Board · Care · Chat\\nLocation · petRecommendation · Meetup"]
+        CORE["핵심 7 패키지\\nUser · Board · Care · Chat\\nLocation · petRecommendation · Meetup"]
         COMMON["공통\\nPayment · Notification · Report\\nStatistics · Admin · Activity · File"]
     end
 
@@ -253,12 +253,12 @@ ${nodeStyles}`;
             <div className="content-card">
               <h3>전체 시스템 아키텍처</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 0, lineHeight: 1.7 }}>
-                React·Capacitor → Spring Security → domain/ 패키지(핵심 8 + 공통) → MySQL·Redis.
+                React·Capacitor → Spring Security → domain/ 패키지(핵심 7 + 공통) → MySQL·Redis.
                 Missing Pet은 board 도메인, petRecommendation은 Board·Care·Location 이벤트 후 NLP 연동.
               </p>
               <MermaidDiagram chart={architectureDiagram} flat />
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.65 }}>
-                Redis: 알림 · 게시글 캐시 · NLP dedup · 이메일 인증 TTL.
+                Redis: 알림 · NLP dedup · 이메일 인증 TTL (게시글 상세 캐시는 조회수 실시간 반영 때문에 현재 비활성).
                 배치·도메인 간 연동은{' '}
                 <Link to="/domains/flows" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
                   통합 시퀀스
