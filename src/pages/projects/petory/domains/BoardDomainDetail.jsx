@@ -253,29 +253,36 @@ public void generateWeeklyPopularitySnapshots() {
 
           {/* 5. 요약 */}
           <section id="audit" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 아직 남은 것 (2026-07)</h2>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 이후 해결됨 (2026-07)</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
               <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
                 전체 쿼리 감사
               </Link>
               는 <strong style={{ color: 'var(--text-color)' }}>이 페이지의 게시글 목록 튜닝을 "완료"로 판단했다가 틀렸다는 걸 깨달으면서 시작됐습니다.</strong>{' '}
               고친 건 목록 SELECT였고, <code>Page&lt;&gt;</code>가 그 옆에서 함께 날리던 COUNT 쿼리는 보고 있지도 않았습니다.
-              감사에서 board에 대해 나온 것 중 아직 안 고친 것들을 적어둡니다.
+              당시엔 아래 두 가지가 미해결 상태였는데, 이후 <Link to="/domains/refactoring/deep-page" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>별도 페이지</Link>에서 둘 다 해결했습니다.
             </p>
 
             <div className="section-card" style={{ ...card, border: '1px dashed var(--nav-border)' }}>
               <ul style={{ listStyle: 'none', padding: 0, color: 'var(--text-secondary)', lineHeight: '1.9', fontSize: '0.9rem', margin: 0 }}>
                 <li>
-                  • <strong style={{ color: 'var(--text-color)' }}>깊은 페이지 OFFSET</strong> — 뒤쪽 페이지를 요청하면
-                  <strong style={{ color: 'var(--text-color)' }}> 100,000행을 검사하고 0행을 반환</strong>합니다(129ms).
-                  키셋 페이징과 지연 조인 중 무엇을 쓸지는 <strong style={{ color: 'var(--text-color)' }}>UI가 "다음 페이지"만 쓸지 페이지 번호를 노출할지에 달려</strong> 있어서, 그 결정 전에는 고르지 않았습니다.
+                  • <strong style={{ color: 'var(--text-color)' }}>✅ 깊은 페이지 OFFSET</strong> — 뒤쪽 페이지를 요청하면
+                  <strong style={{ color: 'var(--text-color)' }}> 100,000행을 검사하고 0행을 반환</strong>하던 문제(129ms).
+                  키셋 페이징 대신 <strong style={{ color: 'var(--text-color)' }}>2단계 지연 조인</strong>(idx만 커버링 인덱스로 스킵 → 살아남은 idx만 작성자 조인)으로 해결 —
+                  페이지 번호 UI를 그대로 유지하면서 스캔 비용만 줄였습니다.
                 </li>
                 <li>
-                  • <strong style={{ color: 'var(--text-color)' }}>자동생성 COUNT</strong> — <code>countQuery</code>를 명시하지 않으면
-                  Hibernate가 본문 쿼리의 JOIN을 물고 COUNT를 만듭니다. board 목록은 호출마다 <strong style={{ color: 'var(--text-color)' }}>60,001행</strong>을 검사합니다.
-                  프로젝트 전체에 같은 형태가 <strong style={{ color: 'var(--text-color)' }}>16개</strong> 있어 별도 과제로 뺐습니다.
+                  • <strong style={{ color: 'var(--text-color)' }}>✅ 자동생성 COUNT</strong> — <code>countQuery</code>를 명시하지 않아
+                  Hibernate가 본문 쿼리의 JOIN을 물고 COUNT를 만들던 문제(호출마다 60,001행 검사).
+                  <code>Board</code> 단일 테이블 COUNT(<code>countVisible</code>/<code>countVisibleByCategory</code>)로 분리해 해결.
                 </li>
               </ul>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.7 }}>
+                자세한 판단 과정(대안 3개 검토, 트리거 함정, 전/후 실측)은{' '}
+                <Link to="/domains/refactoring/deep-page" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                  깊은 페이지 페이징 판단 케이스
+                </Link>{' '}참고.
+              </p>
             </div>
 
             <div className="section-card" style={{ ...card, marginTop: '1rem' }}>
