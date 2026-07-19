@@ -63,7 +63,7 @@ function BoardDomainDetail() {
           </div>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Board 도메인 — 성능 · 구조 상세</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.7 }}>
-            대표 사례(N+1)는 <Link to="/domains/refactoring#n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에 큐레이션돼 있습니다.
+            대표 사례(N+1)는 <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에 큐레이션돼 있습니다.
             이 페이지는 Board 백엔드 작업의 <strong style={{ color: 'var(--text-secondary)' }}>상세 기록(작업 로그)</strong>입니다.
           </p>
 
@@ -255,12 +255,12 @@ public void generateWeeklyPopularitySnapshots() {
           <section id="audit" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 이후 해결됨 (2026-07)</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
-              <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+              <Link to="/domains/cases" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
                 전체 쿼리 감사
               </Link>
               는 <strong style={{ color: 'var(--text-color)' }}>이 페이지의 게시글 목록 튜닝을 "완료"로 판단했다가 틀렸다는 걸 깨달으면서 시작됐습니다.</strong>{' '}
               고친 건 목록 SELECT였고, <code>Page&lt;&gt;</code>가 그 옆에서 함께 날리던 COUNT 쿼리는 보고 있지도 않았습니다.
-              당시엔 아래 두 가지가 미해결 상태였는데, 이후 <Link to="/domains/refactoring/deep-page" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>별도 페이지</Link>에서 둘 다 해결했습니다.
+              당시엔 아래 두 가지가 미해결 상태였는데, 이후 <Link to="/domains/cases?case=deep-paging" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>별도 페이지</Link>에서 둘 다 해결했습니다.
             </p>
 
             <div className="section-card" style={{ ...card, border: '1px dashed var(--nav-border)' }}>
@@ -279,7 +279,7 @@ public void generateWeeklyPopularitySnapshots() {
               </ul>
               <p style={{ color: 'var(--text-muted)', fontSize: '0.82rem', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.7 }}>
                 자세한 판단 과정(대안 3개 검토, 트리거 함정, 전/후 실측)은{' '}
-                <Link to="/domains/refactoring/deep-page" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                <Link to="/domains/cases?case=deep-paging" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
                   깊은 페이지 페이징 판단 케이스
                 </Link>{' '}참고.
               </p>
@@ -317,7 +317,7 @@ public void generateWeeklyPopularitySnapshots() {
                 대상을 <code>@AuthenticationPrincipal</code>에서 가져오도록 바꿨습니다 — 같은 컨트롤러의 <code>createBoard</code>·<code>addComment</code>가 이미 쓰던 방식입니다.
                 고친 뒤 <strong style={{ color: 'var(--text-color)' }}>같은 패턴을 전 컨트롤러에서 스윕했더니 <code>/api/activities/my</code>에서 하나 더 나왔습니다</strong> —
                 거기는 <code>@PreAuthorize</code>조차 없었습니다. 경위는{' '}
-                <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                <Link to="/domains/cases" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
                   전체 쿼리 감사
                 </Link>
                 에 있습니다.

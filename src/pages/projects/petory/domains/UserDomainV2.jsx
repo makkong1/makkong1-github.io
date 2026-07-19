@@ -628,7 +628,7 @@ int markDormantUsers(@Param("cutoff") LocalDateTime cutoff, @Param("now") LocalD
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#n-plus-one"
+                    to="/domains/cases?case=list-n-plus-one"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     대표 개선 사례 보기
@@ -638,7 +638,7 @@ int markDormantUsers(@Param("cutoff") LocalDateTime cutoff, @Param("now") LocalD
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#query-audit"
+                    to="/domains/cases"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     전체 쿼리 감사

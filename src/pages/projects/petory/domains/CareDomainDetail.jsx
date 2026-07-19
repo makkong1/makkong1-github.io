@@ -53,8 +53,8 @@ function CareDomainDetail() {
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Care 도메인 — 성능 · 결제 연동 상세</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.7 }}>
             펫케어 요청 목록의 N+1 해결과, Care와 맞물린 펫코인(결제) 연동 리팩토링을 정리했습니다.
-            거래 확정 동시성(Race Condition)은 <Link to="/domains/refactoring#concurrency" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에서 다룹니다.
-            <code>my-requests</code>가 <code>userId</code> 쿼리 파라미터로 남의 요청을 조회할 수 있던 문제도 같은 시기에 고쳤습니다(<Link to="/domains/refactoring#n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>N+1 성능 개선 사례</Link> 참고).
+            거래 확정 동시성(Race Condition)은 <Link to="/domains/cases?case=concurrency-strategy" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에서 다룹니다.
+            <code>my-requests</code>가 <code>userId</code> 쿼리 파라미터로 남의 요청을 조회할 수 있던 문제도 같은 시기에 고쳤습니다(<Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>N+1 성능 개선 사례</Link> 참고).
           </p>
 
           {/* 1. 개요 */}
@@ -212,7 +212,7 @@ Map<Long, List<FileDTO>> filesByPet =
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사에서 다시 나온 것 (2026-07)</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
               위 항목들을 고치고 나서 Care의 N+1은 정리됐다고 생각했습니다. 이후{' '}
-              <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+              <Link to="/domains/cases" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
                 전체 쿼리 감사
               </Link>
               에서 62개 엔드포인트를 <code>curl</code>로 직접 호출해보니, Care에서만 네 가지가 더 나왔습니다.

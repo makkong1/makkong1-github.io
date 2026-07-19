@@ -5,9 +5,6 @@ import HomePage from './pages/HomePage';
 import PetoryProjectPage from './pages/projects/petory/PetoryProjectPage';
 import PetoryFlowsPage from './pages/projects/petory/PetoryFlowsPage';
 import PetoryCasesPage from './pages/projects/petory/PetoryCasesPage';
-import PetoryRefactoringPage from './pages/projects/petory/PetoryRefactoringPage';
-import OverFetchingDetail from './pages/projects/petory/domains/OverFetchingDetail';
-import DeepPagePaginationDetail from './pages/projects/petory/domains/DeepPagePaginationDetail';
 import MCPFilesPage from './pages/MCPFilesPage';
 import DemoPage from './pages/DemoPage';
 import InfraPage from './pages/InfraPage';
@@ -53,9 +50,6 @@ function App() {
             <Route path="/portfolio/petory" element={<PetoryProjectPage />} />
             <Route path="/domains/flows" element={<PetoryFlowsPage />} />
             <Route path="/domains/cases" element={<PetoryCasesPage />} />
-            <Route path="/domains/refactoring" element={<PetoryRefactoringPage />} />
-            <Route path="/domains/refactoring/over-fetching" element={<OverFetchingDetail />} />
-            <Route path="/domains/refactoring/deep-page" element={<DeepPagePaginationDetail />} />
             {/* 라이브 데모 페이지 */}
             <Route path="/demo" element={<DemoPage />} />
             

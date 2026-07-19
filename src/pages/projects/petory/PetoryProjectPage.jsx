@@ -182,12 +182,12 @@ ${nodeStyles}`;
                 <div className="stat-label">쿼리 수 감소</div>
                 <div className="stat-sub">Board · N+1 · 301 → 3개 (실제 커밋 worktree 실측)</div>
               </Link>
-              <Link to="/domains/refactoring#spatial-index" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
+              <Link to="/domains/cases" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="stat-number">~30배</div>
                 <div className="stat-label">p95 지연 단축</div>
                 <div className="stat-sub">Meetup · 근처검색 5만건 · 1.75s → 57.5ms</div>
               </Link>
-              <Link to="/domains/refactoring#notification-read" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
+              <Link to="/domains/cases" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="stat-number">100 → 1</div>
                 <div className="stat-label">UPDATE 쿼리 수</div>
                 <div className="stat-sub">Notification · 읽음 처리 · JPQL bulk UPDATE</div>
@@ -388,7 +388,7 @@ ${nodeStyles}`;
                 <p>초기 로드 22.4MB→100KB(-99.6%), 응답 531.8ms→50.9ms (반환 100건 상한)</p>
                 <strong>반경 조회 · 공간 인덱스(R-Tree)</strong>
               </Link>
-              <Link to="/domains/refactoring#spatial-index" className="problem-summary-card">
+              <Link to="/domains/cases" className="problem-summary-card">
                 <span>04</span>
                 <h3>근처 검색 인덱스 튜닝</h3>
                 <p>EXPLAIN으로 풀스캔 확인 → bounding box+인덱스로 스캔 96%↓ → 공간 인덱스로 재구현</p>

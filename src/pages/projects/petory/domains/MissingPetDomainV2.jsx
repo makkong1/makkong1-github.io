@@ -486,7 +486,7 @@ score        = 0.6 * recencyScore + 0.4 * distScore`}</CodeBlock>
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#n-plus-one"
+                    to="/domains/cases?case=list-n-plus-one"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     대표 개선 사례 보기

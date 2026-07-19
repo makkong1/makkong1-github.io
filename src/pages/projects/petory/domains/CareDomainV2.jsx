@@ -282,7 +282,7 @@ function CareDomainV2() {
                 ※ 이전에 쓰던 <code>~2,400 → 4~5</code>는 <code>@BatchSize</code> 도입 <strong>이전 세대</strong>의
                 값이라 재검증 후 위 재현치로 교체했습니다. 경위는{' '}
                 <Link
-                  to="/domains/refactoring#n-plus-one"
+                  to="/domains/cases?case=list-n-plus-one"
                   style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                 >
                   대표 개선 사례
@@ -410,7 +410,7 @@ if (bothConfirmed(conv)) {
                   <>
                     상세는{' '}
                     <Link
-                      to="/domains/refactoring#n-plus-one"
+                      to="/domains/cases?case=list-n-plus-one"
                       style={{
                         color: 'var(--link-color)',
                         textDecoration: 'none',
@@ -567,7 +567,7 @@ WHERE cr.is_deleted = false
                 하나만 쓸 수 있어 <code>latitude</code> 다음의 <code>longitude</code>가 걸러지지
                 않습니다. 측정·전환 과정은{' '}
                 <Link
-                  to="/domains/refactoring#query-audit"
+                  to="/domains/cases"
                   style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                 >
                   전체 쿼리 감사
@@ -596,7 +596,7 @@ WHERE cr.is_deleted = false
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#n-plus-one"
+                    to="/domains/cases?case=list-n-plus-one"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     대표 개선 사례 보기
@@ -606,7 +606,7 @@ WHERE cr.is_deleted = false
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#query-audit"
+                    to="/domains/cases"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     전체 쿼리 감사

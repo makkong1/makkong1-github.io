@@ -83,7 +83,7 @@ function MeetupDomainDetail() {
           </div>
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Meetup 도메인 — 성능 · 동시성 상세</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.7 }}>
-            대표 사례는 <Link to="/domains/refactoring#concurrency" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에 큐레이션돼 있습니다.
+            대표 사례는 <Link to="/domains/cases?case=concurrency-strategy" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에 큐레이션돼 있습니다.
             이 페이지는 Meetup 백엔드 작업의 <strong style={{ color: 'var(--text-secondary)' }}>상세 기록(작업 로그)</strong>으로,
             ① 동시성(인원 초과 방지) ② 쿼리 성능 최적화 두 축으로 정리했습니다.
           </p>
@@ -425,7 +425,7 @@ List<MeetupParticipants> findByUserIdxOrderByJoinedAtDesc(@Param("userIdx") Long
           <section id="audit" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 검색 페이징 (2026-07)</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
-              <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+              <Link to="/domains/cases" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
                 전체 쿼리 감사
               </Link>
               에서 모임 검색을 실제로 호출해보니, <strong style={{ color: 'var(--text-color)' }}>N+1로 보였던 것이 N+1이 아니었습니다.</strong>

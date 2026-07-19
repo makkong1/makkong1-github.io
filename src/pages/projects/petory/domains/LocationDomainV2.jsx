@@ -631,7 +631,7 @@ lat/lng 없음 + 지역 없음 + keyword 있음 -> FULLTEXT 검색
                 <li>
                   •{" "}
                   <Link
-                    to="/domains/refactoring#location"
+                    to="/domains/cases?case=spatial-search"
                     style={{
                       color: "var(--link-color)",
                       textDecoration: "none",

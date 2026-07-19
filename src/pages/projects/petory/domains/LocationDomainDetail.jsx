@@ -32,7 +32,7 @@ function LocationDomainDetail() {
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Location 도메인 — 성능 · 검색 상세</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.7 }}>
             초기 로드 성능 개선(대표)과, 그 뒤 백엔드 검색 분기를 정리한 작업을 함께 담았습니다.
-            대표 요약은 <Link to="/domains/refactoring#location" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에 있습니다.
+            대표 요약은 <Link to="/domains/cases?case=spatial-search" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에 있습니다.
           </p>
 
           {/* 1. 개요 */}

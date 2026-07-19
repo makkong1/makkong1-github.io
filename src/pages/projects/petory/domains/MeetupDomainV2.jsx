@@ -518,7 +518,7 @@ ORDER BY m.date ASC
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#concurrency"
+                    to="/domains/cases?case=concurrency-strategy"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     대표 개선 사례 보기
@@ -528,7 +528,7 @@ ORDER BY m.date ASC
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#query-audit"
+                    to="/domains/cases"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     전체 쿼리 감사

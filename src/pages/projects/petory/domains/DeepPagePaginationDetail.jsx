@@ -58,7 +58,7 @@ function DeepPagePaginationDetail() {
         <div className="domain-page-content" style={{ flex: 1 }}>
           <div style={{ marginBottom: "1rem" }}>
             <Link
-              to="/domains/refactoring#deep-page"
+              to="/domains/cases?case=deep-paging"
               style={{
                 color: "var(--link-color)",
                 textDecoration: "none",

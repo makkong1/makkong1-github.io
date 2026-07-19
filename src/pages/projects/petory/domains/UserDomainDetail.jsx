@@ -56,7 +56,7 @@ function UserDomainDetail() {
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>User 도메인 — 인증 · 성능 상세</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.7 }}>
             로그인 직후 채팅방 목록의 N+1 해결(대표)과, 인증·조회 경로의 중복 쿼리 정리를 담았습니다.
-            대표 사례(N+1)는 <Link to="/domains/refactoring#n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에도 있습니다.
+            대표 사례(N+1)는 <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에도 있습니다.
           </p>
 
           {/* 1. 개요 */}
@@ -261,7 +261,7 @@ if (Boolean.TRUE.equals(user.getIsDormant())) {
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>인증 주체 계약 — 전 컨트롤러 스윕 (2026-07)</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
               "누구의 데이터인가"를 <strong style={{ color: 'var(--text-color)' }}>클라이언트가 정하게 두면 안 된다</strong>는 계약은{' '}
-              <Link to="/domains/refactoring#n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+              <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
                 N+1 성능 개선 사례
               </Link>
               에서 Chat·Care를 대상으로 이미 세웠습니다. 그런데 <strong style={{ color: 'var(--text-color)' }}>그때 손댄 두 도메인만 바뀌어 있었습니다.</strong>
@@ -330,7 +330,7 @@ GET /api/activities/my?userId=1663
           <section id="audit" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>쿼리 감사 — 펫 목록 페이징 (2026-07)</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem', lineHeight: 1.7 }}>
-              <Link to="/domains/refactoring#query-audit" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+              <Link to="/domains/cases" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
                 전체 쿼리 감사
               </Link>
               에서 나온 User 도메인 항목입니다. <strong style={{ color: 'var(--text-color)' }}>고치는 과정에서 제가 새 N+1을 만들었고, 없던 COUNT 문제도 스스로 불러왔습니다.</strong>{' '}

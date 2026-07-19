@@ -397,7 +397,7 @@ const cases = [
     limits:
       'ORDER BY created_at DESC에 동점(tie-break) 키가 없어 같은 밀리초에 여러 글이 생성되면 페이지 경계 순서가 안정적이지 않을 수 있습니다(선재 이슈, 이번 범위 밖). 측정치를 범위(24~32ms 등)로 기록한 것은 로컬 단일 실행 환경의 버퍼풀 상태 변동 때문이며, 방향성(순서·배율)은 재현마다 일관됐습니다. missing_pet·meetup·care는 현재 규모(수천~1만 행)에서 체감되지 않아 같은 처방을 보류했습니다.',
     docs: [
-      { to: '/domains/refactoring/deep-page', label: '판단 여정 상세 (키셋 기각 이유 포함)' },
+      { to: '/domains/cases?case=deep-paging', label: '판단 여정 상세 (키셋 기각 이유 포함)' },
       { to: '/domains/board/detail', label: 'Board 성능·구조 상세' },
       {
         href:

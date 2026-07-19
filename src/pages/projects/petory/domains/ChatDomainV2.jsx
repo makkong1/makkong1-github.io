@@ -528,7 +528,7 @@ if (readFrom != null) {
                 <li>
                   •{' '}
                   <Link
-                    to="/domains/refactoring#n-plus-one"
+                    to="/domains/cases?case=list-n-plus-one"
                     style={{ color: 'var(--link-color)', textDecoration: 'none' }}
                   >
                     대표 개선 사례 보기

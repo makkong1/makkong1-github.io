@@ -55,7 +55,7 @@ function MissingPetDomainDetail() {
           <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>Missing Pet 도메인 — 성능 · 구조 상세</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '2rem', lineHeight: 1.7 }}>
             실종 제보 목록의 N+1 해결(대표)과 Admin·삭제·조회 경로의 부가 정리를 담았습니다.
-            대표 사례(N+1)는 <Link to="/domains/refactoring#n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에도 있습니다.
+            대표 사례(N+1)는 <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>리팩토링 대표 사례</Link>에도 있습니다.
           </p>
 
           {/* 1. 개요 */}
