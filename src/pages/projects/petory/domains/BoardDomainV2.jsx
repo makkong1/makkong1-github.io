@@ -75,6 +75,7 @@ function BoardDomainV2() {
     '상세 캐시 정합성',
     '인기글 스냅샷',
     'FULLTEXT 검색',
+    '반응 토글',
   ];
 
   const code = { backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' };
@@ -235,7 +236,7 @@ Map<Long, List<FileDTO>> attachmentsMap =
             </Card>
 
             {/* 3-6 */}
-            <Card>
+            <Card style={{ marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
                 F. 검색을 LIKE가 아니라 FULLTEXT(ngram)로 짠 이유
               </h3>
@@ -253,6 +254,26 @@ Map<Long, List<FileDTO>> attachmentsMap =
     break;
 }`}</CodeBlock>
             </Card>
+
+            {/* 3-7 */}
+            <Card>
+              <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
+                G. 반응(좋아요/싫어요)을 조회-분기 + insertIgnore로 처리하는 이유
+              </h3>
+              <Field label="문제">같은 유저가 같은 글에 반응을 중복으로 남기거나, 좋아요↔싫어요 전환·취소를 처리해야 함. 중복 반응을 구조적으로 막아야 함.</Field>
+              <Field label="결정"><code style={code}>board_reaction(board_idx, user_idx)</code> 유니크 제약 기반. 기존 반응 조회 후 분기 — 같은 타입이면 취소, 다른 타입이면 <code style={code}>changeReactionType</code>으로 전환(<code style={code}>setReactionType</code> 직접 노출 대신 캡슐화), 없으면 <code style={code}>insertIgnore</code>로 신규(유니크로 동시 중복 삽입 방지). <code style={code}>likeCount</code>/<code style={code}>dislikeCount</code>는 즉시 갱신.</Field>
+              <CodeBlock>{`Optional<BoardReaction> existing =
+    boardReactionRepository.findByBoardAndUser(board, user);
+
+if (existing.isPresent() && existing.get().getReactionType() == reactionType) {
+    boardReactionRepository.delete(existing.get());          // 같은 타입 → 취소
+} else if (existing.isPresent()) {
+    existing.get().changeReactionType(reactionType);         // 다른 타입 → 전환(캡슐화)
+    boardReactionRepository.save(existing.get());
+} else {
+    boardReactionRepository.insertIgnore(boardId, userId, reactionType.name());  // 신규(UNIQUE)
+}`}</CodeBlock>
+            </Card>
           </section>
 
           {/* 4. 관련 문서 */}
@@ -260,6 +281,16 @@ Map<Long, List<FileDTO>> attachmentsMap =
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
             <Card>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '2' }}>
+                <li>
+                  •{' '}
+                  <Link to="/domains/cases?case=deep-paging" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    대표 사례 — 깊은 페이지 페이징
+                  </Link>
+                  {' · '}
+                  <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
+                    목록 N+1
+                  </Link>
+                </li>
                 <li>
                   •{' '}
                   <Link to="/domains/board/detail" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>

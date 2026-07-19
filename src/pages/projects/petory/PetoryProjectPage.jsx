@@ -177,7 +177,7 @@ ${nodeStyles}`;
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 성과</h2>
             <div className="glass" style={{ padding: '2rem', textAlign: 'center' }}>
               <div className="stat-grid">
-              <Link to="/domains/refactoring#n-plus-one" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
+              <Link to="/domains/cases?case=list-n-plus-one" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="stat-number">99%</div>
                 <div className="stat-label">쿼리 수 감소</div>
                 <div className="stat-sub">Board · N+1 · 301 → 3개 (실제 커밋 worktree 실측)</div>
@@ -363,22 +363,26 @@ ${nodeStyles}`;
             <span className="eyebrow">Problem Solving</span>
             <h2 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>성능 개선 & 리팩토링</h2>
             <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.65 }}>
-              전체 7개 사례 중 분석이 잘 된 대표 4개를 추렸습니다. 전체는 리팩토링 페이지에서 확인할 수 있습니다.
+              프로젝트 전체에서 대표 사례를 추려{' '}
+              <Link to="/domains/cases" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
+                대표 사례 페이지
+              </Link>
+              에 모았습니다. 카드를 누르면 해당 사례로 이동합니다.
             </p>
             <div className="problem-summary-grid">
-              <Link to="/domains/refactoring#n-plus-one" className="problem-summary-card">
+              <Link to="/domains/cases?case=list-n-plus-one" className="problem-summary-card">
                 <span>01</span>
                 <h3>JPA N+1 성능 개선</h3>
                 <p>Board 301→3 · Care 151→4 · Chat 41→4 · MissingPet 267→4 (실제 커밋 worktree 실측)</p>
                 <strong>배치 조회 · Fetch Join · Map DTO 조립</strong>
               </Link>
-              <Link to="/domains/refactoring#concurrency" className="problem-summary-card">
+              <Link to="/domains/cases?case=concurrency-strategy" className="problem-summary-card">
                 <span>02</span>
                 <h3>동시성 제어</h3>
                 <p>PetCoin Lost Update(100→110) 3/3 재현, Meetup 최초 버그는 데드락 실패 → 원자적 UPDATE로 해결</p>
                 <strong>조건부 UPDATE · SELECT FOR UPDATE</strong>
               </Link>
-              <Link to="/domains/refactoring#location" className="problem-summary-card">
+              <Link to="/domains/cases?case=spatial-search" className="problem-summary-card">
                 <span>03</span>
                 <h3>Location 검색 최적화</h3>
                 <p>초기 로드 22.4MB→100KB(-99.6%), 응답 531.8ms→50.9ms (반환 100건 상한)</p>
