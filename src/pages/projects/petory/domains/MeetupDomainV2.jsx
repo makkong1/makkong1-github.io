@@ -402,6 +402,8 @@ public void createChatRoom(Long meetupIdx, Long organizerIdx, String title) {
                 {li('2단계: findByIdxInWithOrganizer — IN + JOIN FETCH로 organizer N+1 방지')}
                 {li('응답 DTO의 distance는 서비스에서 미터 단위로 다시 계산해 세팅')}
                 {li('nearby는 지도 마커용 미래 모임 조회 — RECRUITING 정원 미달 목록은 /available과 구분')}
+                {li('geo_point R-Tree 공간 인덱스는 현재 운영 규모(~5천 행)에선 옵티마이저가 date 인덱스를 골라 미선택 — 규모 대비 선제적 구조 결정')}
+                {li('131,072행으로 시딩해 측정하니 옵티마이저가 스스로 공간인덱스를 선택: table scan 대비 441 → 43ms(~10배), 스캔 131,072 → 4,083행(-96.9%). "규모가 커지면 공간인덱스가 이긴다"를 실측으로 확인')}
               </ul>
               <CodeBlock>{`// 1단계: ID·정렬·LIMIT만 네이티브 쿼리로
 List<Long> ids = meetupRepository.findNearbyMeetupIds(

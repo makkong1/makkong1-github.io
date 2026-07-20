@@ -122,14 +122,28 @@ Map<Long, List<FileDTO>> files =
     domain: 'Meetup',
     domainPath: '/domains/meetup',
     title: '서브쿼리 → LEFT JOIN + GROUP BY',
-    context: '모임 목록에서 각 모임의 참가자 수 등을 함께 보여준다.',
-    problem: '집계를 상관 서브쿼리로 처리해, 목록 행마다 서브쿼리가 재실행되며 느림.',
-    decision: '상관 서브쿼리 → LEFT JOIN + GROUP BY + HAVING으로 한 번에 집계.',
-    verify: '리팩토링 전/후 EXPLAIN·실행시간·메모리 비교.',
+    context: '모임 목록에서 각 모임의 참가자 수를 정원과 비교해 "참여 가능" 여부를 함께 판정한다.',
+    problem: '참가자 수 집계를 상관 서브쿼리로 처리해, 목록 행마다 서브쿼리가 재실행되며 느림.',
+    decision: '상관 서브쿼리 → LEFT JOIN + GROUP BY + HAVING으로 한 번에 집계. 아래 실측은 이 전환 시점의 것이다. (현재 코드는 그 뒤 한 단계 더 나아가, currentParticipants 카운터 컬럼을 도입해 집계 자체를 없애고 WHERE 직접 비교로 단순화 — 이 사례는 "행별 재실행되는 상관 서브쿼리를 어떻게 걷어내나"의 실측 기록이다.)',
+    verify: '리팩토링 전/후 EXPLAIN·실행시간·메모리 비교(전환 커밋 c93c81be).',
     metrics: [
       ['실행 시간', '156ms', '57ms (-63.5%)'],
       ['메모리', '19.07MB', '2.00MB (-89.5%)'],
     ],
+    codeLang: 'sql',
+    code: `-- Before: 상관 서브쿼리 (목록 행마다 재실행)
+SELECT m FROM Meetup m
+ WHERE m.maxParticipants > (
+     SELECT COUNT(p) FROM MeetupParticipants p WHERE p.meetup.idx = m.idx
+   )
+   AND m.date > :now
+
+-- After: LEFT JOIN + GROUP BY + HAVING (한 번에 집계)
+SELECT m FROM Meetup m
+  LEFT JOIN m.participants p
+ WHERE m.date > :now
+ GROUP BY m.idx
+HAVING COUNT(p) < m.maxParticipants`,
   },
   {
     id: 'failure-isolation',
