@@ -45,7 +45,7 @@ function MeetupDomainV2() {
   const sections = [
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
-    { id: 'design', title: '기술 결정' },
+    { id: 'design', title: '구현 포인트' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -296,7 +296,7 @@ function MeetupDomainV2() {
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              기술 결정
+              구현 포인트
             </h2>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -309,34 +309,15 @@ function MeetupDomainV2() {
               >
                 A. 참가 동시성 제어
               </h3>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li('findByIdWithLock — PESSIMISTIC_WRITE로 동시 참가 요청 직렬화')}
-                {li('incrementParticipantsIfAvailable — RECRUITING 상태 + 인원 미달 조건을 UPDATE 한 번에 체크')}
-                {li('DataIntegrityViolationException(PK 충돌) → decrementParticipantsIfPositive + alreadyJoined 복구')}
-                {li('취소 시 decrementParticipantsIfPositive — read-modify-write 제거, 음수 방지 조건 포함')}
-              </ul>
-              <CodeBlock>{`// 비관적 락으로 직렬화
-Meetup meetup = meetupRepository.findByIdWithLock(meetupIdx)
-    .orElseThrow(MeetupNotFoundException::new);
-
-// 원자적 조건부 증가 (RECRUITING + 인원 미달 동시 체크)
-int updated = meetupRepository
-    .incrementParticipantsIfAvailable(meetupIdx, MeetupStatus.RECRUITING);
-if (updated == 0) throw MeetupConflictException.fullCapacity();
-
-// PK 충돌 → 증가 롤백 후 중복 예외
-} catch (DataIntegrityViolationException e) {
-    meetupRepository.decrementParticipantsIfPositive(meetupIdx);
-    throw MeetupConflictException.alreadyJoined();
-}`}</CodeBlock>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>문제</strong> — 동시 참가 요청이 정원 체크(current &lt; max)를 각자 통과해버려 정원 초과.
+              </p>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>결과</strong> — <code>incrementParticipantsIfAvailable</code> 원자적 UPDATE 한 문장으로 정원 초과가 구조적으로 불가능.
+              </p>
+              <Link to="/domains/cases?case=concurrency-strategy" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
+                대표사례에서 자세히 보기 →
+              </Link>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -475,27 +456,15 @@ ORDER BY mp.joinedAt DESC`}</CodeBlock>
               >
                 E. 참여 가능 목록 단순화
               </h3>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li('이전: 서브쿼리 또는 LEFT JOIN + GROUP BY + HAVING 구조')}
-                {li('현재: currentParticipants < maxParticipants 직접 비교 — 상태·인원 조건 단순 WHERE절')}
-                {li('Pageable로 DB LIMIT/OFFSET 처리 — 메모리 페이징 위험 해소')}
-              </ul>
-              <CodeBlock>{`-- 참여 가능 모임 (currentParticipants 직접 비교)
-SELECT m FROM Meetup m JOIN FETCH m.organizer
-WHERE m.date > :currentDate
-  AND m.currentParticipants < m.maxParticipants
-  AND m.status = :recruiting
-  AND (m.isDeleted = false OR m.isDeleted IS NULL)
-ORDER BY m.date ASC
--- Pageable → DB LIMIT/OFFSET 자동 적용`}</CodeBlock>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>문제</strong> — 참가자 COUNT 집계용 상관 서브쿼리(이후 LEFT JOIN + GROUP BY + HAVING)가 필요했음.
+              </p>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>결과</strong> — <code>currentParticipants</code> 카운터 컬럼 도입 후 집계 자체가 필요 없어져, JOIN 없는 직접 비교 WHERE절로 더 단순화(대표사례는 그 이전 단계인 서브쿼리→JOIN 전환 실측).
+              </p>
+              <Link to="/domains/cases?case=subquery-optimization" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
+                대표사례에서 자세히 보기 →
+              </Link>
             </Card>
           </section>
           <section
@@ -515,16 +484,6 @@ ORDER BY m.date ASC
                   lineHeight: '2',
                 }}
               >
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/cases?case=concurrency-strategy"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    대표 개선 사례 보기
-                  </Link>
-                  {' — 동시성/Race Condition 해결'}
-                </li>
                 <li>
                   •{' '}
                   <Link

@@ -51,7 +51,7 @@ function CareDomainV2() {
   const sections = [
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
-    { id: 'design', title: '기술 결정' },
+    { id: 'design', title: '구현 포인트' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -342,7 +342,7 @@ function CareDomainV2() {
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              기술 결정
+              구현 포인트
             </h2>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -355,33 +355,15 @@ function CareDomainV2() {
               >
                 A. 거래 확정 Race Condition
               </h3>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li('두 사용자 동시 확정 → 상태 전이 누락 위험 (stuck state)')}
-                {li('Conversation 조회에 비관적 락 적용 → 확정 로직 순차 처리')}
-                {li('기존 CareApplication 있으면 ACCEPTED, 없으면 그 자리에서 생성')}
-                {li('에스크로 생성은 상태 전이 이후 별도 후속 처리로 분리')}
-              </ul>
-              <CodeBlock>{`// Conversation에 비관적 락 획득
-Conversation conv = conversationRepository
-    .findByIdWithLock(conversationId)
-    .orElseThrow(...);
-
-// 양측 모두 확정됐을 때만 상태 전환
-if (bothConfirmed(conv)) {
-    careApp = findOrCreate(careRequest, provider); // ACCEPTED
-    careRequest.setStatus(CareRequestStatus.IN_PROGRESS);
-    // 에스크로 생성 시도 — 실패해도 거래 확정은 유지
-    try { petCoinEscrowService.createEscrow(...); }
-    catch (Exception e) { log.warn("에스크로 생성 실패: {}", e.getMessage()); }
-}`}</CodeBlock>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>문제</strong> — 두 사용자가 동시에 거래를 확정하면 격리수준 때문에 서로 상대의 미커밋 확정을 못 봐 둘 다 대기 상태(stuck state)에 머무름.
+              </p>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>결과</strong> — 원자적 UPDATE로 표현 불가능한 check-then-act라 <code>Conversation</code> 비관적 락으로 직렬화, stuck state 구조적으로 제거.
+              </p>
+              <Link to="/domains/cases?case=concurrency-strategy" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
+                대표사례에서 자세히 보기 →
+              </Link>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -593,16 +575,6 @@ WHERE cr.is_deleted = false
                   lineHeight: '2',
                 }}
               >
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/cases?case=list-n-plus-one"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    대표 개선 사례 보기
-                  </Link>
-                  {' — N+1 성능 개선 · 동시성/Race Condition'}
-                </li>
                 <li>
                   •{' '}
                   <Link

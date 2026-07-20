@@ -49,7 +49,7 @@ function LocationDomainV2() {
   const sections = [
     { id: "pillars", title: "핵심 기능" },
     { id: "intro", title: "도메인 개요" },
-    { id: "design", title: "기술 결정" },
+    { id: "design", title: "구현 포인트" },
     { id: "docs", title: "관련 페이지" },
   ];
 
@@ -312,7 +312,7 @@ function LocationDomainV2() {
             style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
           >
             <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-              기술 결정
+              구현 포인트
             </h2>
 
             <Card style={{ marginBottom: "1rem" }}>
@@ -368,35 +368,15 @@ else                results = findByOrderByRatingDesc(...);`}</CodeBlock>
               >
                 B. 초기 로드 최적화
               </h3>
-              <ul
-                style={{
-                  listStyle: "none",
-                  padding: 0,
-                  margin: 0,
-                  color: "var(--text-secondary)",
-                  lineHeight: "1.8",
-                }}
-              >
-                {li(
-                  "이전: size 제한 없이 전체 22,699건 로드 → 전송량·메모리 병목",
-                )}
-                {li(
-                  "이후: 반경 검색 + 통합 지도 size=300 고정(meetup/care만 줌별 limit)",
-                )}
-                {li(
-                  "컨트롤러 기본값 size=100, size≤0 지정은 서비스 레이어 fallback(반경 100 / 지역·키워드 50)으로 실제로는 상한이 유지됨",
-                )}
-              </ul>
-              <CodeBlock>{`// unifiedMapApi.js (Petory) — location 탭만 고정 상한
-const LOCATION_RESULT_LIMIT = 300;
-
-locationServiceApi.searchPlaces({
-  latitude: lat,
-  longitude: lng,
-  radius: radiusKm * 1000,  // UI km → API m
-  sort,  // stable | distance | rating | reviews
-  size: LOCATION_RESULT_LIMIT,
-});`}</CodeBlock>
+              <p style={{ margin: "0 0 0.5rem", color: "var(--text-secondary)", lineHeight: "1.75", fontSize: "0.9rem" }}>
+                <strong style={{ color: "var(--text-color)" }}>문제</strong> — size 제한 없이 전체 22,699건 로드(22.4MB, 531.8ms) → 전송량·메모리 병목.
+              </p>
+              <p style={{ margin: "0 0 0.5rem", color: "var(--text-secondary)", lineHeight: "1.75", fontSize: "0.9rem" }}>
+                <strong style={{ color: "var(--text-color)" }}>결과</strong> — 반경 검색 + 이중 공간 필터(ST_Within → ST_Distance_Sphere)로 100KB, 50.9ms.
+              </p>
+              <Link to="/domains/cases?case=spatial-search" style={{ color: "var(--link-color)", fontWeight: 600, textDecoration: "none", fontSize: "0.9rem" }}>
+                대표사례에서 자세히 보기 →
+              </Link>
             </Card>
 
             <Card style={{ marginBottom: "1rem" }}>
@@ -627,19 +607,6 @@ lat/lng 없음 + 지역 없음 + keyword 있음 -> FULLTEXT 검색
                   >
                     위치서비스 CSV 배치 임포트 문서
                   </a>
-                </li>
-                <li>
-                  •{" "}
-                  <Link
-                    to="/domains/cases?case=spatial-search"
-                    style={{
-                      color: "var(--link-color)",
-                      textDecoration: "none",
-                    }}
-                  >
-                    대표 개선 사례 보기
-                  </Link>
-                  {" — Location 검색/초기 로드 최적화"}
                 </li>
               </ul>
             </Card>

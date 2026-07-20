@@ -51,7 +51,7 @@ function RecommendationDomainV2() {
   const sections = [
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
-    { id: 'design', title: '기술 결정' },
+    { id: 'design', title: '구현 포인트' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -278,7 +278,7 @@ function RecommendationDomainV2() {
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              기술 결정
+              구현 포인트
             </h2>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -613,6 +613,15 @@ DEFAULT        -> 7일`}</CodeBlock>
                   lineHeight: '2',
                 }}
               >
+                <li>
+                  •{' '}
+                  <Link
+                    to="/domains/cases?case=failure-isolation"
+                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
+                  >
+                    대표사례 — 장애 격리가 만든 "침묵 버그" (petType 422 무음 드롭)
+                  </Link>
+                </li>
                 <li>
                   •{' '}
                   <a

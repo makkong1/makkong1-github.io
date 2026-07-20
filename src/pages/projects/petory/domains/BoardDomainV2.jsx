@@ -38,7 +38,7 @@ function CodeBlock({ children }) {
   );
 }
 
-// "왜 이 코드인가" 한 줄 필드 (문제 / 검토한 대안 / 결정 / 전·후 실측)
+// "구현 포인트" 한 줄 필드 (문제 / 검토한 대안 / 결정 / 전·후 실측)
 function Field({ label, children }) {
   return (
     <p
@@ -64,7 +64,7 @@ function BoardDomainV2() {
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
     { id: 'architecture', title: '아키텍처 · 흐름' },
-    { id: 'why', title: '왜 이 코드인가' },
+    { id: 'why', title: '구현 포인트' },
     { id: 'docs', title: '관련 문서' },
   ];
 
@@ -167,9 +167,9 @@ function BoardDomainV2() {
             </Card>
           </section>
 
-          {/* 3. 왜 이 코드인가 */}
+          {/* 3. 구현 포인트 */}
           <section id="why" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '0.4rem', color: 'var(--text-color)' }}>왜 이 코드인가</h2>
+            <h2 style={{ marginBottom: '0.4rem', color: 'var(--text-color)' }}>구현 포인트</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '1rem', lineHeight: 1.7 }}>
               각 결정을 <strong>예전 문제 → 검토한 대안 → 결정 → 전·후 실측</strong> 순으로.
             </p>
@@ -179,16 +179,11 @@ function BoardDomainV2() {
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
                 A. 목록 조회를 "조인 하나 + 배치 둘"로 나눈 이유
               </h3>
-              <Field label="문제">목록 100건에서 작성자는 LAZY라 글마다 1번(N), 반응·첨부도 각 N → <code style={code}>1 + 3N = 301쿼리</code> (787ms).</Field>
-              <Field label="결정">작성자(<code style={code}>@ManyToOne</code>)는 조인해도 글 행이 안 늘어 <strong>JOIN</strong>. 반응·첨부는 컬렉션이라 조인하면 행이 뻥튀기 → <strong><code style={code}>IN</code> 배치 + <code style={code}>GROUP BY</code></strong>로 따로 뽑아 <code style={code}>Map</code> 병합. <code style={code}>Page.map</code>은 단건 변환기를 행마다 호출해 N+1이 재발하므로 배치 변환기 사용.</Field>
-              <Field label="실측">301 → 3쿼리, 787 → 38ms (쿼리 수는 데이터 규모와 무관하게 고정).</Field>
-              <CodeBlock>{`List<Long> boardIds = boards.stream().map(Board::getIdx).toList();
-
-Map<Long, Map<ReactionType, Long>> reactionCountsMap =
-    getReactionCountsBatch(boardIds);              // IN + GROUP BY
-
-Map<Long, List<FileDTO>> attachmentsMap =
-    attachmentFileService.getAttachmentsBatch(FileTargetType.BOARD, boardIds);`}</CodeBlock>
+              <Field label="문제">목록 100건에서 작성자·반응·첨부가 각각 LAZY라 <code style={code}>1 + 3N = 301쿼리</code>(787ms).</Field>
+              <Field label="결과">301 → 3쿼리, 787 → 38ms.</Field>
+              <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
+                대표사례에서 자세히 보기 →
+              </Link>
             </Card>
 
             {/* 3-2 */}
@@ -196,10 +191,11 @@ Map<Long, List<FileDTO>> attachmentsMap =
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
                 B. 깊은 페이지에서 키셋이 아니라 지연조인인 이유
               </h3>
-              <Field label="문제"><code style={code}>OFFSET 49,980</code> 요청 시 <strong>10만 행을 검사하고 0행 반환</strong>(≈133ms). <code style={code}>LIMIT</code>은 정렬이 끝난 뒤 적용돼서, 1페이지든 뒷페이지든 정렬 비용이 같았습니다(딥페이징처럼 보이지만 실제 원인은 여기).</Field>
-              <Field label="검토한 대안">키셋 페이징 vs 2단계 지연조인. <strong>키셋 탈락</strong> — 프론트 공용 <code style={code}>PageNavigation</code>이 "3페이지로 점프" 같은 페이지 번호 UI를 노출하는데, 키셋은 "다음/이전"만 가능해 이 UI를 못 지킴.</Field>
-              <Field label="결정"><code style={code}>author_visible</code> 컬럼 비정규화(트리거 동기화)로 users 조인 제거 → 1단계 커버링 인덱스로 <code style={code}>idx</code>만 깊은 skip → 2단계 살아남은 20건만 작성자 조인 → COUNT는 단일 테이블로 분리.</Field>
-              <Field label="실측">깊은 페이지 133ms → 24~32ms, 페이지 결손 23.8% 검증(EXPLAIN·COUNT·k6).</Field>
+              <Field label="문제"><code style={code}>OFFSET 49,980</code> 요청 시 10만 행을 검사하고 0행 반환(≈133ms). 페이지 번호 점프 UI 때문에 키셋 페이징은 탈락.</Field>
+              <Field label="결과">깊은 페이지 133ms → 24~32ms, 페이지 결손 23.8% 검증.</Field>
+              <Link to="/domains/cases?case=deep-paging" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
+                대표사례에서 자세히 보기 →
+              </Link>
             </Card>
 
             {/* 3-3 */}
@@ -281,16 +277,6 @@ if (existing.isPresent() && existing.get().getReactionType() == reactionType) {
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 문서</h2>
             <Card>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '2' }}>
-                <li>
-                  •{' '}
-                  <Link to="/domains/cases?case=deep-paging" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
-                    대표 사례 — 깊은 페이지 페이징
-                  </Link>
-                  {' · '}
-                  <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
-                    목록 N+1
-                  </Link>
-                </li>
                 <li>
                   •{' '}
                   <Link to="/domains/board/detail" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>

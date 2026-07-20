@@ -47,7 +47,7 @@ function MissingPetDomainV2() {
   const sections = [
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
-    { id: 'design', title: '기술 결정' },
+    { id: 'design', title: '구현 포인트' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -278,7 +278,7 @@ function MissingPetDomainV2() {
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              기술 결정
+              구현 포인트
             </h2>
 
             <Card style={{ marginBottom: '1rem' }}>

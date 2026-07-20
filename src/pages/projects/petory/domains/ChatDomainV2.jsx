@@ -51,7 +51,7 @@ function ChatDomainV2() {
   const sections = [
     { id: 'pillars', title: '핵심 기능' },
     { id: 'intro', title: '도메인 개요' },
-    { id: 'design', title: '기술 결정' },
+    { id: 'design', title: '구현 포인트' },
     { id: 'docs', title: '관련 페이지' },
   ];
 
@@ -301,7 +301,7 @@ function ChatDomainV2() {
             style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}
           >
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>
-              기술 결정
+              구현 포인트
             </h2>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -493,19 +493,15 @@ if (readFrom != null) {
               >
                 E. 참여자 조회 N+1 개선
               </h3>
-              <ul
-                style={{
-                  listStyle: 'none',
-                  padding: 0,
-                  margin: 0,
-                  color: 'var(--text-secondary)',
-                  lineHeight: '1.8',
-                }}
-              >
-                {li('채팅방 목록 변환 시 Converter에서 LAZY 컬렉션 접근 → 채팅방 수만큼 N+1 발생')}
-                {li('참여자 데이터를 배치 조회 후 서비스 레이어에서 직접 DTO에 세팅')}
-                {li('Converter는 이미 조회된 데이터만 변환 — 추가 쿼리 없음')}
-              </ul>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>문제</strong> — 채팅방 목록 변환 시 Converter가 LAZY 참여자 컬렉션에 접근해 채팅방 수만큼 N+1. 처음엔 Hibernate Statistics API로 "21→4"로 측정됐으나, 실제 SQL 로그로 재검증하니 41개였음(측정 도구 자체의 함정).
+              </p>
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
+                <strong style={{ color: 'var(--text-color)' }}>결과</strong> — 참여자 배치 조회 후 서비스 레이어에서 직접 세팅. 41 → 4쿼리, 167 → 70ms.
+              </p>
+              <Link to="/domains/cases?case=measurement-tool" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
+                대표사례에서 자세히 보기 →
+              </Link>
             </Card>
           </section>
           <section
@@ -525,16 +521,6 @@ if (readFrom != null) {
                   lineHeight: '2',
                 }}
               >
-                <li>
-                  •{' '}
-                  <Link
-                    to="/domains/cases?case=list-n-plus-one"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    대표 개선 사례 보기
-                  </Link>
-                  {' — N+1 성능 개선 · 보안/인가 계약 정리'}
-                </li>
                 <li>
                   •{' '}
                   <a
