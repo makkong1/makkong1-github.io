@@ -615,15 +615,6 @@ DEFAULT        -> 7일`}</CodeBlock>
               >
                 <li>
                   •{' '}
-                  <Link
-                    to="/domains/cases?case=failure-isolation"
-                    style={{ color: 'var(--link-color)', textDecoration: 'none' }}
-                  >
-                    대표사례 — 장애 격리가 만든 "침묵 버그" (petType 422 무음 드롭)
-                  </Link>
-                </li>
-                <li>
-                  •{' '}
                   <a
                     href={PETORY_RECOMMENDATION_DOC}
                     target="_blank"

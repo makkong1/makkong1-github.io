@@ -188,7 +188,7 @@ ${nodeStyles}`;
               </Link>
               <Link to="/domains/cases?case=concurrency-strategy" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="stat-number">0건</div>
-                <div className="stat-label">동시성 정합성 위반 (재현 후)</div>
+                <div className="stat-label">동시성 정합성 위반 (수정 후)</div>
                 <div className="stat-sub">8개 시나리오 재현 (정원초과 · Lost Update · Stuck State) → 원자적 UPDATE / 비관적 락 전략 분리로 구조적 차단</div>
               </Link>
             </div>

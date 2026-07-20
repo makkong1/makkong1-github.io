@@ -145,21 +145,6 @@ SELECT m FROM Meetup m
  GROUP BY m.idx
 HAVING COUNT(p) < m.maxParticipants`,
   },
-  {
-    id: 'failure-isolation',
-    label: '장애 격리 침묵 버그',
-    domain: 'Recommendation',
-    domainPath: '/domains/recommendation',
-    title: '장애 격리가 만든 "침묵 버그" (petType 422 무음 드롭)',
-    context:
-      '커뮤니티/케어/위치검색 행동을 이벤트로 받아 Python NLP 서버가 의도를 분석하고, 그 결과(signal)로 추천 카드를 만든다.',
-    problem:
-      'signal 처리를 @TransactionalEventListener(AFTER_COMMIT) + @Async로 장애 격리(NLP 실패가 원 트랜잭션·요청에 영향 없게)했는데, Java petType과 Python NLP 서버의 enum이 불일치해 NLP가 422를 반환하고 signal이 조용히 버려졌다. 장애 격리(비동기·실패 무시) 원칙이 오히려 아무도 모르는 침묵 버그를 만든 사례.',
-    decision:
-      'normalizePetType()으로 전송 전에 값을 정규화해 계약 불일치를 제거. AFTER_COMMIT + 비동기는 유지(커밋 후에만 처리해 원 트랜잭션을 NLP 실패로부터 보호). 위치 검색 폭주 대비로 전용 bounded executor + Redis TTL dedup(10분 내 같은 user+keyword 스킵)도 둠.',
-    verify: 'Java/Python petType enum 매핑 대조 + 정규화 후 signal 저장 확인.',
-    metrics: [['signal', '무음 드롭', '정상 저장']],
-  },
 ];
 
 /** URL ?case=<id> 로 사례 선택. 없으면 첫 사례. */
