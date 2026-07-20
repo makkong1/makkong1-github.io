@@ -53,7 +53,7 @@ Map<Long, List<FileDTO>> files =
     alternatives:
       '키셋(커서) 페이징도 검토했으나, 앱 전역이 페이지 번호·점프 UI(공유 PageNavigation)를 쓰고 있어 "다음 페이지"만 되는 키셋 방식으로는 이 UI를 지원할 수 없어 채택하지 않았다.',
     decision:
-      '① users 상태를 board 쪽 author_visible 컬럼으로 비정규화(트리거로 동기화)해 조인 제거 → ② 커버링 인덱스로 idx만 훑어 깊은 위치까지 skip → ③ 살아남은 20건만 작성자 조인, COUNT는 board 단일 테이블.',
+      '① users 상태를 board 쪽 author_visible 컬럼으로 비정규화(트리거로 동기화)해 조인 제거 → ② 커버링 인덱스로 board의 PK 컬럼인 idx만 훑어 깊은 위치까지 skip(작성자 조인 없이) → ③ 그렇게 추린 20건의 idx로만 작성자 조인, COUNT는 board 단일 테이블.',
     verify:
       'EXPLAIN + k6 부하로 전·후 응답시간 비교.',
     metrics: [['깊은 페이지', '133ms', '24~32ms']],
