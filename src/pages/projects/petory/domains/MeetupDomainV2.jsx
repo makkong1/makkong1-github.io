@@ -309,15 +309,23 @@ function MeetupDomainV2() {
               >
                 A. 참가 동시성 제어
               </h3>
-              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>문제</strong> — 동시 참가 요청이 정원 체크(current &lt; max)를 각자 통과해버려 정원 초과.
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('incrementParticipantsIfAvailable — RECRUITING 상태 + 인원 미달 조건을 UPDATE 한 문장으로 체크')}
+                {li('정원 체크와 증가를 한 문장으로 묶어 동시 참가 요청의 정원 초과를 구조적으로 차단')}
+              </ul>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
+                <Link to="/domains/cases?case=concurrency-strategy" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
+                  대표사례에서 자세히 보기 →
+                </Link>
               </p>
-              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>결과</strong> — <code>incrementParticipantsIfAvailable</code> 원자적 UPDATE 한 문장으로 정원 초과가 구조적으로 불가능.
-              </p>
-              <Link to="/domains/cases?case=concurrency-strategy" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
-                대표사례에서 자세히 보기 →
-              </Link>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>
@@ -456,15 +464,23 @@ ORDER BY mp.joinedAt DESC`}</CodeBlock>
               >
                 E. 참여 가능 목록 단순화
               </h3>
-              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>문제</strong> — 참가자 COUNT 집계용 상관 서브쿼리(이후 LEFT JOIN + GROUP BY + HAVING)가 필요했음.
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('참가자 COUNT 집계용 상관 서브쿼리 → LEFT JOIN + GROUP BY + HAVING을 거쳐, 현재는 currentParticipants 카운터 컬럼 도입으로 집계 자체를 제거')}
+                {li('JOIN 없는 직접 비교 WHERE절만으로 참여 가능 여부 판정')}
+              </ul>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
+                <Link to="/domains/cases?case=subquery-optimization" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
+                  대표사례에서 자세히 보기 → (서브쿼리→JOIN 전환 단계의 실측)
+                </Link>
               </p>
-              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>결과</strong> — <code>currentParticipants</code> 카운터 컬럼 도입 후 집계 자체가 필요 없어져, JOIN 없는 직접 비교 WHERE절로 더 단순화(대표사례는 그 이전 단계인 서브쿼리→JOIN 전환 실측).
-              </p>
-              <Link to="/domains/cases?case=subquery-optimization" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
-                대표사례에서 자세히 보기 →
-              </Link>
             </Card>
           </section>
           <section

@@ -493,15 +493,24 @@ if (readFrom != null) {
               >
                 E. 참여자 조회 N+1 개선
               </h3>
-              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>문제</strong> — 채팅방 목록 변환 시 Converter가 LAZY 참여자 컬렉션에 접근해 채팅방 수만큼 N+1. 처음엔 Hibernate Statistics API로 "21→4"로 측정됐으나, 실제 SQL 로그로 재검증하니 41개였음(측정 도구 자체의 함정).
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('채팅방 목록 변환 시 Converter가 LAZY 참여자 컬렉션에 접근하던 것을 참여자 배치 조회 후 서비스 레이어에서 직접 세팅하도록 변경')}
+                {li('쿼리 수 측정은 Hibernate Statistics API가 아니라 SQL 로그 기준 — Statistics API는 파생 쿼리·lazy 초기화를 누락해 실제 절반만 집계함')}
+                {li('41 → 4쿼리, 167 → 70ms')}
+              </ul>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
+                <Link to="/domains/cases?case=measurement-tool" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
+                  대표사례에서 자세히 보기 →
+                </Link>
               </p>
-              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>결과</strong> — 참여자 배치 조회 후 서비스 레이어에서 직접 세팅. 41 → 4쿼리, 167 → 70ms.
-              </p>
-              <Link to="/domains/cases?case=measurement-tool" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
-                대표사례에서 자세히 보기 →
-              </Link>
             </Card>
           </section>
           <section

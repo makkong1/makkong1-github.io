@@ -368,15 +368,16 @@ else                results = findByOrderByRatingDesc(...);`}</CodeBlock>
               >
                 B. 초기 로드 최적화
               </h3>
-              <p style={{ margin: "0 0 0.5rem", color: "var(--text-secondary)", lineHeight: "1.75", fontSize: "0.9rem" }}>
-                <strong style={{ color: "var(--text-color)" }}>문제</strong> — size 제한 없이 전체 22,699건 로드(22.4MB, 531.8ms) → 전송량·메모리 병목.
+              <ul style={{ listStyle: "none", padding: 0, margin: 0, color: "var(--text-secondary)", lineHeight: "1.8" }}>
+                {li("size 제한 없이 전체 로드하던 것을 반경 파라미터 기반 조회로 전환")}
+                {li("반경은 1차 ST_Within(bounding box)으로 공간 인덱스를 태워 후보를 좁히고, 2차 ST_Distance_Sphere로 정확한 원형 거리 재필터")}
+                {li("22.4MB(531.8ms) → 100KB(50.9ms)")}
+              </ul>
+              <p style={{ margin: "0.75rem 0 0", fontSize: "0.86rem" }}>
+                <Link to="/domains/cases?case=spatial-search" style={{ color: "var(--link-color)", fontWeight: 600, textDecoration: "none" }}>
+                  대표사례에서 자세히 보기 →
+                </Link>
               </p>
-              <p style={{ margin: "0 0 0.5rem", color: "var(--text-secondary)", lineHeight: "1.75", fontSize: "0.9rem" }}>
-                <strong style={{ color: "var(--text-color)" }}>결과</strong> — 반경 검색 + 이중 공간 필터(ST_Within → ST_Distance_Sphere)로 100KB, 50.9ms.
-              </p>
-              <Link to="/domains/cases?case=spatial-search" style={{ color: "var(--link-color)", fontWeight: 600, textDecoration: "none", fontSize: "0.9rem" }}>
-                대표사례에서 자세히 보기 →
-              </Link>
             </Card>
 
             <Card style={{ marginBottom: "1rem" }}>

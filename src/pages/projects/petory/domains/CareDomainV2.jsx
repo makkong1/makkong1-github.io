@@ -355,15 +355,23 @@ function CareDomainV2() {
               >
                 A. 거래 확정 Race Condition
               </h3>
-              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>문제</strong> — 두 사용자가 동시에 거래를 확정하면 격리수준 때문에 서로 상대의 미커밋 확정을 못 봐 둘 다 대기 상태(stuck state)에 머무름.
+              <ul
+                style={{
+                  listStyle: 'none',
+                  padding: 0,
+                  margin: 0,
+                  color: 'var(--text-secondary)',
+                  lineHeight: '1.8',
+                }}
+              >
+                {li('두 참여자 상태를 함께 판단하는 check-then-act라 원자적 UPDATE로 표현 불가 — Conversation 비관적 락으로 직렬화')}
+                {li('동시 확정 시 서로의 미커밋 확정을 못 봐 stuck state에 머무르던 문제를 구조적으로 제거')}
+              </ul>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
+                <Link to="/domains/cases?case=concurrency-strategy" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
+                  대표사례에서 자세히 보기 →
+                </Link>
               </p>
-              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.9rem' }}>
-                <strong style={{ color: 'var(--text-color)' }}>결과</strong> — 원자적 UPDATE로 표현 불가능한 check-then-act라 <code>Conversation</code> 비관적 락으로 직렬화, stuck state 구조적으로 제거.
-              </p>
-              <Link to="/domains/cases?case=concurrency-strategy" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
-                대표사례에서 자세히 보기 →
-              </Link>
             </Card>
 
             <Card style={{ marginBottom: '1rem' }}>

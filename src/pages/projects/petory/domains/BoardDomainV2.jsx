@@ -38,22 +38,6 @@ function CodeBlock({ children }) {
   );
 }
 
-// "구현 포인트" 한 줄 필드 (문제 / 검토한 대안 / 결정 / 전·후 실측)
-function Field({ label, children }) {
-  return (
-    <p
-      style={{
-        margin: '0 0 0.5rem',
-        color: 'var(--text-secondary)',
-        lineHeight: '1.75',
-        fontSize: '0.9rem',
-      }}
-    >
-      <strong style={{ color: 'var(--text-color)' }}>{label}</strong> — {children}
-    </p>
-  );
-}
-
 const PETORY_BOARD_DOMAIN_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/board.md';
 const PETORY_BOARD_ARCH_DOC =
@@ -79,6 +63,7 @@ function BoardDomainV2() {
   ];
 
   const code = { backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.3rem', borderRadius: '4px' };
+  const li = (text) => <li style={{ marginBottom: '0.35rem' }}>• {text}</li>;
 
   return (
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
@@ -169,42 +154,55 @@ function BoardDomainV2() {
 
           {/* 3. 구현 포인트 */}
           <section id="why" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <h2 style={{ marginBottom: '0.4rem', color: 'var(--text-color)' }}>구현 포인트</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: '1rem', lineHeight: 1.7 }}>
-              각 결정을 <strong>예전 문제 → 검토한 대안 → 결정 → 전·후 실측</strong> 순으로.
-            </p>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>구현 포인트</h2>
 
             {/* 3-1 */}
             <Card style={{ marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                A. 목록 조회를 "조인 하나 + 배치 둘"로 나눈 이유
+                A. 목록 조회 — 조인 하나 + 배치 둘
               </h3>
-              <Field label="문제">목록 100건에서 작성자·반응·첨부가 각각 LAZY라 <code style={code}>1 + 3N = 301쿼리</code>(787ms).</Field>
-              <Field label="결과">301 → 3쿼리, 787 → 38ms.</Field>
-              <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
-                대표사례에서 자세히 보기 →
-              </Link>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li(<>작성자(<code style={code}>@ManyToOne</code>)는 JOIN FETCH로 목록과 함께 로딩</>)}
+                {li(<>반응·첨부는 컬렉션이라 게시글 ID <code style={code}>IN</code> 배치로 따로 조회 후 <code style={code}>Map</code> 병합</>)}
+                {li(<><code style={code}>Page.map</code> 대신 배치 변환기(<code style={code}>toDTOList</code>) 사용 — N+1 재발 방지</>)}
+                {li('301쿼리(787ms) → 3쿼리(38ms), 쿼리 수는 데이터 규모와 무관하게 고정')}
+              </ul>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
+                <Link to="/domains/cases?case=list-n-plus-one" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
+                  대표사례에서 자세히 보기 →
+                </Link>
+              </p>
             </Card>
 
             {/* 3-2 */}
             <Card style={{ marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                B. 깊은 페이지에서 키셋이 아니라 지연조인인 이유
+                B. 깊은 페이지 — 지연조인 + 커버링 인덱스
               </h3>
-              <Field label="문제"><code style={code}>OFFSET 49,980</code> 요청 시 10만 행을 검사하고 0행 반환(≈133ms). 페이지 번호 점프 UI 때문에 키셋 페이징은 탈락.</Field>
-              <Field label="결과">깊은 페이지 133ms → 24~32ms, 페이지 결손 23.8% 검증.</Field>
-              <Link to="/domains/cases?case=deep-paging" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none', fontSize: '0.9rem' }}>
-                대표사례에서 자세히 보기 →
-              </Link>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li(<><code style={code}>author_visible</code> 컬럼 비정규화(트리거 동기화)로 users 조인 제거</>)}
+                {li('1단계: idx만 커버링 인덱스로 깊은 skip, 2단계: 살아남은 20건만 작성자 조인')}
+                {li('COUNT는 단일 테이블로 분리 조회')}
+                {li('페이지 번호 점프 UI(PageNavigation) 유지를 위해 키셋 대신 지연조인 선택')}
+                {li('깊은 페이지 133ms → 24~32ms, 페이지 결손 23.8% 검증')}
+              </ul>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.86rem' }}>
+                <Link to="/domains/cases?case=deep-paging" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
+                  대표사례에서 자세히 보기 →
+                </Link>
+              </p>
             </Card>
 
             {/* 3-3 */}
             <Card style={{ marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                C. 조회수·내 글 목록을 클라이언트 값으로 판정하지 않는 이유
+                C. 조회수·내 글 목록 — 서버 인증 주체 기준
               </h3>
-              <Field label="문제">조회수 증가를 클라가 보낸 <code style={code}>viewerId</code>로 판정 → 조작 가능. <code style={code}>my-posts</code>도 클라 <code style={code}>userId</code>를 신뢰해 남의 글을 반환.</Field>
-              <Field label="결정">대상 유저는 항상 인증 주체(<code style={code}>CustomUserDetails</code>)에서 서버가 주입. 중복 조회수는 <code style={code}>board_view_log(board_id, user_id)</code> 유니크 제약 기반 <code style={code}>insertIgnore</code>로, 1행 이상 삽입됐을 때만 증가.</Field>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li(<>대상 유저는 항상 인증 주체(<code style={code}>CustomUserDetails</code>)에서 서버가 주입 — 클라이언트 파라미터 신뢰 안 함</>)}
+                {li(<>중복 조회수 방지는 <code style={code}>board_view_log(board_id, user_id)</code> 유니크 제약 + <code style={code}>insertIgnore</code></>)}
+                {li('insertIgnore가 1행 이상 삽입됐을 때만 조회수 증가')}
+              </ul>
               <CodeBlock>{`private boolean shouldIncrementView(Board board, Long viewerId) {
     if (viewerId == null) return false;
     // board_view_log(board_id, user_id) UNIQUE — 첫 조회만 1 반환
@@ -215,30 +213,39 @@ function BoardDomainV2() {
             {/* 3-4 */}
             <Card style={{ marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                D. 게시글 상세 캐시를 뺀 이유
+                D. 게시글 상세 캐시 제거
               </h3>
-              <Field label="문제">Redis 상세 캐시(<code style={code}>@Cacheable</code>)가 히트되면 메서드 본문이 실행 안 되니 <strong>조회수 증가 로직도 같이 스킵</strong> → TTL 동안 조회수 정체(정합성 버그).</Field>
-              <Field label="결정">캐시를 완전히 제거하고 매 조회 실시간 DB. 대신 N+1은 <code style={code}>findByIdWithUser</code>(fetch join)로 작성자까지 한 번에 가져와 방지. "성능(캐시)보다 조회수 정합성이 우선"이라는 판단.</Field>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li(<>Redis 상세 캐시(<code style={code}>@Cacheable</code>)가 히트되면 조회수 증가 로직도 같이 스킵되던 문제라 캐시를 완전히 제거</>)}
+                {li('매 조회 실시간 DB 조회로 전환')}
+                {li(<>N+1은 <code style={code}>findByIdWithUser</code>(fetch join)로 작성자까지 한 번에 로딩해 방지</>)}
+              </ul>
             </Card>
 
             {/* 3-5 */}
             <Card style={{ marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                E. 인기글 스냅샷을 병렬 배치로 뽑는 이유
+                E. 인기글 스냅샷 — 병렬 배치 집계
               </h3>
-              <Field label="문제">스냅샷 생성 시 좋아요·댓글·조회수 3개 배치를 순차 실행 + 스냅샷마다 첨부를 개별 조회 → 30개면 파일 조회만 31쿼리.</Field>
-              <Field label="결정">3개 카운트를 <code style={code}>CompletableFuture.supplyAsync</code>로 병렬 실행 후 <code style={code}>allOf</code>로 통합, 첨부는 <code style={code}>IN</code> 배치로 30개 한 번에. 인기 점수 = <code style={code}>likes*3 + comments*2 + views</code>.</Field>
-              <Field label="실측">첨부 조회 31 → 2쿼리(스냅샷 30개 기준).</Field>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li(<>좋아요·댓글·조회수 3개 카운트를 <code style={code}>CompletableFuture.supplyAsync</code>로 병렬 실행 후 <code style={code}>allOf</code>로 통합</>)}
+                {li('첨부는 스냅샷 ID IN 배치로 한 번에 조회')}
+                {li(<>인기 점수 = <code style={code}>likes*3 + comments*2 + views</code></>)}
+                {li('첨부 조회 31 → 2쿼리(스냅샷 30개 기준)')}
+              </ul>
             </Card>
 
             {/* 3-6 */}
             <Card style={{ marginBottom: '1rem' }}>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                F. 검색을 LIKE가 아니라 FULLTEXT(ngram)로 짠 이유
+                F. 검색 — FULLTEXT(ngram)
               </h3>
-              <Field label="문제">제목·내용 검색이 <code style={code}>LIKE '%kw%'</code>라 풀스캔. 닉네임 검색은 User·Board 2쿼리 분리. 관리자 검색은 CLOB에 <code style={code}>lower()</code>/<code style={code}>MATCH</code>가 SQL 오류로 HTTP 500.</Field>
-              <Field label="결정">제목+내용은 FULLTEXT 인덱스(<code style={code}>WITH PARSER ngram</code> — 한글 단어 검색)로 <code style={code}>MATCH...AGAINST</code>, 닉네임은 JOIN 1쿼리, 관리자 500은 <code style={code}>FunctionContributor</code>로 해결.</Field>
-              <Field label="실측">닉네임 2 → 1쿼리, 관리자 검색 500 → 정상.</Field>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li(<>제목+내용은 FULLTEXT 인덱스(<code style={code}>WITH PARSER ngram</code> — 한글 단어 검색)로 <code style={code}>MATCH...AGAINST</code></>)}
+                {li('닉네임 검색은 JOIN 1쿼리로 통합')}
+                {li(<>관리자 검색의 CLOB <code style={code}>lower()</code>/<code style={code}>MATCH</code> SQL 오류는 <code style={code}>FunctionContributor</code>로 해결</>)}
+                {li('닉네임 2 → 1쿼리, 관리자 검색 500 → 정상')}
+              </ul>
               <CodeBlock>{`switch (searchType.toUpperCase()) {
   case "NICKNAME":
     boardPage = boardRepository.searchByNicknameWithPaging(keyword, pageable);
@@ -254,10 +261,13 @@ function BoardDomainV2() {
             {/* 3-7 */}
             <Card>
               <h3 style={{ marginBottom: '0.75rem', color: 'var(--text-color)', fontSize: '1rem' }}>
-                G. 반응(좋아요/싫어요)을 조회-분기 + insertIgnore로 처리하는 이유
+                G. 반응(좋아요/싫어요) 처리
               </h3>
-              <Field label="문제">같은 유저가 같은 글에 반응을 중복으로 남기거나, 좋아요↔싫어요 전환·취소를 처리해야 함. 중복 반응을 구조적으로 막아야 함.</Field>
-              <Field label="결정"><code style={code}>board_reaction(board_idx, user_idx)</code> 유니크 제약 기반. 기존 반응 조회 후 분기 — 같은 타입이면 취소, 다른 타입이면 <code style={code}>changeReactionType</code>으로 전환(<code style={code}>setReactionType</code> 직접 노출 대신 캡슐화), 없으면 <code style={code}>insertIgnore</code>로 신규(유니크로 동시 중복 삽입 방지). <code style={code}>likeCount</code>/<code style={code}>dislikeCount</code>는 즉시 갱신.</Field>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, color: 'var(--text-secondary)', lineHeight: '1.8' }}>
+                {li(<><code style={code}>board_reaction(board_idx, user_idx)</code> 유니크 제약 기반</>)}
+                {li(<>기존 반응 조회 후 분기 — 같은 타입이면 취소, 다른 타입이면 <code style={code}>changeReactionType</code>으로 전환(캡슐화), 없으면 <code style={code}>insertIgnore</code>로 신규</>)}
+                {li(<><code style={code}>likeCount</code>/<code style={code}>dislikeCount</code>는 즉시 갱신(delta 반영, DB 재조회 없음)</>)}
+              </ul>
               <CodeBlock>{`Optional<BoardReaction> existing =
     boardReactionRepository.findByBoardAndUser(board, user);
 
