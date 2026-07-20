@@ -93,18 +93,19 @@ export const PETORY_FLOW_GROUPS = [
 
     FE->>Care: POST 케어 요청(요청자 세션)
     Care-->>FE: CareRequest 저장
-    FE->>Chat: 지원 기반 채팅방 조회·생성
+    FE->>Chat: POST /conversations/care-request (relatedType=CARE_APPLICATION 고정)
     Chat->>Chat: confirmCareDeal(Conversation 비관적 락 + 양쪽 확정)
 
-    alt relatedType == CARE_REQUEST
+    alt relatedType == CARE_APPLICATION (현재 실제로 생성되는 유일한 값)
+        Note over Chat: 상태 전이·에스크로 생성 없음 — 로그만 남김
+    else relatedType == CARE_REQUEST (설계상 존재, 생성 경로 없음)
         Chat->>Care: CareApplication 승인/생성 + CareRequest IN_PROGRESS
         Chat->>Pay: PetCoinEscrow 생성·차감 시도
         Pay-->>Chat: 에스크로 상태
-    else relatedType == CARE_APPLICATION
-        Note over Chat: 현재 상태 전이·에스크로 생성 없음
     end
 
-    Note over Pay: 완료/취소 시 Payment 도메인에서 지급·환불`,
+    Note over Chat: ⚠️ 방 생성이 항상 CARE_APPLICATION만 만들어 아래 분기는 현재 도달 불가 (docs/domains/care.md §9)
+    Note over Pay: 완료/취소 시 Payment 도메인에서 지급·환불(상태 전이가 일어난 요청 한정)`,
       },
       {
         seq: 'chat',
@@ -117,9 +118,10 @@ export const PETORY_FLOW_GROUPS = [
     participant Chat as Chat 도메인
     participant DB as DB
 
-    FE->>Care: 케어 비즈 요청(API)
-    Care->>Chat: CARE_REQUEST 또는 CARE_APPLICATION related로 방 생성 위임
-    Chat->>Chat: REQUIRES_NEW·참여자 검증 DIRECT 재사용
+    FE->>Care: 케어 비즈 요청(API, Chat과 별도 호출)
+    FE->>Chat: POST /conversations/care-request (relatedType=CARE_APPLICATION 고정)
+    Note over Care,Chat: Care 백엔드는 Chat에 의존하지 않음 — 프론트가 두 API를 각각 호출
+    Chat->>Chat: REQUIRES_NEW·기존 방 재사용 체크
     Chat->>DB: Conversation · Participant 저장
     DB-->>Chat: 방 식별자
 
@@ -433,9 +435,10 @@ export const PETORY_FLOW_GROUPS = [
     participant Chat as Chat 도메인
     participant DB as DB
 
-    FE->>Care: 케어 비즈 요청(API)
-    Care->>Chat: CARE_REQUEST 또는 CARE_APPLICATION related로 방 생성 위임
-    Chat->>Chat: REQUIRES_NEW·참여자 검증 DIRECT 재사용
+    FE->>Care: 케어 비즈 요청(API, Chat과 별도 호출)
+    FE->>Chat: POST /conversations/care-request (relatedType=CARE_APPLICATION 고정)
+    Note over Care,Chat: Care 백엔드는 Chat에 의존하지 않음 — 프론트가 두 API를 각각 호출
+    Chat->>Chat: REQUIRES_NEW·기존 방 재사용 체크
     Chat->>DB: Conversation · Participant 저장
     DB-->>Chat: 방 식별자
 
