@@ -39,12 +39,12 @@ const corePillars = [
   "sort=stable 추천순",
   "반경·size=300",
   "지도 「이 지역」",
-  "CSV 배치 적재",
+  "CSV + API 동기화 적재",
   "목록/추천 API 분리",
 ];
 ```
 
-주의: 첨부 JSX의 `"JSON·CSV 적재"`는 현재 코드 기준으로는 `"CSV 배치 적재"`가 더 안전하다. JSON 적재 근거를 포트폴리오 repo나 과거 문서에서 별도로 확인할 수 있으면 `"JSON·CSV 적재"`를 유지해도 된다.
+주의: 첨부 JSX의 `"JSON·CSV 적재"`는 현재 코드 기준으로는 확인되지 않는다. 현재 활성 적재 경로는 **CSV 배치 임포트 + 공공데이터 오픈API 자동 동기화** 두 가지이므로 `"CSV + API 동기화 적재"`가 정확하다.
 
 ---
 
@@ -219,11 +219,14 @@ LIMIT :limit
 - `backend/main/java/com/linkup/Petory/domain/location/repository/SpringDataJpaLocationServiceRepository.java`
 - `docs/architecture/location/위치 기반 서비스 아키텍처.md`
 
-### E. 시설 적재 - CSV 배치 경로
+### E. 시설 적재 - CSV 배치 + 공공데이터 오픈API 동기화
 
 핵심 문구:
 
-현재 코드 기준의 활성 시설 적재 경로는 공공데이터 CSV 배치 임포트다. `AdminLocationController`가 MASTER 전용 업로드/경로 임포트 API를 제공하고, `PublicDataLocationService`가 CSV 파싱, 유효성 검증, 엔티티 변환을 맡는다. 저장은 `LocationServiceBatchWriter`로 분리해 대량 데이터 처리 트랜잭션 경계를 관리한다.
+시설 데이터 적재는 두 경로다. (1) 관리자가 파일을 올리는 **CSV 배치 임포트**, (2) 공공데이터 오픈API(data.go.kr odcloud)를 주기적으로 받아 멱등 upsert 하는 **자동 동기화 파이프라인**. `AdminLocationController`가 두 경로의 MASTER 전용 API를 제공하고, 대량 저장은 `LocationServiceBatchWriter`(`@Transactional(REQUIRES_NEW)`)로 트랜잭션 경계를 분리한다.
+
+- **CSV 경로**: `PublicDataLocationService`가 CSV 파싱·검증·엔티티 변환을 맡는다. 수동 업로드/서버경로 임포트.
+- **API 동기화 경로**: `PublicDataApiClient`가 odcloud를 페이지 단위로 순회(재시도 2회)하고 한글 컬럼키를 정규화 매핑한다. `PublicDataSyncService`가 시설명+주소로 조회해 **신규 INSERT / 변경 UPDATE / 무변경 skip** 하되, UPDATE 시 공공데이터 필드만 복사해 앱 관리 필드(`rating`, `reviewCount`, `isDeleted`, `geo_point`)를 보존한다. `PublicDataSyncScheduler`가 매일 03:00 자동 실행(`SchedulingConfig` 중앙 게이팅)하고, run 당 1행을 `location_sync_log`(V8)에 상태·건수로 남긴다.
 
 API:
 
@@ -231,18 +234,25 @@ API:
 |---|---|---|
 | `POST /api/admin/location-services/import-public-data` | `MASTER` | CSV 파일 업로드 |
 | `POST /api/admin/location-services/import-public-data-path` | `MASTER` | 서버 경로 CSV 임포트 |
+| `POST /api/admin/location-services/sync-public-data` | `MASTER` | 공공데이터 오픈API 동기화(수동 트리거) |
 
 페이지 문구 주의:
 
-- 첨부 JSX의 `"JSON·CSV 이중 경로"`는 현재 코드 기준으로는 확인되지 않는다.
+- 첨부 JSX의 `"JSON·CSV 이중 경로"`는 현재 코드 기준으로는 확인되지 않는다. 대신 `"CSV + 오픈API 동기화"` 이중 경로로 표현한다.
 - `LocationServiceAdminService.loadInitialData()`는 카카오맵 API 의존성 제거로 비활성화되어 있고, CSV 배치 업로드 사용 메시지를 반환한다.
+- 서비스키의 `+`는 URL 인코딩(`URLEncoder` + `build(true)`)으로 공백 오해석을 막는다 — 실제 라이브 호출로 재현·수정한 버그.
 
 근거:
 
 - `backend/main/java/com/linkup/Petory/domain/admin/controller/AdminLocationController.java`
 - `backend/main/java/com/linkup/Petory/domain/location/service/PublicDataLocationService.java`
+- `backend/main/java/com/linkup/Petory/domain/location/service/PublicDataApiClient.java`
+- `backend/main/java/com/linkup/Petory/domain/location/service/PublicDataSyncService.java`
+- `backend/main/java/com/linkup/Petory/domain/location/service/PublicDataSyncScheduler.java`
 - `backend/main/java/com/linkup/Petory/domain/location/service/LocationServiceBatchWriter.java`
+- `backend/main/java/com/linkup/Petory/domain/location/entity/LocationSyncLog.java`
 - `docs/architecture/location/위치서비스_공공데이터_CSV_배치_임포트_구현.md`
+- `docs/architecture/location/위치서비스_공공데이터_오픈API_동기화_파이프라인.md`
 
 ### F. 지역 계층 검색은 보조 경로로 둔다
 
@@ -319,6 +329,8 @@ const PETORY_LOCATION_ARCH =
   'https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%20%EA%B8%B0%EB%B0%98%20%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md';
 const PETORY_LOCATION_IMPORT_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%EC%84%9C%EB%B9%84%EC%8A%A4_%EA%B3%B5%EA%B3%B5%EB%8D%B0%EC%9D%B4%ED%84%B0_CSV_%EB%B0%B0%EC%B9%98_%EC%9E%84%ED%8F%AC%ED%8A%B8_%EA%B5%AC%ED%98%84.md';
+const PETORY_LOCATION_SYNC_DOC =
+  'https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%EC%84%9C%EB%B9%84%EC%8A%A4_%EA%B3%B5%EA%B3%B5%EB%8D%B0%EC%9D%B4%ED%84%B0_%EC%98%A4%ED%94%88API_%EB%8F%99%EA%B8%B0%ED%99%94_%ED%8C%8C%EC%9D%B4%ED%94%84%EB%9D%BC%EC%9D%B8.md';
 const PETORY_RECOMMENDATION_DOC =
   'https://github.com/makkong1/Petory/blob/main/docs/domains/recommendation.md';
 ```

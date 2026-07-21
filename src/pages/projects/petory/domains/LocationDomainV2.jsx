@@ -44,6 +44,8 @@ const PETORY_LOCATION_ARCH =
   "https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%20%EA%B8%B0%EB%B0%98%20%EC%84%9C%EB%B9%84%EC%8A%A4%20%EC%95%84%ED%82%A4%ED%85%8D%EC%B2%98.md";
 const PETORY_LOCATION_IMPORT_DOC =
   "https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%EC%84%9C%EB%B9%84%EC%8A%A4_%EA%B3%B5%EA%B3%B5%EB%8D%B0%EC%9D%B4%ED%84%B0_CSV_%EB%B0%B0%EC%B9%98_%EC%9E%84%ED%8F%AC%ED%8A%B8_%EA%B5%AC%ED%98%84.md";
+const PETORY_LOCATION_SYNC_DOC =
+  "https://github.com/makkong1/Petory/blob/main/docs/architecture/location/%EC%9C%84%EC%B9%98%EC%84%9C%EB%B9%84%EC%8A%A4_%EA%B3%B5%EA%B3%B5%EB%8D%B0%EC%9D%B4%ED%84%B0_%EC%98%A4%ED%94%88API_%EB%8F%99%EA%B8%B0%ED%99%94_%ED%8C%8C%EC%9D%B4%ED%94%84%EB%9D%BC%EC%9D%B8.md";
 
 function LocationDomainV2() {
   const sections = [
@@ -58,7 +60,7 @@ function LocationDomainV2() {
     "sort=stable 추천순",
     "반경·size=300",
     "지도 「이 지역」",
-    "CSV 배치 적재",
+    "CSV + API 동기화 적재",
     "목록/추천 API 분리",
   ];
 
@@ -489,8 +491,21 @@ ORDER BY
                   fontSize: "1rem",
                 }}
               >
-                E. 시설 적재 — CSV 배치 경로
+                E. 시설 적재 — CSV 배치 + 공공데이터 오픈API 동기화
               </h3>
+              <p
+                style={{
+                  margin: "0 0 0.75rem",
+                  color: "var(--text-secondary)",
+                  lineHeight: "1.8",
+                }}
+              >
+                적재 경로는 두 가지다. 관리자가 파일을 올리는 CSV 배치 임포트와,
+                공공데이터 오픈API(data.go.kr odcloud)를 주기적으로 받아 멱등
+                upsert 하는 자동 동기화 파이프라인. 대량 저장은
+                LocationServiceBatchWriter(@Transactional REQUIRES_NEW)로 트랜잭션
+                경계를 분리한다.
+              </p>
               <ul
                 style={{
                   listStyle: "none",
@@ -501,18 +516,35 @@ ORDER BY
                 }}
               >
                 {li(
-                  "CSV: /api/admin/location-services/import-public-data (AdminLocationController, MASTER)",
+                  "CSV 업로드: /api/admin/location-services/import-public-data (AdminLocationController, MASTER)",
                 )}
                 {li(
                   "CSV 경로 임포트: /api/admin/location-services/import-public-data-path",
                 )}
                 {li(
-                  "PublicDataLocationService가 CSV 파싱·검증·엔티티 변환을 담당",
+                  "API 동기화(수동): /api/admin/location-services/sync-public-data (MASTER)",
                 )}
                 {li(
-                  "LocationServiceBatchWriter로 대량 저장 트랜잭션 경계를 분리",
+                  "PublicDataApiClient: odcloud 페이징 순회·재시도, 한글 컬럼키 정규화 매핑",
+                )}
+                {li(
+                  "PublicDataSyncService: 시설명+주소로 신규 INSERT / 변경 UPDATE / 무변경 skip (멱등 upsert)",
+                )}
+                {li(
+                  "UPDATE는 공공데이터 필드만 복사 — rating·리뷰수·geo_point 등 앱 관리 필드 보존",
+                )}
+                {li(
+                  "PublicDataSyncScheduler: 매일 03:00 자동 실행 (SchedulingConfig 중앙 게이팅)",
+                )}
+                {li(
+                  "location_sync_log(V8): run 당 상태(SUCCESS/PARTIAL/FAILED)·건수 기록",
                 )}
               </ul>
+              <CodeBlock>{`// upsert 분기 (PublicDataSyncService)
+findFirstByNameAndAddress 없음  -> INSERT (insertBatch)
+있고 공공필드 변경됨            -> UPDATE (updateBatch, 앱 관리 필드 보존)
+있고 변경 없음                 -> skip
+API 전체 실패 -> FAILED / 일부 배치 실패 -> PARTIAL`}</CodeBlock>
             </Card>
 
             <Card>
@@ -607,6 +639,20 @@ lat/lng 없음 + 지역 없음 + keyword 있음 -> FULLTEXT 검색
                     }}
                   >
                     위치서비스 CSV 배치 임포트 문서
+                  </a>
+                </li>
+                <li>
+                  •{" "}
+                  <a
+                    href={PETORY_LOCATION_SYNC_DOC}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      color: "var(--link-color)",
+                      textDecoration: "none",
+                    }}
+                  >
+                    위치서비스 공공데이터 오픈API 동기화 파이프라인 문서
                   </a>
                 </li>
               </ul>
