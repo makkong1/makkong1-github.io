@@ -54,6 +54,33 @@ function MetricsTable({ rows }) {
   );
 }
 
+function StrategiesTable({ rows }) {
+  const th = { padding: '0.5rem 0.75rem', textAlign: 'left', color: 'var(--text-color)', fontSize: '0.85rem' };
+  const td = { padding: '0.5rem 0.75rem', fontSize: '0.88rem', verticalAlign: 'top' };
+  return (
+    <div style={{ overflowX: 'auto', margin: '0.5rem 0 0' }}>
+      <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)' }}>
+        <thead>
+          <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
+            <th style={th}>도메인</th>
+            <th style={th}>전략</th>
+            <th style={th}>왜</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map(([domain, strategy, why], i) => (
+            <tr key={domain} style={{ borderBottom: i < rows.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
+              <td style={{ ...td, color: 'var(--text-color)', fontWeight: 600, whiteSpace: 'nowrap' }}>{domain}</td>
+              <td style={{ ...td, color: 'var(--text-color)' }}>{strategy}</td>
+              <td style={td}>{why}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function PetoryCasesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const active = useMemo(() => resolvePetoryCaseSelection(searchParams), [searchParams]);
@@ -126,6 +153,14 @@ function PetoryCasesPage() {
             <Field label="문제">{active.problem}</Field>
             {active.alternatives && <Field label="검토한 대안">{active.alternatives}</Field>}
             <Field label="결정">{active.decision}</Field>
+
+            {active.strategies && (
+              <>
+                <p style={{ margin: '0.3rem 0 0', color: 'var(--text-color)', fontWeight: 600, fontSize: '0.9rem' }}>도메인별 전략</p>
+                <StrategiesTable rows={active.strategies} />
+              </>
+            )}
+
             {active.verify && <Field label="검증">{active.verify}</Field>}
 
             {active.metrics && (

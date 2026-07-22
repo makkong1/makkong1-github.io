@@ -8,7 +8,7 @@
  * @typedef {{
  *   id: string, label: string, domain: string, domainPath: string, title: string,
  *   context?: string, problem: string, alternatives?: string, decision: string,
- *   verify?: string, metrics?: string[][], code?: string, codeLang?: string,
+ *   strategies?: string[][], verify?: string, metrics?: string[][], code?: string, codeLang?: string,
  * }} PetoryCase
  */
 
@@ -72,25 +72,35 @@ SELECT ... FROM board b JOIN users u ON ...
   {
     id: 'concurrency-strategy',
     label: '동시성 전략 선택',
-    domain: 'Meetup · Care',
-    domainPath: '/domains/meetup',
-    title: '동시성 — 원자적 UPDATE vs 비관적 락 (전략 선택)',
+    domain: 'User · Meetup · Payment · Care',
+    domainPath: '/domains/user',
+    title: '동시성 — 원자적 UPDATE로도 못 막은 데드락 (전략 선택 + 재검증)',
     context:
-      '이 프로젝트엔 동시성 지점이 여러 곳(펫코인 잔액·모임 참가 인원·케어 거래 확정 등). 8개 시나리오에서 재현하고, 성격에 따라 전략을 나눴다.',
+      '동시성 지점이 여러 도메인에 흩어져 있다(경고·모임 인원·펫코인 잔액·케어 확정). "동시성 = 무조건 락"이 아니라 연산 성격에 따라 전략을 나눴고, 그중 가장 배운 게 많았던 경고(user) 사례를 주력으로 깊게 다룬다.',
     problem:
-      '동시성 지점이 성격별로 세 갈래였다. 모임 참가: 동시 3명이 각자 정원 미달(current < max)을 통과해 초과. 펫코인 차감: 여러 스레드가 잔액을 각자 읽고 덮어써 Lost Update. 케어 확정: 양측 동시 확정 시 서로의 미커밋 확정을 못 봐 둘 다 대기(Stuck State).',
-    alternatives:
-      '모든 지점에 비관적 락을 걸 수도 있었으나, 모임 참가처럼 조건부 증가 한 문장(WHERE current < max)으로 표현되는 연산까지 락을 걸면 불필요한 락 대기·데드락 관리 비용만 커진다. 그래서 "읽고 분기"가 꼭 필요한 연산(펫코인, 케어 확정)에만 락을 남겼다.',
+      '[경고 부여] warningCount 동시 증가를 원자적 UPDATE로 막고 테스트도 통과해 끝난 줄 알았다. 그런데 재검증에서 두 가지 반전 — ① 테스트 단언(경고수 == 기록수)이 둘 다 같은 트랜잭션이라 항상 성립하는 항진명제여서 방어를 증명하지 못했다. ② 실제로는 Lost Update가 아니라 Deadlock: 경고 기록 INSERT(FK로 users 행 S락) → warningCount UPDATE(같은 행 X락) 순서라, 동시 요청이 모두 S락을 쥔 채 X락 승격을 노려 순환 대기 → 5개 중 4개가 롤백돼 경고가 유실됐다.',
     decision:
-      '연산 성격별로 전략을 나눔. 모임 인원(단순 조건부 증가)은 원자적 UPDATE 한 문장(WHERE current < max) — 속도가 아니라 성격 기준. 펫코인 차감(잔액 부족 검증 필요)은 현재값을 읽고 분기해야 해 비관적 락. 케어 확정(두 참여자 상태를 함께 판단)은 원자적 UPDATE로 표현 불가라 상위 엔티티(Conversation) 락으로 직렬화.',
+      '[경고] 락 획득 순서를 바꿔 UPDATE(X락)를 INSERT(S락)보다 먼저 실행 → X락을 선점해 요청들이 순차 처리되며 데드락이 사라진다(같은 트랜잭션이라 순서만 바꿔도 정합성 동일). 테스트도 "성공 콜 수 == 최종 경고수"로 강화해 실제 결함을 구분하게 했다. 나머지 도메인은 "현재 값 검증이 필요한가"를 기준으로 전략을 나눴다.',
+    strategies: [
+      ['모임 인원 · meetup', '조건부 원자 UPDATE', 'SET current=current+1 WHERE current<max 한 문장. 락을 참가자 INSERT까지 안 끌고 감 — 경고가 어겼던 바로 그 원칙'],
+      ['펫코인 차감 · payment', '비관적 락', '잔액 "부족" 분기를 태우려면 현재값을 읽어야 함 → 원자 UPDATE로 표현 불가 → findByIdForUpdate'],
+      ['케어 확정 · care', '상위 엔티티 락', 'REPEATABLE READ서 서로 미커밋을 못 봐 둘 다 스킵(Stuck State) → 상위 Conversation 락으로 직렬화'],
+    ],
     verify:
-      '동시 3·5스레드로 재현 → 해결 후 인원 ≤ 최대, 잔액·확정 정합성 유지 확인.',
-    metrics: [['무결성', '초과·Lost Update·Stuck State', '구조적으로 불가능']],
-    codeLang: 'sql',
-    code: `UPDATE Meetup m
-   SET m.currentParticipants = m.currentParticipants + 1
- WHERE m.idx = :idx
-   AND m.currentParticipants < m.maxParticipants   -- 체크+증가를 한 문장으로`,
+      'petory_test에서 경고 동시 5요청을 트랜잭션 우회 직접 호출로 결정론적 재현. 락 순서 수정 전후로 데드락·성공 건수를 비교.',
+    metrics: [
+      ['경고 동시 5요청', '4/5 데드락 실패', '5/5 성공'],
+      ['무결성(전 도메인)', '초과·Lost Update·Stuck·데드락', '구조적으로 제거'],
+    ],
+    codeLang: 'java',
+    code: `// 문제: INSERT(FK→users 행 S락) 후 UPDATE(같은 행 X락)
+//   → 동시 요청들이 S락 쥔 채 X락 승격 시도 → 순환 대기(데드락)
+sanctionRepository.save(warning);            // FK로 users 행 S락
+usersRepository.incrementWarningCount(id);   // 같은 행 X락 승격 → 💥 Deadlock
+
+// 수정: UPDATE(X락)를 먼저 실행해 X락 선점 → 순차 처리로 데드락 소멸
+usersRepository.incrementWarningCount(id);   // X락 선점
+sanctionRepository.save(warning);            // 이미 X 보유 → 안전`,
   },
   {
     id: 'spatial-search',
