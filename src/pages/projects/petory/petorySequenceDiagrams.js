@@ -79,60 +79,48 @@ export const PETORY_FLOW_GROUPS = [
   {
     tab: 'care',
     tocLabel: 'Care',
-    defaultSeq: 'biz',
+    defaultSeq: 'contract',
     sequences: [
       {
-        seq: 'biz',
-        pillLabel: '케어·결제·매칭',
-        heading: 'Care — 요청·채팅 매칭·거래 확정·에스크로',
+        seq: 'contract',
+        pillLabel: '',
+        heading: 'Care — 등록 시 코인 보관 → 제안 → 수락(제공자) → 정산',
         chart: `sequenceDiagram
     participant FE as 프론트엔드
-    participant Care as Care 도메인
-    participant Chat as Chat 도메인
-    participant Pay as Payment 도메인
+    participant CR as CareRequestController
+    participant CO as CareOfferController
+    participant Pay as PetCoinEscrowService
+    participant NF as Notification
 
-    FE->>Care: POST 케어 요청(요청자 세션)
-    Care-->>FE: CareRequest 저장
-    FE->>Chat: POST /conversations/care-request (relatedType=CARE_APPLICATION 고정)
-    Chat->>Chat: confirmCareDeal(Conversation 비관적 락 + 양쪽 확정)
+    Note over FE,Pay: ① 등록 — 돈을 확정이 아니라 여기서 잡는다
+    FE->>CR: POST /api/care-requests (요청자)
+    CR->>Pay: holdForRequest(요청, 제시 금액)
+    Pay->>Pay: 비관적 락 안에서 잔액 검사 → 차감 → HOLD
+    Note over Pay: 확정 시점에 차감하면 채팅까지 마친 뒤에야 잔액 부족이 드러난다
 
-    alt relatedType == CARE_APPLICATION (현재 실제로 생성되는 유일한 값)
-        Note over Chat: 상태 전이·에스크로 생성 없음 — 로그만 남김
-    else relatedType == CARE_REQUEST (설계상 존재, 생성 경로 없음)
-        Chat->>Care: CareApplication 승인/생성 + CareRequest IN_PROGRESS
-        Chat->>Pay: PetCoinEscrow 생성·차감 시도
-        Pay-->>Chat: 에스크로 상태
+    Note over FE,NF: ② 제안 — 요청자가 제공자를 지목 (offeredCoins 스냅샷)
+    FE->>CO: POST /api/care-offers
+    CO->>NF: CARE_OFFER_RECEIVED
+
+    Note over FE,NF: ③ 수락 — 제공자가 받는다
+    FE->>CO: POST /api/care-offers/{offerIdx}/accept (제공자)
+    CO->>CO: findByIdForUpdate(요청) — 요청 행 비관적 락
+    alt 제안 금액 ≠ 요청의 현재 금액
+        CO-->>FE: offeredAmountChanged — 금액이 바뀐 뒤의 수락을 막는다
+    else 일치
+        CO->>CO: 제안 ACCEPTED · 같은 요청의 나머지 PENDING 제안 REJECTED
+        CO->>CR: 요청 OPEN → IN_PROGRESS
+        CO->>Pay: assignProvider(지급 대상 배정)
+        CO->>NF: CARE_OFFER_ACCEPTED
     end
 
-    Note over Chat: ⚠️ 방 생성이 항상 CARE_APPLICATION만 만들어 아래 분기는 현재 도달 불가 (docs/domains/care.md §9)
-    Note over Pay: 완료/취소 시 Payment 도메인에서 지급·환불(상태 전이가 일어난 요청 한정)`,
-      },
-      {
-        seq: 'chat',
-        pillLabel: 'Chat 연계(인프라)',
-        heading:
-          'Chat — Care 연계(CARE_REQUEST/CARE_APPLICATION 후 메시지·unread·읽음)',
-        chart: `sequenceDiagram
-    participant FE as 프론트엔드
-    participant Care as Care 도메인
-    participant Chat as Chat 도메인
-    participant DB as DB
+    Note over FE,Pay: ④ 종료 — 요청자·제공자가 각각 확인해야 정산
+    FE->>CR: POST /api/care-requests/{id}/complete
+    CR->>Pay: 양쪽 확인되면 releaseToProvider (HOLD → RELEASED)
+    FE->>CR: 취소·삭제
+    CR->>Pay: refundToRequester (HOLD → REFUNDED)
 
-    FE->>Care: 케어 비즈 요청(API, Chat과 별도 호출)
-    FE->>Chat: POST /conversations/care-request (relatedType=CARE_APPLICATION 고정)
-    Note over Care,Chat: Care 백엔드는 Chat에 의존하지 않음 — 프론트가 두 API를 각각 호출
-    Chat->>Chat: REQUIRES_NEW·기존 방 재사용 체크
-    Chat->>DB: Conversation · Participant 저장
-    DB-->>Chat: 방 식별자
-
-    FE->>Chat: 메시지 전송
-    Chat->>DB: 메시지 + unread 증가
-    FE->>Chat: 목록·읽음 요청
-    alt 일반 메시지 조회 재참여
-        Chat->>DB: joinedAt 이후만
-    else 읽음 처리
-        Chat->>DB: unread 초기화 lastRead
-    end`,
+    Note over CO,NF: 제안이 끝나는 길을 셋으로 구분한다 — REJECTED(제공자 거절) ·<br/>WITHDRAWN(요청자 사정: 금액 변경·취소·삭제) · EXPIRED(아무도 안 움직임)`,
       },
     ],
   },
@@ -428,7 +416,7 @@ export const PETORY_FLOW_GROUPS = [
         seq: 'care',
         pillLabel: 'Care 연계',
         heading:
-          'Chat — Care 연계(CARE_REQUEST/CARE_APPLICATION 후 메시지·unread·읽음)',
+          'Chat — Care 연계(CARE_REQUEST 방 생성 후 메시지·unread·읽음)',
         chart: `sequenceDiagram
     participant FE as 프론트엔드
     participant Care as Care 도메인
@@ -436,7 +424,7 @@ export const PETORY_FLOW_GROUPS = [
     participant DB as DB
 
     FE->>Care: 케어 비즈 요청(API, Chat과 별도 호출)
-    FE->>Chat: POST /conversations/care-request (relatedType=CARE_APPLICATION 고정)
+    FE->>Chat: POST /api/chat/conversations (relatedType=CARE_REQUEST)
     Note over Care,Chat: Care 백엔드는 Chat에 의존하지 않음 — 프론트가 두 API를 각각 호출
     Chat->>Chat: REQUIRES_NEW·기존 방 재사용 체크
     Chat->>DB: Conversation · Participant 저장
