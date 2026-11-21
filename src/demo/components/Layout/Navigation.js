@@ -233,6 +233,13 @@ const Navigation = ({ activeTab, setActiveTab, user, onNavigateToBoard }) => {
       }, 100);
     } else if (notification.relatedType === 'CARE_REQUEST' && notification.relatedId) {
       setActiveTab('unified-map');
+    } else if (notification.type === 'PET_HEALTH_ALERT') {
+      setActiveTab('unified-map');
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('navigateToHealthAlert', {
+          detail: { category: '동물병원', groupId: 'medical' }
+        }));
+      }, 100);
     }
   };
 
@@ -720,21 +727,23 @@ const BottomNavItem = styled.button`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
+  gap: 3px;
   flex: 1;
   border: none;
   background: transparent;
-  color: ${props => props.$active ? props.theme.colors.primary : props.theme.colors.textSecondary};
+  color: ${props => props.$active ? props.theme.colors.primary : props.theme.colors.textMuted};
   font-size: 10px;
+  font-weight: ${props => props.$active ? '700' : '500'};
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: color 0.2s ease;
 
   span:first-child {
     font-size: 20px;
+    transition: transform 0.2s ${props => props.theme.easing?.spring || 'ease'};
+    transform: ${props => props.$active ? 'translateY(-1px) scale(1.08)' : 'none'};
   }
 
   &:hover {
-    background: ${props => props.theme.colors.surfaceHover};
     color: ${props => props.theme.colors.primary};
   }
 `;

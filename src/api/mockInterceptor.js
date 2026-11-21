@@ -3,6 +3,31 @@ import { isMockMode, simulateDelay } from '../utils/apiMock';
 
 // 더미데이터 매핑 (URL 패턴 -> 더미데이터 파일)
 const mockDataMap = {
+  // 케어 계약 (제안 → 수락/거절). 2026-09 에 chat 의 confirmCareDeal 에서 care 로 옮겨왔다.
+  'POST:/api/care-offers': (config) => {
+    const url = config?.url || '';
+    if (url.includes('/accept')) {
+      return Promise.resolve({ idx: 1, status: 'ACCEPTED', message: '제안을 수락했습니다. 케어 요청이 진행 중으로 바뀝니다.' });
+    }
+    if (url.includes('/reject')) {
+      return Promise.resolve({ idx: 1, status: 'REJECTED', message: '제안을 거절했습니다.' });
+    }
+    return Promise.resolve({ idx: 1, status: 'PENDING', offeredCoins: 3000, message: '제안을 보냈습니다.' });
+  },
+  'GET:/api/care-offers/between': () => Promise.resolve(null),
+  'GET:/api/care-offers/candidates': () => Promise.resolve([]),
+
+  // 반려동물 소식 — 목록 API 는 없고 알림·배너에서 1건씩 읽는다
+  'GET:/api/pet-news/': (config) => {
+    const idx = (config?.url || '').split('/').pop();
+    return Promise.resolve({
+      idx: Number(idx) || 1,
+      title: '서울시 반려동물 동반 가능 시설 안내',
+      link: 'https://news.seoul.go.kr/',
+      publishedAt: '2026-11-20T09:00:00',
+    });
+  },
+
   // 인증
   'POST:/api/auth/login': () => import('../mockData/auth.js').then(m => m.loginResponse),
   'POST:/api/auth/register': () => import('../mockData/auth.js').then(m => m.registerResponse),
@@ -91,6 +116,25 @@ const mockDataMap = {
   },
 
   // 채팅
+  // 채팅 엔드포인트가 /rooms 에서 /conversations 로 바뀌었는데 목 경로가 따라가지 않아
+  // 데모에서 채팅방 목록이 비어 있었다.
+  'GET:/api/chat/conversations': () => import('../mockData/chat.js').then(m => m.getChatRooms()),
+  'GET:/api/chat/conversations/': (config) => {
+    const url = config?.url || '';
+    const id = url.match(/\/conversations\/(\d+)/)?.[1];
+    return import('../mockData/chat.js').then(m => {
+      const rooms = m.getChatRooms();
+      const list = Array.isArray(rooms) ? rooms : (rooms?.content || []);
+      return list.find(r => String(r.idx ?? r.id) === String(id)) || list[0] || null;
+    });
+  },
+  'POST:/api/chat/conversations': () => Promise.resolve({ idx: 1, message: '데모에서는 채팅방을 새로 만들지 않습니다.' }),
+  'GET:/api/chat/messages/': (config) => {
+    const id = (config?.url || '').match(/\/conversation\/(\d+)/)?.[1];
+    return import('../mockData/chat.js').then(m => m.getMessages(id));
+  },
+  'POST:/api/chat/messages': () => Promise.resolve({ idx: Date.now(), message: '전송됨' }),
+
   'GET:/api/chat/rooms': () => import('../mockData/chat.js').then(m => m.getChatRooms()),
   'GET:/api/chat/rooms/': (config) => {
     const url = config.url || '';

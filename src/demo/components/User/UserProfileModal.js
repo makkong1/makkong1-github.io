@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { SEOUL_DISTRICTS } from '../../constants/seoulDistricts';
 import styled from 'styled-components';
 import { useAuth } from '../../contexts/AuthContext';
 import { userProfileApi, petApiClient } from '../../api/userApi';
 import { uploadApi } from '../../api/uploadApi';
 import { meetupApi } from '../../api/meetupApi';
+import EmptyState from '../Common/ui/EmptyState';
 
 const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
   const { user } = useAuth();
@@ -16,6 +18,7 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
     email: '',
     phone: '',
     location: '',
+    regionSigungu: '',
   });
   const [saving, setSaving] = useState(false);
 
@@ -72,6 +75,7 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
           email: response.data.user?.email || '',
           phone: response.data.user?.phone || '',
           location: response.data.user?.location || '',
+          regionSigungu: response.data.user?.regionSigungu || '',
         });
       } else {
         // 다른 사용자 프로필인 경우 getUserProfile 사용
@@ -325,6 +329,19 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
                         placeholder="예: 서울시 강남구"
                       />
                     </FormField>
+                    <FormField>
+                      <Label>자치구 (서울 반려동물 소식 알림)</Label>
+                      <Select
+                        value={editFormData.regionSigungu}
+                        onChange={(e) => setEditFormData(prev => ({ ...prev, regionSigungu: e.target.value }))}
+                      >
+                        <option value="">받지 않음</option>
+                        {SEOUL_DISTRICTS.map((gu) => (
+                          <option key={gu} value={gu}>{gu}</option>
+                        ))}
+                      </Select>
+                      <FieldHint>고르면 서울시가 올리는 반려동물 행사·교육·안전 소식을 알림으로 받는다. 현재는 서울만 지원한다.</FieldHint>
+                    </FormField>
                     <ButtonRow>
                       <SecondaryButton onClick={() => setIsEditMode(false)}>취소</SecondaryButton>
                       <PrimaryButton onClick={handleEditProfile} disabled={saving}>
@@ -552,9 +569,11 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
                   {petsLoading ? (
                     <LoadingMessage>펫 목록을 불러오는 중...</LoadingMessage>
                   ) : pets.length === 0 ? (
-                    <EmptyMessage>
-                      등록된 펫이 없습니다. "펫 추가" 버튼을 눌러 펫을 등록해주세요.
-                    </EmptyMessage>
+                    <EmptyState
+                      icon="🐾"
+                      title="등록된 펫이 없어요"
+                      description='"펫 추가" 버튼으로 우리 아이를 등록해주세요'
+                    />
                   ) : (
                     <PetList>
                       {pets.map((pet) => (
@@ -643,7 +662,7 @@ const UserProfileModal = ({ isOpen, userId, onClose, onUpdated }) => {
               )}
 
               {profile.reviewCount === 0 && (
-                <EmptyReviewsMessage>아직 펫케어 리뷰가 없습니다.</EmptyReviewsMessage>
+                <EmptyState icon="⭐" title="아직 펫케어 리뷰가 없어요" padding="32px 24px" iconSize="36px" />
               )}
 
               {profile.locationServiceReviewCount > 0 && (
@@ -969,6 +988,13 @@ const Select = styled.select`
   }
 `;
 
+const FieldHint = styled.p`
+  margin: 0.4rem 0 0;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: ${(props) => props.theme.colors.textSecondary};
+`;
+
 const Textarea = styled.textarea`
   width: 100%;
   padding: 0.75rem;
@@ -1140,13 +1166,6 @@ const RemoveImageButton = styled.button`
   &:hover {
     opacity: 0.8;
   }
-`;
-
-const EmptyMessage = styled.div`
-  text-align: center;
-  padding: ${(props) => props.theme.spacing.xl};
-  color: ${(props) => props.theme.colors.textSecondary};
-  font-style: italic;
 `;
 
 const PetList = styled.div`
@@ -1350,9 +1369,3 @@ const ReviewDate = styled.div`
   color: ${(props) => props.theme.colors.textSecondary};
 `;
 
-const EmptyReviewsMessage = styled.div`
-  text-align: center;
-  padding: ${(props) => props.theme.spacing.xl};
-  color: ${(props) => props.theme.colors.textSecondary};
-  font-style: italic;
-`;

@@ -1,34 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
+import {
+  PET_PLACE_CATEGORY_GROUPS,
+  resolveActiveGroup,
+} from '../../../constants/locationCategoryTree';
 
-const KEYWORD_CATEGORIES = [
-  { value: '', label: '전체' },
-  { value: '동물병원', label: '동물병원' },
-  { value: '동물약국', label: '동물약국' },
-  { value: '미용', label: '미용' },
-  { value: '카페', label: '카페' },
-  { value: '펜션', label: '펜션' },
-  { value: '식당', label: '식당' },
-  { value: '위탁관리', label: '위탁관리' },
-  { value: '반려동물용품', label: '용품' },
-  { value: '호텔', label: '호텔' },
-];
-
-const SORT_OPTIONS = ['distance', 'rating', 'reviews'];
-const SORT_LABELS = { distance: '거리순', rating: '평점순', reviews: '리뷰순' };
+const SORT_OPTIONS = ['stable', 'distance', 'rating', 'reviews'];
+const SORT_LABELS = { stable: '추천순', distance: '거리순', rating: '평점순', reviews: '리뷰순' };
 const RADIUS_OPTIONS = [1, 3, 5, 10];
 
 const LocationControls = ({
   keyword,
   category,
+  intentSignals = [],
+  /** 마지막으로 선택한 중분류 브랜치 (소분류가 여러 중복일 때 필수) */
+  activeGroupId = null,
   sort = 'distance',
   hasPendingAreaChange = false,
   radius,
   onSearch,
-  onCategoryChange,
+  /** @param {{ category: string, groupId: string|null }} p */
+  onCategoryPick,
   onSortChange,
   onSearchThisArea,
   onRadiusChange,
+  onSignalPick,
 }) => {
   const [inputValue, setInputValue] = useState(keyword || '');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -46,6 +42,8 @@ const LocationControls = ({
     const idx = SORT_OPTIONS.indexOf(sort);
     onSortChange?.(SORT_OPTIONS[(idx + 1) % SORT_OPTIONS.length]);
   };
+
+  const activeGroup = resolveActiveGroup(category, activeGroupId);
 
   return (
     <Wrapper>
@@ -65,7 +63,7 @@ const LocationControls = ({
           )}
         </SearchPill>
         <SortCycleBtn type="button" onClick={handleSortCycle} aria-label="정렬 변경">
-          {SORT_LABELS[sort]} ▾
+          {SORT_LABELS[sort] ?? SORT_LABELS.stable} ▾
         </SortCycleBtn>
         <FilterBtn
           type="button"
@@ -79,18 +77,83 @@ const LocationControls = ({
         </FilterBtn>
       </TopRow>
 
-      <CategoryScrollRow role="group" aria-label="카테고리 필터">
-        {KEYWORD_CATEGORIES.map(cat => (
+      <SubgroupHint>중분류</SubgroupHint>
+      <CategoryScrollRow role="group" aria-label="장소 유형 (중분류, API category2)">
+        <CategoryChip
+          type="button"
+          $active={!category}
+          onClick={() =>
+            onCategoryPick?.({ category: '', groupId: null })
+          }
+        >
+          전체
+        </CategoryChip>
+        {PET_PLACE_CATEGORY_GROUPS.map((g) => (
           <CategoryChip
-            key={cat.value}
+            key={g.id}
             type="button"
-            $active={category === cat.value}
-            onClick={() => onCategoryChange?.(cat.value)}
+            $active={!!category && activeGroup?.id === g.id}
+            onClick={() => {
+              if (category === g.apiValue) {
+                onCategoryPick?.({ category: '', groupId: null });
+              } else {
+                onCategoryPick?.({ category: g.apiValue, groupId: g.id });
+              }
+            }}
           >
-            {cat.label}
+            {g.label}
           </CategoryChip>
         ))}
       </CategoryScrollRow>
+
+      {activeGroup && (
+        <>
+          <SubgroupHint>소분류</SubgroupHint>
+          <LeafScrollRow role="group" aria-label="세부 유형 (소분류, API category3)">
+            {activeGroup.leaves.map((leaf) => (
+              <LeafChip
+                key={`${activeGroup.id}-${leaf.apiValue}`}
+                type="button"
+                $active={category === leaf.apiValue}
+                onClick={() => {
+                  if (category === leaf.apiValue) {
+                    onCategoryPick?.({
+                      category: activeGroup.apiValue,
+                      groupId: activeGroup.id,
+                    });
+                  } else {
+                    onCategoryPick?.({
+                      category: leaf.apiValue,
+                      groupId: activeGroup.id,
+                    });
+                  }
+                }}
+              >
+                {leaf.label}
+              </LeafChip>
+            ))}
+          </LeafScrollRow>
+        </>
+      )}
+
+      {intentSignals.length > 0 && (
+        <SignalRow>
+          {intentSignals.slice(0, 2).map((signal, index) => {
+            const categoryName = signal.targetCategory || signal.recommendedCategories?.[0];
+            if (!categoryName) return null;
+            return (
+              <SignalButton
+                key={`${signal.intent || 'intent'}-${categoryName}-${index}`}
+                type="button"
+                onClick={() => onSignalPick?.(categoryName)}
+              >
+                <SignalText>{signal.cardMessage || '최근 입력 기반 추천이 있어요.'}</SignalText>
+                <SignalAction>{signal.actionLabel || `근처 ${categoryName} 보기`}</SignalAction>
+              </SignalButton>
+            );
+          })}
+        </SignalRow>
+      )}
 
       {isFilterOpen && onRadiusChange && (
         <RadiusPanel id="radius-filter-panel">
@@ -234,16 +297,103 @@ const FilterBtn = styled.button`
   }
 `;
 
+const SignalRow = styled.div`
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px 0;
+`;
+
+const SignalButton = styled.button`
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid ${p => p.theme.colors.primary};
+  background: ${p => p.theme.colors.surface};
+  color: ${p => p.theme.colors.primary};
+  border-radius: 8px;
+  padding: 7px 9px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const SignalText = styled.span`
+  display: block;
+  max-width: 220px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const SignalAction = styled.span`
+  flex-shrink: 0;
+  color: ${p => p.theme.colors.textInverse};
+  background: ${p => p.theme.colors.primary};
+  border-radius: 999px;
+  padding: 3px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+`;
+
 const CategoryScrollRow = styled.div`
   display: flex;
   gap: 5px;
   overflow-x: auto;
   padding-bottom: 2px;
-  &::-webkit-scrollbar { display: none; }
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+`;
+
+const SubgroupHint = styled.div`
+  font-size: 10px;
+  font-weight: 700;
+  color: ${(p) => p.theme.colors.textMuted};
+  padding: 0 2px;
+  margin-top: 2px;
+`;
+
+const LeafScrollRow = styled.div`
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  &::-webkit-scrollbar {
+    display: none;
+  }
   scrollbar-width: none;
 `;
 
 const CategoryChip = styled.button`
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1.5px solid
+    ${(p) => (p.$active ? p.theme.colors.domain.location : p.theme.colors.border)};
+  background: ${(p) =>
+    p.$active ? p.theme.colors.domain.location + '22' : 'transparent'};
+  color: ${(p) =>
+    p.$active ? p.theme.colors.domain.location : p.theme.colors.textSecondary};
+  font-size: 12px;
+  font-weight: ${(p) => (p.$active ? 600 : 400)};
+  white-space: nowrap;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s;
+  &:hover {
+    border-color: ${(p) => p.theme.colors.domain.location};
+    color: ${(p) => p.theme.colors.domain.location};
+    background: ${(p) => p.theme.colors.domain.location + '14'};
+  }
+`;
+
+const LeafChip = styled.button`
   padding: 4px 12px;
   border-radius: 999px;
   border: 1.5px solid ${p => p.$active ? p.theme.colors.domain.location : p.theme.colors.border};

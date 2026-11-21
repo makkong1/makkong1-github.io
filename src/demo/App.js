@@ -16,7 +16,6 @@ import ScrollToTopBottom from './components/Common/ScrollToTopBottom';
 import MissingPetBoardPage from './components/MissingPet/MissingPetBoardPage';
 import ActivityPage from './components/Activity/ActivityPage';
 import UnifiedPetMapPage from './components/UnifiedMap/UnifiedPetMapPage';
-// import TrendCategoryPage from './components/Recommendation/TrendCategoryPage';
 import ChatWidget from './components/Chat/ChatWidget';
 import EmailVerificationPage from './components/Auth/EmailVerificationPage';
 import EmailVerificationPrompt from './components/Common/EmailVerificationPrompt.js';
@@ -118,7 +117,6 @@ function AppContent() {
       case 'community':    return <CommunityBoard />;
       case 'missing-pets': return <MissingPetBoardPage />;
       case 'unified-map':  return <UnifiedPetMapPage />;
-      // case 'trends':       return <TrendCategoryPage />;
       case 'users':        return <UserList />;
       case 'admin':        return <AdminPanel />;
       case 'activity':     return <ActivityPage />;

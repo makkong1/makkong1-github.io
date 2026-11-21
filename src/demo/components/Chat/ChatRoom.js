@@ -3,11 +3,13 @@ import styled from 'styled-components';
 import { Client } from '@stomp/stompjs';
 import SockJS from 'sockjs-client';
 import { useAuth } from '../../contexts/AuthContext';
-import { getMessages, sendMessage, markAsRead, getConversation, leaveConversation, deleteConversation, confirmCareDeal } from '../../api/chatApi';
+import { getMessages, sendMessage, markAsRead, getConversation, leaveConversation, deleteConversation } from '../../api/chatApi';
+import { careOfferApi } from '../../api/careOfferApi';
 import { careRequestApi } from '../../api/careRequestApi';
 import { careReviewApi } from '../../api/careReviewApi';
 import { uploadApi } from '../../api/uploadApi';
 import { geocodingApi } from '../../api/geocodingApi';
+import ChatSearchPanel from './ChatSearchPanel';
 
 const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
   const { user } = useAuth();
@@ -20,18 +22,19 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showMenu, setShowMenu] = useState(false);
-  const [dealConfirmed, setDealConfirmed] = useState(false);
-  const [confirmingDeal, setConfirmingDeal] = useState(false);
-  const [careRequestStatus, setCareRequestStatus] = useState(null);
-  const [careRequestData, setCareRequestData] = useState(null);
-  const [isRequester, setIsRequester] = useState(false);
-  const [isProvider, setIsProvider] = useState(false);
-  const [completingCare, setCompletingCare] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  // 살아 있는 케어 제안(상대와 나 사이). 채팅방은 계약을 모르므로 방이 아니라 상대로 찾는다.
+  // 배열인 이유: 같은 두 사람 사이에 계약이 여러 건 살아 있을 수 있다. UNIQUE 는 (요청, 제공자)
+  // 조합이라 요청이 다르면 같은 사람에게 또 맡길 수 있고, 방은 두 사람당 하나뿐이다.
+  const [offers, setOffers] = useState([]);
+  const [processingOfferIdx, setProcessingOfferIdx] = useState(null);
+  const [myOpenRequests, setMyOpenRequests] = useState([]);
+  const [reviewTarget, setReviewTarget] = useState(null);
+  const [completingCareIdx, setCompletingCareIdx] = useState(null);
   const [showReviewModal, setShowReviewModal] = useState(false);
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
-  const [hasReview, setHasReview] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
   const [toast, setToast] = useState(null); // { message, type: 'success' | 'error' }
   const toastTimerRef = useRef(null);
@@ -131,42 +134,33 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
     try {
       const data = await getConversation(conversationIdx);
       setConversation(data);
-      // 내가 거래 확정했는지 확인
-      const myParticipant = data?.participants?.find(p => p.userIdx === user.idx);
-      setDealConfirmed(myParticipant?.dealConfirmed || false);
+      // 계약은 채팅방이 아니라 care 에 있다. 방 번호가 아니라 "상대가 누구인가"로 찾는다.
+      // 예전엔 방의 relatedType/relatedIdx 로 케어 요청을 찾았는데, 지도에서 만들어지는 방은
+      // DIRECT(relatedType=null)라 이 블록이 한 번도 실행되지 않았다 — 확정·완료·리뷰 UI가
+      // 통째로 죽어 있던 이유다.
+      const other = data?.participants?.find(p => p.userIdx !== user.idx);
+      if (!other?.userIdx) {
+        setOffers([]);
+        setMyOpenRequests([]);
+        return;
+      }
 
-      // 펫케어 요청 상태 조회
-      if (data?.relatedType === 'CARE_REQUEST' && data?.relatedIdx) {
+      try {
+        const { data: list } = await careOfferApi.between(other.userIdx);
+        const live = Array.isArray(list) ? list : [];
+        setOffers(live);
+
+        // 내 모집 중 요청 — 아직 이 사람에게 안 보낸 것이 있어야 "맡기기"를 띄운다.
         try {
-          const careRequest = await careRequestApi.getCareRequest(data.relatedIdx);
-          const careRequestInfo = careRequest.data;
-          setCareRequestStatus(careRequestInfo?.status || null);
-          setCareRequestData(careRequestInfo);
-
-          // 요청자와 제공자 구분
-          const requesterId = careRequestInfo?.userId;
-
-          // 승인된 CareApplication에서 제공자 찾기
-          const acceptedApplication = careRequestInfo?.applications?.find(
-            app => app.status === 'ACCEPTED'
-          );
-          const providerId = acceptedApplication?.providerId || acceptedApplication?.provider?.idx;
-
-          setIsRequester(user?.idx === requesterId);
-          setIsProvider(user?.idx === providerId);
-
-          // 이미 리뷰를 작성했는지 확인
-          if (acceptedApplication && user?.idx === requesterId) {
-            const hasExistingReview = acceptedApplication.reviews?.some(
-              review => review.reviewerId === user.idx
-            );
-            setHasReview(hasExistingReview || false);
-          } else {
-            setHasReview(false);
-          }
-        } catch (error) {
-          console.error('펫케어 요청 상태 조회 실패:', error);
+          const { data: mine } = await careRequestApi.getMyCareRequests();
+          const mineList = Array.isArray(mine) ? mine : (mine?.careRequests || []);
+          setMyOpenRequests(mineList.filter(r => r.status === 'OPEN'));
+        } catch (e) {
+          setMyOpenRequests([]);
         }
+
+      } catch (error) {
+        console.error('케어 제안 조회 실패:', error);
       }
     } catch (error) {
       console.error('채팅방 정보 조회 실패:', error);
@@ -446,71 +440,143 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
     }
   };
 
-  // 거래 확정
-  const handleConfirmDeal = async () => {
-    if (!conversationIdx || !user?.idx || dealConfirmed) return;
+  // 요청자가 이 사람에게 케어를 제안한다. 아직 안 보낸 모집 중 요청이 여러 개면 하나를 고른다.
+  const handleOffer = async () => {
+    const otherUserIdx = getOtherParticipant()?.userIdx;
+    if (!otherUserIdx || offerableRequests.length === 0 || processingOfferIdx) return;
 
-    if (!window.confirm('거래를 확정하시겠습니까? 양쪽 모두 확정하면 펫케어 서비스가 시작됩니다.')) {
+    let target = offerableRequests[0];
+    if (offerableRequests.length > 1) {
+      const list = offerableRequests.map((r, i) => `${i + 1}. ${r.title}`).join('\n');
+      const picked = window.prompt(`어느 케어를 맡기시겠습니까?\n${list}\n\n번호 입력:`, '1');
+      const n = Number(picked);
+      if (!n || n < 1 || n > offerableRequests.length) return;
+      target = offerableRequests[n - 1];
+    }
+
+    const amount = target.offeredCoins != null ? `${target.offeredCoins.toLocaleString()} 코인으로 ` : '';
+    if (!window.confirm(`"${target.title}"을(를) ${amount}이 분께 맡기시겠습니까?\n제공자가 수락하면 케어가 시작됩니다.`)) {
       return;
     }
 
-    setConfirmingDeal(true);
+    setProcessingOfferIdx('new');
     try {
-      await confirmCareDeal(conversationIdx);
-      setDealConfirmed(true);
-      // 채팅방 정보 다시 조회
+      await careOfferApi.offer(target.idx, otherUserIdx);
       await fetchConversation();
-      showToast('거래 확정이 완료되었습니다. 상대방도 확정하면 서비스가 시작됩니다.', 'success');
+      showToast('제안을 보냈습니다. 제공자가 수락하면 케어가 시작됩니다.', 'success');
     } catch (error) {
-      console.error('거래 확정 실패:', error);
-      showToast(error.response?.data?.error || '거래 확정에 실패했습니다.');
+      console.error('케어 제안 실패:', error);
+      showToast(error.response?.data?.error || error.response?.data?.message || '제안에 실패했습니다.');
     } finally {
-      setConfirmingDeal(false);
+      setProcessingOfferIdx(null);
     }
   };
 
-  // 펫케어 서비스 완료
-  const handleCompleteCare = async () => {
-    if (!conversation?.relatedIdx || !user?.idx || completingCare) return;
+  // 제공자가 제안을 수락한다. 여기서 계약이 성립하고 에스크로 지급 대상이 배정된다.
+  const handleAcceptOffer = async (offer) => {
+    if (!offer?.idx || processingOfferIdx) return;
 
-    if (!window.confirm('펫케어 서비스를 완료 처리하시겠습니까?')) {
+    const amount = offer.offeredCoins != null ? `${offer.offeredCoins.toLocaleString()} 코인으로 ` : '';
+    if (!window.confirm(`"${offer.careRequestTitle}" 케어를 ${amount}맡으시겠습니까?\n수락하면 바로 케어가 시작됩니다.`)) {
       return;
     }
 
-    setCompletingCare(true);
+    setProcessingOfferIdx(offer.idx);
     try {
-      await careRequestApi.updateStatus(conversation.relatedIdx, 'COMPLETED');
-      setCareRequestStatus('COMPLETED');
-      // 펫케어 요청 정보 다시 조회
+      await careOfferApi.accept(offer.idx);
       await fetchConversation();
-      showToast('펫케어 서비스가 완료되었습니다.', 'success');
+      showToast('제안을 수락했습니다. 케어가 시작되었습니다.', 'success');
     } catch (error) {
-      console.error('서비스 완료 실패:', error);
-      showToast(error.response?.data?.error || '서비스 완료 처리에 실패했습니다.');
+      console.error('제안 수락 실패:', error);
+      // 409 = 제안 이후 금액이 바뀌었거나 이미 다른 제공자와 확정된 경우. 최신 상태를 다시 받는다.
+      if (error.response?.status === 409) {
+        await fetchConversation();
+      }
+      showToast(error.response?.data?.error || error.response?.data?.message || '수락에 실패했습니다.');
     } finally {
-      setCompletingCare(false);
+      setProcessingOfferIdx(null);
     }
   };
 
-  // 리뷰 작성 모달 열기
-  const handleOpenReviewModal = () => {
+  const handleRejectOffer = async (offer) => {
+    if (!offer?.idx || processingOfferIdx) return;
+    if (!window.confirm(`"${offer.careRequestTitle}" 제안을 거절하시겠습니까?`)) return;
+
+    setProcessingOfferIdx(offer.idx);
+    try {
+      await careOfferApi.reject(offer.idx);
+      await fetchConversation();
+      showToast('제안을 거절했습니다.', 'success');
+    } catch (error) {
+      console.error('제안 거절 실패:', error);
+      showToast(error.response?.data?.error || error.response?.data?.message || '거절에 실패했습니다.');
+    } finally {
+      setProcessingOfferIdx(null);
+    }
+  };
+
+  // 펫케어 서비스 이행 완료 확인
+  // 요청자·제공자가 각자 눌러야 하고, 양쪽이 다 확인해야 COMPLETED 가 되며 코인이 정산된다.
+  const handleCompleteCare = async (offer) => {
+    if (!offer?.careRequestId || !user?.idx || completingCareIdx) return;
+
+    // 요청자의 클릭은 그 순간 지급이다. 마지막 클릭의 무게에 맞게 금액과 상대를 박는다.
+    const iAmProvider = offer.providerId === user?.idx;
+    const amount = (offer.offeredCoins ?? 0).toLocaleString();
+    const message = iAmProvider
+      ? `"${offer.careRequestTitle}" 이행을 마쳤다고 알릴까요?\n요청자가 확인하면 ${amount} 코인을 받습니다.`
+      : `"${offer.careRequestTitle}" 이행을 확인하시겠습니까?\n\n${offer.providerName || '제공자'}님에게 ${amount} 코인이 지금 지급됩니다.\n이 작업은 되돌릴 수 없습니다.`;
+    if (!window.confirm(message)) {
+      return;
+    }
+
+    setCompletingCareIdx(offer.idx);
+    try {
+      const response = await careRequestApi.confirmCompletion(offer.careRequestId);
+      const updated = response?.data;
+      await fetchConversation();
+      showToast(
+        updated?.status === 'COMPLETED'
+          ? '양쪽 확인이 끝나 펫케어 서비스가 완료되었습니다.'
+          : '완료 확인했습니다. 상대방 확인을 기다리는 중입니다.',
+        'success'
+      );
+    } catch (error) {
+      console.error('완료 확인 실패:', error);
+      showToast(error.response?.data?.error || '완료 확인에 실패했습니다.');
+    } finally {
+      setCompletingCareIdx(null);
+    }
+  };
+
+  // 제공자가 이행 완료 알림을 되돌린다 (실수 클릭 복구)
+  const handleCancelCompletion = async (offer) => {
+    if (!offer?.careRequestId || completingCareIdx) return;
+    if (!window.confirm('이행 완료 알림을 취소하시겠습니까?')) return;
+
+    setCompletingCareIdx(offer.idx);
+    try {
+      await careRequestApi.cancelCompletion(offer.careRequestId);
+      await fetchConversation();
+      showToast('이행 완료 알림을 취소했습니다.', 'success');
+    } catch (error) {
+      console.error('확인 취소 실패:', error);
+      showToast(error.response?.data?.error || '취소에 실패했습니다.');
+    } finally {
+      setCompletingCareIdx(null);
+    }
+  };
+
+  // 리뷰 작성 모달 열기 — 어느 계약에 대한 리뷰인지 함께 들고 있는다.
+  const handleOpenReviewModal = (offer) => {
+    setReviewTarget(offer);
     setShowReviewModal(true);
   };
 
   // 리뷰 작성
   const handleSubmitReview = async () => {
-    if (!careRequestData || !user?.idx) {
+    if (!reviewTarget || !user?.idx) {
       showToast('리뷰 작성에 필요한 정보가 없습니다.');
-      return;
-    }
-
-    // CareApplication 찾기
-    const acceptedApplication = careRequestData.applications?.find(
-      app => app.status === 'ACCEPTED'
-    );
-
-    if (!acceptedApplication) {
-      showToast('승인된 펫케어 서비스를 찾을 수 없습니다.');
       return;
     }
 
@@ -522,29 +588,36 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
     setSubmittingReview(true);
     try {
       await careReviewApi.createReview({
-        careApplicationId: acceptedApplication.idx,
+        careApplicationId: reviewTarget.idx,
         reviewerId: user.idx,
-        revieweeId: acceptedApplication.providerId,
+        revieweeId: reviewTarget.providerId,
         rating: reviewRating,
         comment: reviewComment.trim()
       });
 
       showToast('리뷰가 작성되었습니다.', 'success');
       setShowReviewModal(false);
+      setReviewTarget(null);
       setReviewRating(5);
       setReviewComment('');
-      setHasReview(true);
-      // 리뷰 작성 후 리뷰 버튼 숨기기 위해 상태 업데이트
       await fetchConversation();
     } catch (error) {
       console.error('리뷰 작성 실패:', error);
-      showToast(error.response?.data?.error || '리뷰 작성에 실패했습니다.');
+      const msg = error.response?.data?.error || error.response?.data?.message || '';
+      const status = error.response?.status;
+      if (status === 409 || (typeof msg === 'string' && msg.includes('이미 해당 서비스에 리뷰'))) {
+        // 이미 썼다면 다시 받아오면 카드가 사라진다(조회가 리뷰 남은 것만 돌려준다).
+        setShowReviewModal(false);
+        await fetchConversation();
+        showToast(typeof msg === 'string' ? msg : '이미 해당 서비스에 리뷰를 작성하셨습니다.');
+      } else {
+        showToast(msg || '리뷰 작성에 실패했습니다.');
+      }
     } finally {
       setSubmittingReview(false);
     }
   };
 
-  // 내 위치 전송 (주소 텍스트 입력)
   const handleSendLocation = async () => {
     if (!navigator.geolocation) {
       showToast('브라우저가 위치 정보를 지원하지 않습니다.');
@@ -583,15 +656,13 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
     );
   };
 
-  // 펫케어 관련 채팅방인지 확인
-  const isCareRequestChat = conversation?.relatedType === 'CARE_REQUEST' ||
-    conversation?.relatedType === 'CARE_APPLICATION' ||
-    conversation?.conversationType === 'CARE_REQUEST';
-
-  // 양쪽 모두 거래 확정했는지 확인
-  const allParticipantsConfirmed = conversation?.participants && conversation.participants.length > 0
-    ? conversation.participants.every(p => p.dealConfirmed === true)
-    : false;
+  // 계약 UI 를 띄울지는 방의 종류가 아니라 "이 상대와 살아 있는 계약이 있는가"로 정한다.
+  // 방 타입으로 판정하던 예전 코드는 실제로 만들어지는 방과 어긋나 한 번도 참이 되지 않았다.
+  // 이미 제안을 보낸 요청은 후보에서 뺀다 — 같은 요청을 또 보내는 건 의미가 없다.
+  const offeredRequestIds = new Set(offers.map(o => o.careRequestId));
+  const offerableRequests = myOpenRequests.filter(r => !offeredRequestIds.has(r.idx));
+  const canOffer = offerableRequests.length > 0
+    && conversation?.conversationType === 'DIRECT';
 
   // 메뉴 외부 클릭 시 닫기
   useEffect(() => {
@@ -640,6 +711,7 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
           </HeaderSubtitle>
         </HeaderInfo>
         <HeaderActions>
+          <MenuButton onClick={() => setShowSearch(true)} aria-label="메시지 검색">🔍</MenuButton>
           <MenuButton onClick={() => setShowMenu(!showMenu)}>⋮</MenuButton>
           {showMenu && (
             <MenuDropdown ref={menuRef}>
@@ -652,6 +724,13 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
           )}
         </HeaderActions>
       </Header>
+
+      {showSearch && (
+        <ChatSearchPanel
+          conversationIdx={conversationIdx}
+          onClose={() => setShowSearch(false)}
+        />
+      )}
 
       <MiddleColumn>
         <MessagesContainer ref={messagesContainerRef}>
@@ -691,57 +770,98 @@ const ChatRoom = ({ conversationIdx, onClose, onBack, onAction }) => {
           <div ref={messagesEndRef} />
         </MessagesContainer>
 
-        {/* 거래 확정 버튼 (펫케어 채팅방인 경우) */}
-        {isCareRequestChat && !allParticipantsConfirmed && (
+        {/* 케어 제안 — 요청자가 이 사람에게 맡기겠다고 보낸다 */}
+        {canOffer && (
           <DealConfirmSection>
-            {dealConfirmed ? (
-              <DealConfirmStatus>
-                ✓ 거래 확정 완료 (상대방 확정 대기 중)
-              </DealConfirmStatus>
-            ) : (
-              <DealConfirmButton onClick={handleConfirmDeal} disabled={confirmingDeal}>
-                {confirmingDeal ? '확정 중...' : '🤝 거래 확정'}
-              </DealConfirmButton>
-            )}
+            <DealConfirmButton onClick={handleOffer} disabled={Boolean(processingOfferIdx)}>
+              {processingOfferIdx === 'new' ? '보내는 중...' : '🤝 이 분께 케어 맡기기'}
+            </DealConfirmButton>
           </DealConfirmSection>
         )}
 
-        {allParticipantsConfirmed && isCareRequestChat && (
-          <DealConfirmedBanner>
-            ✓ 양쪽 모두 거래 확정 완료! 펫케어 서비스가 시작되었습니다.
-          </DealConfirmedBanner>
-        )}
+        {/* 살아 있는 계약마다 카드 하나. 한 방에 여러 건이 매달릴 수 있어 목록으로 그린다 */}
+        {offers.map((o) => {
+          const iAmProvider = o.providerId === user?.idx;
+          const busy = processingOfferIdx === o.idx;
 
-        {/* 서비스 완료 버튼 (IN_PROGRESS 상태이고 제공자일 때만 표시) */}
-        {isCareRequestChat && careRequestStatus === 'IN_PROGRESS' && isProvider && (
-          <CompleteCareSection>
-            <CompleteCareButton onClick={handleCompleteCare} disabled={completingCare}>
-              {completingCare ? '완료 처리 중...' : '✅ 서비스 완료'}
-            </CompleteCareButton>
-          </CompleteCareSection>
-        )}
+          return (
+            <OfferCard key={o.idx}>
+              <OfferTitle>
+                {o.careRequestTitle}
+                {o.offeredCoins != null && ` · ${o.offeredCoins.toLocaleString()} 코인`}
+              </OfferTitle>
 
-        {isCareRequestChat && careRequestStatus === 'COMPLETED' && (
-          <CompletedBanner>
-            ✓ 펫케어 서비스가 완료되었습니다.
-          </CompletedBanner>
-        )}
+              {o.status === 'PENDING' && iAmProvider && (
+                <OfferActions>
+                  <DealConfirmButton onClick={() => handleAcceptOffer(o)} disabled={busy}>
+                    {busy ? '처리 중...' : '✅ 이 케어 맡기'}
+                  </DealConfirmButton>
+                  <RejectOfferButton onClick={() => handleRejectOffer(o)} disabled={busy}>
+                    거절
+                  </RejectOfferButton>
+                </OfferActions>
+              )}
 
-        {/* 리뷰 작성 버튼 (COMPLETED 상태이고 요청자이며 아직 리뷰를 작성하지 않았을 때만 표시) */}
-        {isCareRequestChat && careRequestStatus === 'COMPLETED' && isRequester && !hasReview && (
-          <ReviewSection>
-            <ReviewButton onClick={handleOpenReviewModal}>
-              ⭐ 리뷰 작성하기
-            </ReviewButton>
-          </ReviewSection>
-        )}
+              {o.status === 'PENDING' && !iAmProvider && (
+                <DealConfirmStatus>✓ 제안을 보냈습니다 (제공자 수락 대기 중)</DealConfirmStatus>
+              )}
 
-        {/* 리뷰 작성 완료 메시지 */}
-        {isCareRequestChat && careRequestStatus === 'COMPLETED' && isRequester && hasReview && (
-          <ReviewCompletedBanner>
-            ✓ 리뷰를 작성하셨습니다.
-          </ReviewCompletedBanner>
-        )}
+              {/* 순서를 강제한다 — 제공자가 이행을 알리고, 요청자가 승인한다.
+                  아무나 먼저 누를 수 있으면 실수 클릭 두 번으로 이행 없이 정산된다. */}
+              {o.status === 'ACCEPTED' && o.careRequestStatus === 'IN_PROGRESS' && iAmProvider && (
+                <OfferActions>
+                  {o.providerCompletedAt ? (
+                    <>
+                      <DealConfirmStatus>⏳ 요청자 확인 대기 중</DealConfirmStatus>
+                      <RejectOfferButton
+                        onClick={() => handleCancelCompletion(o)}
+                        disabled={completingCareIdx === o.idx}
+                      >
+                        취소
+                      </RejectOfferButton>
+                    </>
+                  ) : (
+                    <CompleteCareButton
+                      onClick={() => handleCompleteCare(o)}
+                      disabled={completingCareIdx === o.idx}
+                    >
+                      {completingCareIdx === o.idx ? '알리는 중...' : '✅ 이행 완료 알리기'}
+                    </CompleteCareButton>
+                  )}
+                </OfferActions>
+              )}
+
+              {o.status === 'ACCEPTED' && o.careRequestStatus === 'IN_PROGRESS' && !iAmProvider && (
+                <OfferActions>
+                  {o.providerCompletedAt ? (
+                    <CompleteCareButton
+                      onClick={() => handleCompleteCare(o)}
+                      disabled={completingCareIdx === o.idx}
+                    >
+                      {completingCareIdx === o.idx
+                        ? '확인 중...'
+                        : `✅ 이행 확인하고 ${(o.offeredCoins ?? 0).toLocaleString()} 코인 지급`}
+                    </CompleteCareButton>
+                  ) : (
+                    <DealConfirmStatus>제공자의 이행 완료를 기다리는 중입니다</DealConfirmStatus>
+                  )}
+                </OfferActions>
+              )}
+
+              {/* 완료 카드는 리뷰가 남았을 때만 내려온다 — 쓰고 나면 카드째 사라진다 */}
+              {o.careRequestStatus === 'COMPLETED' && (
+                <>
+                  <CompletedBanner>✓ 펫케어 서비스가 완료되었습니다.</CompletedBanner>
+                  <OfferActions>
+                    <ReviewButton onClick={() => handleOpenReviewModal(o)}>
+                      ⭐ 리뷰 작성하기
+                    </ReviewButton>
+                  </OfferActions>
+                </>
+              )}
+            </OfferCard>
+          );
+        })}
       </MiddleColumn>
 
       <InputContainer>
@@ -1276,6 +1396,7 @@ const DealConfirmSection = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 8px;
 `;
 
 const DealConfirmButton = styled.button`
@@ -1300,7 +1421,50 @@ const DealConfirmButton = styled.button`
   }
 `;
 
+const OfferCard = styled.div`
+  padding: 12px 16px;
+  background: ${({ theme }) => theme.colors.surface};
+  border-top: 1px solid ${({ theme }) => theme.colors.border};
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
+const OfferTitle = styled.div`
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
+  font-weight: 600;
+  color: ${({ theme }) => theme.colors.textPrimary};
+`;
+
+const OfferActions = styled.div`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+`;
+
+const RejectOfferButton = styled.button`
+  padding: 10px 16px;
+  background: transparent;
+  color: ${({ theme }) => theme.colors.textSecondary};
+  border: 1px solid ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.borderRadius.md};
+  font-size: ${({ theme }) => theme.typography.body2.fontSize};
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.colors.surfaceElevated};
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+`;
+
 const DealConfirmStatus = styled.div`
+  margin: 12px 16px;
+  text-align: center;
   padding: 10px 20px;
   background: ${({ theme }) => theme.colors.surfaceElevated};
   color: ${({ theme }) => theme.colors.primary};
@@ -1308,25 +1472,6 @@ const DealConfirmStatus = styled.div`
   border-radius: ${({ theme }) => theme.borderRadius.md};
   font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
-`;
-
-const DealConfirmedBanner = styled.div`
-  padding: 12px 16px;
-  background: ${({ theme }) => theme.colors.successSoft};
-  color: ${({ theme }) => theme.colors.success};
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  text-align: center;
-  font-size: ${({ theme }) => theme.typography.body2.fontSize};
-  font-weight: 600;
-`;
-
-const CompleteCareSection = styled.div`
-  padding: 12px 16px;
-  background: ${({ theme }) => theme.colors.surface};
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  display: flex;
-  justify-content: center;
-  align-items: center;
 `;
 
 const CompleteCareButton = styled.button`
@@ -1359,25 +1504,6 @@ const CompletedBanner = styled.div`
   text-align: center;
   font-size: ${({ theme }) => theme.typography.body2.fontSize};
   font-weight: 600;
-`;
-
-const ReviewCompletedBanner = styled.div`
-  padding: 12px 16px;
-  background: ${({ theme }) => theme.colors.infoSoft};
-  color: ${({ theme }) => theme.colors.info};
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  text-align: center;
-  font-size: ${({ theme }) => theme.typography.body2.fontSize};
-  font-weight: 600;
-`;
-
-const ReviewSection = styled.div`
-  padding: 12px 16px;
-  background: ${({ theme }) => theme.colors.surface};
-  border-top: 1px solid ${({ theme }) => theme.colors.border};
-  display: flex;
-  justify-content: center;
-  align-items: center;
 `;
 
 const ReviewButton = styled.button`

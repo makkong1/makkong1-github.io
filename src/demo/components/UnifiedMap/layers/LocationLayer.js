@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { locationServiceReviewApi } from '../../../api/locationServiceReviewApi';
+import { petRecommendationApi } from '../../../api/petRecommendationApi';
 import { useAuth } from '../../../contexts/AuthContext';
 import {
   InfoPanel as BaseInfoPanel,
@@ -8,37 +9,70 @@ import {
   InfoRow, InfoLabel, InfoValue, InfoGrid,
 } from '../shared/BaseInfoPanel';
 
-const LocationLayer = ({ selectedItem, onClose }) => {
+const REVIEW_PAGE_SIZE = 20;
+
+const LocationLayer = ({ selectedItem, onClose, docked = false }) => {
   const { user } = useAuth();
   const [reviews, setReviews] = useState([]);
+  const [reviewTotal, setReviewTotal] = useState(0);
+  const [reviewAvg, setReviewAvg] = useState(null);
+  const [reviewPage, setReviewPage] = useState(0);
+  const [reviewHasNext, setReviewHasNext] = useState(false);
   const [reviewLoading, setReviewLoading] = useState(false);
+  const [reviewLoadingMore, setReviewLoadingMore] = useState(false);
   const [reviewText, setReviewText] = useState('');
   const [reviewRating, setReviewRating] = useState(5);
   const [editingReview, setEditingReview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
+  // 서버 페이징 리뷰 로더. append=true면 '더보기'로 다음 페이지를 누적, 아니면 첫 페이지로 교체.
+  // 평균/총개수는 서버 전체 집계(count/averageRating)를 그대로 쓴다(페이지 누적과 무관하게 정확).
+  const loadReviews = (serviceIdx, pageArg, append) => {
+    if (!serviceIdx) return;
+    if (append) setReviewLoadingMore(true); else setReviewLoading(true);
+    locationServiceReviewApi.getReviewsByService(serviceIdx, pageArg, REVIEW_PAGE_SIZE)
+      .then(res => {
+        const data = res.data || {};
+        const list = data.reviews || [];
+        setReviews(prev => (append ? [...prev, ...list] : list));
+        setReviewTotal(data.count ?? list.length);
+        setReviewAvg(data.averageRating ?? null);
+        setReviewHasNext(!!data.hasNext);
+        setReviewPage(pageArg);
+      })
+      .catch(() => {
+        if (!append) {
+          setReviews([]);
+          setReviewTotal(0);
+          setReviewAvg(null);
+          setReviewHasNext(false);
+        }
+      })
+      .finally(() => {
+        if (append) setReviewLoadingMore(false); else setReviewLoading(false);
+      });
+  };
+
   useEffect(() => {
     if (!selectedItem) return;
     setReviews([]);
+    setReviewTotal(0);
+    setReviewAvg(null);
+    setReviewHasNext(false);
     setEditingReview(null);
     setReviewText('');
     setReviewRating(5);
     const idx = selectedItem.raw?.idx;
     if (!idx) return;
-
-    setReviewLoading(true);
-    locationServiceReviewApi.getReviewsByService(idx)
-      .then(res => setReviews(res.data?.reviews || res.data || []))
-      .catch(() => setReviews([]))
-      .finally(() => setReviewLoading(false));
+    loadReviews(idx, 0, false);
+    petRecommendationApi.interact(idx, 'VIEW');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedItem]);
 
   if (!selectedItem) return null;
   const r = selectedItem.raw;
 
-  const avgRating = reviews.length
-    ? (reviews.reduce((s, rv) => s + (rv.rating || 0), 0) / reviews.length).toFixed(1)
-    : null;
+  const avgRating = reviewAvg != null ? Number(reviewAvg).toFixed(1) : null;
 
   const handleSubmitReview = async (e) => {
     e.preventDefault();
@@ -57,8 +91,7 @@ const LocationLayer = ({ selectedItem, onClose }) => {
           comment: reviewText,
         });
       }
-      const res = await locationServiceReviewApi.getReviewsByService(r.idx);
-      setReviews(res.data?.reviews || res.data || []);
+      loadReviews(r.idx, 0, false);
       setReviewText('');
       setReviewRating(5);
       setEditingReview(null);
@@ -73,7 +106,7 @@ const LocationLayer = ({ selectedItem, onClose }) => {
     if (!window.confirm('리뷰를 삭제할까요?')) return;
     try {
       await locationServiceReviewApi.deleteReview(reviewIdx);
-      setReviews(prev => prev.filter(rv => rv.idx !== reviewIdx));
+      loadReviews(r.idx, 0, false);
     } catch (err) {
       console.error('리뷰 삭제 실패:', err);
     }
@@ -86,23 +119,31 @@ const LocationLayer = ({ selectedItem, onClose }) => {
   };
 
   return (
-    <InfoPanel $width="320px" $maxHeight="70vh">
+    <InfoPanel $docked={docked} $width="320px" $maxHeight="70vh">
       <PanelHeader>
-        <TypeBadge>🏥 {r.category || '시설'}</TypeBadge>
-        <CloseButton onClick={onClose} aria-label="닫기">✕</CloseButton>
+        <HeaderLeft>
+          {docked && (
+            <BackBtn onClick={onClose} aria-label="목록으로 돌아가기">←</BackBtn>
+          )}
+          <TypeBadge>🏥 {r.category || '시설'}</TypeBadge>
+        </HeaderLeft>
+        {!docked && (
+          <CloseButton onClick={onClose} aria-label="닫기">✕</CloseButton>
+        )}
       </PanelHeader>
 
       <PanelTitle>{selectedItem.title}</PanelTitle>
       {avgRating && (
         <RatingRow>
           <StarRating value={Number(avgRating)} />
-          <RatingText>{avgRating} ({reviews.length}개 리뷰)</RatingText>
+          <RatingText>{avgRating} ({reviewTotal}개 리뷰)</RatingText>
         </RatingRow>
       )}
 
       <Divider />
 
       <ScrollBody>
+        <Hero aria-hidden="true">🏥</Hero>
         <InfoGrid $padding="10px 14px">
           {r.address && <InfoRow><InfoLabel $minWidth="70px">주소</InfoLabel><InfoValue>{r.address}</InfoValue></InfoRow>}
           {r.phone && (
@@ -139,6 +180,8 @@ const LocationLayer = ({ selectedItem, onClose }) => {
               <InfoValue>{r.petFriendly ? '✅ 동반 가능' : '❌ 동반 불가'}</InfoValue>
             </InfoRow>
           )}
+          {/* TourAPI 적재분만 가진 칸(「전구역 동반가능」/「일부구역 동반가능」) */}
+          {r.petZoneType && <InfoRow><InfoLabel $minWidth="70px">동반 구역</InfoLabel><InfoValue>{r.petZoneType}</InfoValue></InfoRow>}
           {r.petSize && <InfoRow><InfoLabel $minWidth="70px">입장 크기</InfoLabel><InfoValue>{r.petSize}</InfoValue></InfoRow>}
           {r.petRestrictions && <InfoRow><InfoLabel $minWidth="70px">제한사항</InfoLabel><InfoValue>{r.petRestrictions}</InfoValue></InfoRow>}
           {r.petExtraFee && <InfoRow><InfoLabel $minWidth="70px">반려동물 추가요금</InfoLabel><InfoValue>{r.petExtraFee}</InfoValue></InfoRow>}
@@ -149,7 +192,7 @@ const LocationLayer = ({ selectedItem, onClose }) => {
 
         {/* 리뷰 섹션 */}
         <ReviewSection>
-        <ReviewTitle>리뷰 ({reviews.length})</ReviewTitle>
+        <ReviewTitle>리뷰 ({reviewTotal})</ReviewTitle>
 
         {reviewLoading ? (
           <ReviewEmpty>불러오는 중...</ReviewEmpty>
@@ -174,6 +217,16 @@ const LocationLayer = ({ selectedItem, onClose }) => {
               </ReviewItem>
             ))}
           </ReviewList>
+        )}
+
+        {reviewHasNext && (
+          <LoadMoreButton
+            type="button"
+            onClick={() => loadReviews(r.idx, reviewPage + 1, true)}
+            disabled={reviewLoadingMore}
+          >
+            {reviewLoadingMore ? '불러오는 중...' : '더보기'}
+          </LoadMoreButton>
         )}
 
         {user && (
@@ -203,6 +256,20 @@ const LocationLayer = ({ selectedItem, onClose }) => {
         )}
         </ReviewSection>
       </ScrollBody>
+
+      <ActionBar>
+        {r.phone && (
+          <ActionPrimary href={`tel:${r.phone}`}>📞 전화하기</ActionPrimary>
+        )}
+        <ActionSecondary
+          href={`https://map.naver.com/p/search/${encodeURIComponent(selectedItem.title || '')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={() => petRecommendationApi.interact(r.idx, 'NAVIGATE')}
+        >
+          🧭 길찾기
+        </ActionSecondary>
+      </ActionBar>
     </InfoPanel>
   );
 };
@@ -210,6 +277,78 @@ const LocationLayer = ({ selectedItem, onClose }) => {
 export default LocationLayer;
 
 const InfoPanel = styled(BaseInfoPanel)``;
+
+const HeaderLeft = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+`;
+
+const BackBtn = styled.button`
+  border: none;
+  background: ${props => props.theme.colors.surface};
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 16px;
+  color: ${props => props.theme.colors.text};
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  &:hover { background: ${props => props.theme.colors.surfaceHover}; }
+`;
+
+const Hero = styled.div`
+  height: 96px;
+  margin: 10px 14px 4px;
+  border-radius: 16px;
+  background: linear-gradient(
+    135deg,
+    ${props => props.theme.colors.surface},
+    ${props => props.theme.colors.background}
+  );
+  border: 1px solid ${props => props.theme.colors.borderLight};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 40px;
+  flex-shrink: 0;
+`;
+
+const ActionBar = styled.div`
+  display: flex;
+  gap: 8px;
+  padding: 12px 14px;
+  border-top: 1px solid ${props => props.theme.colors.borderLight};
+  flex-shrink: 0;
+`;
+
+const ActionPrimary = styled.a`
+  flex: 1;
+  text-align: center;
+  padding: 11px;
+  border-radius: 12px;
+  background: ${props => props.theme.colors.domain.location};
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+`;
+
+const ActionSecondary = styled.a`
+  flex: 1;
+  text-align: center;
+  padding: 11px;
+  border-radius: 12px;
+  background: ${props => props.theme.colors.surface};
+  color: ${props => props.theme.colors.text};
+  border: 1px solid ${props => props.theme.colors.border};
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+`;
 
 const TypeBadge = styled.span`
   font-size: 12px;
@@ -336,6 +475,20 @@ const ReviewEmpty = styled.div`
   font-size: 12px;
   color: ${props => props.theme.colors.textSecondary};
   padding: 8px 0;
+`;
+
+const LoadMoreButton = styled.button`
+  width: 100%;
+  margin-top: 8px;
+  padding: 8px 0;
+  background: none;
+  border: 1px solid ${props => props.theme.colors.border};
+  border-radius: 8px;
+  color: ${props => props.theme.colors.textSecondary};
+  font-size: 12px;
+  cursor: pointer;
+  &:hover:not(:disabled) { color: ${props => props.theme.colors.primary}; border-color: ${props => props.theme.colors.primary}; }
+  &:disabled { opacity: 0.6; cursor: default; }
 `;
 
 const ReviewForm = styled.form`

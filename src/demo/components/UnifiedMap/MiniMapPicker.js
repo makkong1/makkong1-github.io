@@ -4,7 +4,10 @@ import { geocodingApi } from '../../api/geocodingApi';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.9780 };
 const DEFAULT_ZOOM = 15;
-const NAVER_KEY_ID = import.meta.env?.VITE_NAVER_MAPS_KEY_ID || '';
+const NAVER_KEY_ID =
+  import.meta.env?.VITE_NAVER_MAPS_KEY_ID ||
+  import.meta.env?.VITE_NAVER_MAPS_CLIENT_ID ||
+  '';
 
 /**
  * 모달 내 미니 지도 장소 선택 컴포넌트

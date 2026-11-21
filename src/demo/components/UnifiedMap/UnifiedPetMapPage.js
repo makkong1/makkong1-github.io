@@ -11,27 +11,25 @@ import CareCreateModal from "./CareCreateModal";
 import LocationLayer from "./layers/LocationLayer";
 import MeetupLayer from "./layers/MeetupLayer";
 import CareLayer from "./layers/CareLayer";
-import { fetchActiveMapItems, LAYER_CONFIG } from "../../api/unifiedMapApi";
+import { fetchActiveMapItems } from "../../api/unifiedMapApi";
 import { locationServiceApi } from "../../api/locationServiceApi";
-// import RecommendCard from "../Recommendation/RecommendCard";
-// import { recommendApi } from "../../api/recommendApi";
+import { petRecommendationApi } from "../../api/petRecommendationApi";
+import { geocodingApi } from "../../api/geocodingApi";
+import { GOOD_PLACE_CATEGORIES } from "../../constants/locationCategoryTree";
+import PetNewsBanner from "./PetNewsBanner";
 
-const CATEGORY_TO_CONTEXT = {
-  미용: "grooming",
-  동물병원: "hospital",
-  동물약국: "pharmacy",
-  카페: "cafe",
-  펜션: "pension",
-  식당: "restaurant",
-  위탁관리: "boarding",
-  반려동물용품: "supplies",
-  호텔: "hotel",
-  간식: "snack",
-  사료: "food",
-  의류: "clothes",
-};
+/**
+ * 첫 화면 목록 기준. 「갈 만한 곳」이 기본값이다 — 전체 거리순으로 채우면 DB의 76%인
+ * 동물약국·병원·용품이 목록을 덮어 「데리고 갈 곳」이 안 보인다.
+ * (콜드 스타트 다음 단계는 행동 로그가 쌓인 뒤의 「요즘 자주 찾는 곳」이다.)
+ */
+const LOCATION_PRESETS = [
+  { id: "goodPlaces", label: "갈 만한 곳", title: "반려동물과 갈 만한 곳" },
+  { id: "all", label: "전체", title: "주변 시설" },
+];
 
 const SORT_LABELS = {
+  stable: "추천순",
   distance: "거리순",
   rating: "평점순",
   reviews: "리뷰순",
@@ -39,7 +37,18 @@ const SORT_LABELS = {
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const DEFAULT_RADIUS = 5;
-const COORD_EPSILON = 0.0001;
+const EARTH_RADIUS_METERS = 6371000;
+
+// 검색어가 행정구역명이면 sigungu/sido API 파라미터 반환 (반경 검색 우회용)
+const detectRegionSearchParams = (kw) => {
+  const t = kw.trim();
+  if (/(특별시|광역시|자치시|자치도)$/.test(t)) return { sido: t };
+  if (/^.{2,}도$/.test(t)) return { sido: t }; // 경기도, 강원도 등
+  if (/[구군]$/.test(t)) return { sigungu: t };
+  if (/시$/.test(t)) return { sigungu: t }; // 수원시, 고양시 등
+  return null;
+};
+const MIN_SEARCH_AREA_THRESHOLD_METERS = 300;
 
 const calculateMapLevelFromRadius = (radiusKm) => {
   if (radiusKm <= 1) return 5;
@@ -52,12 +61,30 @@ const calculateMapLevelFromRadius = (radiusKm) => {
 const hasValidCenter = (center) =>
   Number.isFinite(center?.lat) && Number.isFinite(center?.lng);
 
-const isSameCenter = (a, b) => {
+const haversineDistanceMeters = (a, b) => {
+  const dLat = ((b.lat - a.lat) * Math.PI) / 180;
+  const dLng = ((b.lng - a.lng) * Math.PI) / 180;
+  const lat1 = (a.lat * Math.PI) / 180;
+  const lat2 = (b.lat * Math.PI) / 180;
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+
+  return EARTH_RADIUS_METERS * 2 * Math.asin(Math.sqrt(h));
+};
+
+const isSameCenter = (a, b, radiusKm) => {
   if (!hasValidCenter(a) || !hasValidCenter(b)) return false;
-  return (
-    Math.abs(a.lat - b.lat) < COORD_EPSILON &&
-    Math.abs(a.lng - b.lng) < COORD_EPSILON
+  const radiusMeters =
+    typeof radiusKm === "number" && Number.isFinite(radiusKm)
+      ? radiusKm * 1000
+      : DEFAULT_RADIUS * 1000;
+  const threshold = Math.max(
+    MIN_SEARCH_AREA_THRESHOLD_METERS,
+    radiusMeters * 0.1
   );
+
+  return haversineDistanceMeters(a, b) < threshold;
 };
 
 const hasValidItemCoordinates = (item) =>
@@ -81,12 +108,15 @@ const UnifiedPetMapPage = () => {
   // location 탭 전용
   const [locationKeyword, setLocationKeyword] = useState("");
   const [locationCategory, setLocationCategory] = useState("");
+  /** 소분류(카페·미술관 등)가 여러 중분류에 있을 때 선택한 중분류 id */
+  const [locationCategoryGroupId, setLocationCategoryGroupId] = useState(null);
+  // [지도 반경검색 통일] 기본 정렬을 거리순으로 맞췄다 (care·meetup 과 동일).
+  // 백엔드 DEFAULT_RADIUS_SORT 는 원래 distance 였는데 프론트만 stable 을 보내고 있었다.
   const [locationSort, setLocationSort] = useState("distance");
   const [hasPendingAreaChange, setHasPendingAreaChange] = useState(false);
   const [searchMode, setSearchMode] = useState("initial");
-  // const [aiRecommendFacilities, setAiRecommendFacilities] = useState([]);
-  // const [aiRequestId, setAiRequestId] = useState(null);
-  // const [aiDismissed, setAiDismissed] = useState(false);
+  const [locationPreset, setLocationPreset] = useState("goodPlaces");
+  const [petIntentSignals, setPetIntentSignals] = useState([]);
 
   // meetup 탭 전용
   const [showMeetupCreateModal, setShowMeetupCreateModal] = useState(false);
@@ -99,6 +129,7 @@ const UnifiedPetMapPage = () => {
 
   const cacheRef = useRef({});
   const fetchTimerRef = useRef(null);
+  const signalRefreshTimerRef = useRef(null);
 
   const commitLocationSearch = useCallback(
     (center, mode = "user-triggered") => {
@@ -109,6 +140,12 @@ const UnifiedPetMapPage = () => {
     },
     []
   );
+
+  const refreshPetIntentSignals = useCallback(() => {
+    petRecommendationApi.getSignals()
+      .then(signals => setPetIntentSignals(signals))
+      .catch(() => setPetIntentSignals([]));
+  }, []);
 
   // 위치 취득 (iOS WebView·시뮬에서 콜백이 안 오는 경우 방지: 시간 지나면 서울 중심으로 진행)
   useEffect(() => {
@@ -157,13 +194,22 @@ const UnifiedPetMapPage = () => {
 
   // 데이터 조회 (디바운스 300ms)
   const fetchItems = useCallback(
-    (type, center, r, keyword, category, sort, level = 7) => {
+    // [지도 반경검색 통일] 줌 레벨(level)은 더 이상 조회 파라미터가 아니다.
+    // 결과 상한을 백엔드가 반경으로 정하므로, 같은 중심·반경이면 줌을 바꿔도 결과가 같다.
+    // 그래서 캐시 키에서도 뺐다 — 예전엔 줌만 바꿔도 캐시가 빗나가 재조회했다.
+    (type, center, r, keyword, category, sort) => {
       if (!hasValidCenter(center)) return;
       clearTimeout(fetchTimerRef.current);
       fetchTimerRef.current = setTimeout(async () => {
-        const cacheKey = `${type}-${center.lat.toFixed(4)}-${center.lng.toFixed(
-          4
-        )}-${r}-${keyword}-${category}-${sort}-${level}`;
+        const cacheKey = [
+          type,
+          center.lat.toFixed(4),
+          center.lng.toFixed(4),
+          r,
+          keyword,
+          category,
+          sort,
+        ].join("-");
         if (cacheRef.current[cacheKey]) {
           setItems(cacheRef.current[cacheKey]);
           return;
@@ -180,7 +226,6 @@ const UnifiedPetMapPage = () => {
             keyword: type === "location" ? keyword : undefined,
             category: type === "location" ? category : undefined,
             sort: type === "location" ? sort : undefined,
-            mapLevel: level,
           });
           cacheRef.current[cacheKey] = result;
           setItems(result);
@@ -199,6 +244,14 @@ const UnifiedPetMapPage = () => {
   const effectiveFetchCenter =
     activeLayer === "location" ? searchCenter : mapViewportCenter;
 
+  // 사용자가 카테고리·검색어를 고르면 그 선택이 이기고, 아무것도 안 고른 첫 화면에서만
+  // 섹션 기준이 적용된다. 배열이면 unifiedMapApi 가 나눠 호출하고 합친다.
+  const isGoodPlacesSection =
+    locationPreset === "goodPlaces" && !locationCategory && !locationKeyword;
+  const effectiveCategory = isGoodPlacesSection
+    ? GOOD_PLACE_CATEGORIES
+    : locationCategory;
+
   useEffect(() => {
     if (effectiveFetchCenter) {
       fetchItems(
@@ -206,9 +259,8 @@ const UnifiedPetMapPage = () => {
         effectiveFetchCenter,
         radius,
         locationKeyword,
-        locationCategory,
-        locationSort,
-        mapLevel
+        effectiveCategory,
+        locationSort
       );
     }
   }, [
@@ -216,23 +268,53 @@ const UnifiedPetMapPage = () => {
     effectiveFetchCenter,
     radius,
     locationKeyword,
-    locationCategory,
+    effectiveCategory,
     locationSort,
-    mapLevel,
     fetchItems,
   ]);
 
+  useEffect(() => {
+    if (activeLayer !== "location") return;
+    let cancelled = false;
+    petRecommendationApi.getSignals()
+      .then(signals => {
+        if (!cancelled) setPetIntentSignals(signals);
+      })
+      .catch(() => {
+        if (!cancelled) setPetIntentSignals([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeLayer, locationKeyword, locationCategory]);
+
+  useEffect(() => {
+    if (activeLayer !== "location" || !locationKeyword.trim()) return undefined;
+    window.clearTimeout(signalRefreshTimerRef.current);
+    signalRefreshTimerRef.current = window.setTimeout(refreshPetIntentSignals, 1500);
+    return () => window.clearTimeout(signalRefreshTimerRef.current);
+  }, [activeLayer, locationKeyword, refreshPetIntentSignals]);
+
+  useEffect(() => {
+    const handler = (e) => {
+      const { category, groupId } = e.detail || {};
+      setActiveLayer('location');
+      setLocationCategory(category || '동물병원');
+      setLocationCategoryGroupId(groupId || 'medical');
+    };
+    window.addEventListener('navigateToHealthAlert', handler);
+    return () => window.removeEventListener('navigateToHealthAlert', handler);
+  }, []);
+
   const handleTabChange = (layer) => {
     setActiveLayer(layer);
-    // setAiDismissed(false);
     setSelectedItem(null);
     setHoveredLocationItem(null);
-    // setAiRecommendFacilities([]);
-    // setAiRequestId(null);
     if (layer !== "location") {
       setLocationKeyword("");
       setLocationCategory("");
-      setLocationSort("distance");
+      setLocationCategoryGroupId(null);
+      setLocationSort("stable");
     }
     if (
       layer === "location" &&
@@ -246,7 +328,9 @@ const UnifiedPetMapPage = () => {
       hasValidCenter(mapViewportCenter) &&
       hasValidCenter(searchCenter)
     ) {
-      setHasPendingAreaChange(!isSameCenter(mapViewportCenter, searchCenter));
+      setHasPendingAreaChange(
+        !isSameCenter(mapViewportCenter, searchCenter, radius)
+      );
     }
     if (layer !== "location") {
       setHasPendingAreaChange(false);
@@ -315,51 +399,42 @@ const UnifiedPetMapPage = () => {
         isManualOperation &&
         hasValidCenter(searchCenter)
       ) {
-        setHasPendingAreaChange(!isSameCenter(nextCenter, searchCenter));
+        setHasPendingAreaChange(!isSameCenter(nextCenter, searchCenter, radius));
       }
     },
-    [activeLayer, searchCenter]
+    [activeLayer, radius, searchCenter]
   );
 
   // 모임 생성 성공 시 목록 갱신
   const handleMeetupCreated = () => {
     cacheRef.current = {};
-    fetchItems(
-      "meetup",
-      mapViewportCenter,
-      radius,
-      "",
-      "",
-      undefined,
-      mapLevel
-    );
+    fetchItems("meetup", mapViewportCenter, radius, "", "", undefined);
   };
 
   // 케어 요청 생성 성공 시 목록 갱신
   const handleCareCreated = () => {
     cacheRef.current = {};
-    fetchItems("care", mapViewportCenter, radius, "", "", undefined, mapLevel);
+    fetchItems("care", mapViewportCenter, radius, "", "", undefined);
   };
 
-  // const handleAiRecommendLoad = useCallback(({ facilities, requestId }) => {
-  //   setAiRecommendFacilities(facilities);
-  //   setAiRequestId(requestId);
-  // }, []);
+  const displayItems = items;
+  const mapServices = items;
 
-  // const handleAiItemClick = useCallback((rawFacility, requestId) => {
-  //   if (!requestId) return;
-  //   const event = {
-  //     facility_id: rawFacility.id ?? null,
-  //     source_id: rawFacility.source_id ?? null,
-  //     event: "click",
-  //     occurred_at: new Date().toISOString(),
-  //   };
-  //   if (event.facility_id == null && event.source_id == null) return;
-  //   recommendApi.sendEvents({ requestId, events: [event] }).catch(() => {});
-  // }, []);
-
-  // const aiDisplayItems = aiRecommendFacilities.map((f, i) => ({ ... }));
-  const displayItems = [...items];
+  // "반경 내 결과 없음" 토스트 — 검색 결과가 비면 중앙에 띄우고 3초 뒤 자동 소멸
+  const [emptyToast, setEmptyToast] = useState(false);
+  useEffect(() => {
+    const isEmpty =
+      !loading && !error && !!mapViewportCenter && displayItems.length === 0;
+    if (!isEmpty) {
+      setEmptyToast(false);
+      return;
+    }
+    setEmptyToast(true);
+    const t = setTimeout(() => setEmptyToast(false), 3000);
+    return () => clearTimeout(t);
+    // mapViewportCenter는 존재 여부만 사용(패닝 시 재트리거 방지)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, error, displayItems.length]);
 
   const handleLocationResultClick = useCallback((item) => {
     setSelectedItem(item);
@@ -369,13 +444,36 @@ const UnifiedPetMapPage = () => {
     }
   }, []);
 
-  const renderLocationResults = () => {
-    if (
-      activeLayer !== "location" ||
-      loading ||
-      error ||
-      displayItems.length === 0
-    ) {
+  const renderMobileBottomSheet = () => {
+    // 주변시설 상세: 목록 시트를 확장해 상세를 표시 (별도 패널 없이 목록↔상세 전환)
+    if (activeLayer === "location" && selectedItem?.type === "location") {
+      return (
+        <LocationResultSheet $expanded>
+          <LocationLayer
+            docked
+            selectedItem={selectedItem}
+            onClose={() => setSelectedItem(null)}
+          />
+        </LocationResultSheet>
+      );
+    }
+    if (activeLayer !== "location" && activeLayer !== "meetup" && activeLayer !== "care") {
+      return null;
+    }
+    const sheetItems = activeLayer === "location" ? displayItems : items;
+    const showPresetToggle =
+      activeLayer === "location" && !locationCategory && !locationKeyword;
+    const locationTitle = LOCATION_PRESETS.find(
+      (p) => p.id === (isGoodPlacesSection ? "goodPlaces" : "all")
+    ).title;
+    const locationSubtitle = isGoodPlacesSection
+      ? `카페·식당·여행지·숙박 등 · 반경 ${radius}km · ${SORT_LABELS[locationSort]}`
+      : `${searchMode === "initial" ? "초기 검색" : "현재 검색 기준"} · 반경 ${radius}km · ${SORT_LABELS[locationSort]}`;
+    const domainTitle = activeLayer === "meetup" ? "주변 모임" : "주변 펫케어";
+    const domainSubtitle = `반경 ${radius}km · 지도 보는 위치 기준`;
+
+    // 섹션이 비었을 때 시트를 숨기면 「전체」로 돌아올 토글까지 같이 사라진다.
+    if (loading || error || (sheetItems.length === 0 && !isGoodPlacesSection)) {
       return null;
     }
 
@@ -384,37 +482,59 @@ const UnifiedPetMapPage = () => {
         <ResultSheetHandle aria-hidden="true" />
         <ResultSheetHeader>
           <div>
-            <ResultSheetTitle>주변 시설</ResultSheetTitle>
+            <ResultSheetTitle>
+              {activeLayer === "location" ? locationTitle : domainTitle}
+            </ResultSheetTitle>
             <ResultSheetSubtitle>
-              {searchMode === "initial" ? "초기 검색" : "현재 검색 기준"} · 반경{" "}
-              {radius}km · {SORT_LABELS[locationSort]}
+              {activeLayer === "location" ? locationSubtitle : domainSubtitle}
             </ResultSheetSubtitle>
           </div>
-          <ResultSheetMeta>{displayItems.length}개</ResultSheetMeta>
+          <SheetHeaderRight>
+            <ResultSheetMeta>{sheetItems.length}개</ResultSheetMeta>
+            {showPresetToggle && (
+              <PresetRow role="group" aria-label="목록 기준">
+                {LOCATION_PRESETS.map((preset) => (
+                  <PresetChip
+                    key={preset.id}
+                    type="button"
+                    $active={locationPreset === preset.id}
+                    aria-pressed={locationPreset === preset.id}
+                    onClick={() => {
+                      setLocationPreset(preset.id);
+                      setSelectedItem(null);
+                    }}
+                  >
+                    {preset.label}
+                  </PresetChip>
+                ))}
+              </PresetRow>
+            )}
+          </SheetHeaderRight>
         </ResultSheetHeader>
-        {/* AI 추천 카드 — 재설계 전까지 비활성화
-        {!aiDismissed && userLocation && CATEGORY_TO_CONTEXT[locationCategory] && (
-          <RecommendCard
-            lat={userLocation.lat}
-            lng={userLocation.lng}
-            context={CATEGORY_TO_CONTEXT[locationCategory]}
-            variant="banner"
-            onDismiss={() => setAiDismissed(true)}
-          />
-        )} */}
-        <ResultList>
-          {displayItems.map((item, index) => {
+        <ResultList
+          onWheel={(e) => {
+            // 데스크톱 가로 목록: 세로 마우스 휠을 가로 스크롤로 변환
+            const el = e.currentTarget;
+            if (el.scrollWidth <= el.clientWidth) return;
+            if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+              el.scrollLeft += e.deltaY;
+            }
+          }}
+        >
+          {sheetItems.length === 0 && (
+            <EmptyHint>
+              반경 {radius}km 안에 갈 만한 곳이 없어요. 「전체」로 보거나 반경을 넓혀 보세요.
+            </EmptyHint>
+          )}
+          {sheetItems.map((item, index) => {
             const isSelected = selectedItem?.id === item.id;
             return (
               <ResultCard
                 key={item.id}
                 type="button"
                 $selected={isSelected}
-                $isAiRecommend={false}
                 onClick={() => {
                   handleLocationResultClick(item);
-                  // if (item.isAiRecommend)
-                  //   handleAiItemClick(item.rawAiFacility, aiRequestId);
                 }}
                 onMouseEnter={() => setHoveredLocationItem(item)}
                 onMouseLeave={() =>
@@ -425,8 +545,7 @@ const UnifiedPetMapPage = () => {
               >
                 <ResultCardTop>
                   <ResultCardTitle>
-                    {/* item.isAiRecommend && <AiItemBadge>AI</AiItemBadge> */}
-                    {item.title || item.name || `시설 ${index + 1}`}
+                    {item.title || item.name || `${activeLayer === "meetup" ? "모임" : activeLayer === "care" ? "케어" : "항목"} ${index + 1}`}
                   </ResultCardTitle>
                   {item.distanceM != null ? (
                     <ResultDistance>{item.distanceM}m</ResultDistance>
@@ -439,7 +558,13 @@ const UnifiedPetMapPage = () => {
                   )}
                 </ResultCardTop>
                 <ResultCardSubtitle>
-                  {item.subtitle || item.raw?.address || "주소 정보 없음"}
+                  {activeLayer === "location"
+                    ? item.subtitle || item.raw?.address || "주소 정보 없음"
+                    : item.subtitle ||
+                      item.raw?.address ||
+                      (item.raw?.description
+                        ? String(item.raw.description).slice(0, 100).trim()
+                        : "상세는 항목을 눌러 확인")}
                 </ResultCardSubtitle>
               </ResultCard>
             );
@@ -449,38 +574,105 @@ const UnifiedPetMapPage = () => {
     );
   };
 
+  const renderLocationResults = () => renderMobileBottomSheet();
+
   const renderLayerControls = (showRadius = false) => {
     if (activeLayer === "location") {
       return (
         <LocationControls
           keyword={locationKeyword}
           category={locationCategory}
+          intentSignals={petIntentSignals}
+          activeGroupId={locationCategoryGroupId}
           sort={locationSort}
           hasPendingAreaChange={hasPendingAreaChange}
           radius={showRadius ? radius : undefined}
-          onSearch={(kw) => {
+          onSearch={async (kw) => {
+            if (!kw) {
+              setLocationKeyword("");
+              cacheRef.current = {};
+              commitLocationSearch(mapViewportCenter, "user-triggered");
+              return;
+            }
+            // geocoding 먼저 시도 — 주소·지역명(강남구, 묵동 등)이면 좌표로 변환해 지도 이동
+            try {
+              const geoResult = await geocodingApi.searchPlaces(kw);
+              const first = geoResult?.results?.[0];
+              if (first?.latitude && first?.longitude) {
+                const loc = { lat: first.latitude, lng: first.longitude };
+                setMapViewportCenter(loc);
+                setLocationKeyword("");
+                cacheRef.current = {};
+                commitLocationSearch(loc, "geocoding");
+                return;
+              }
+            } catch (_) {
+              // geocoding 실패 시 다음 fallback으로
+            }
+            // 지역명 감지 (구/군/시/도) → sigungu·sido 직접 검색
+            const regionParams = detectRegionSearchParams(kw);
+            if (regionParams) {
+              setLoading(true);
+              setError(null);
+              setSelectedItem(null);
+              try {
+                const res = await locationServiceApi.searchPlaces({
+                  ...regionParams,
+                  ...(locationCategory && { category: locationCategory }),
+                  size: 300,
+                });
+                const services = res?.data?.services ?? [];
+                setItems(services.map(svc => ({
+                  idx: svc.idx,
+                  name: svc.name || '',
+                  latitude: svc.latitude,
+                  longitude: svc.longitude,
+                  markerColor: '#4A90D9',
+                  id: `location-${svc.idx}`,
+                  type: 'location',
+                  title: svc.name || '',
+                  subtitle: svc.category || svc.address || svc.roadAddress || '',
+                  raw: svc,
+                })));
+                // 결과 시설들의 중심으로 지도 이동 (searchCenter는 건드리지 않아야 radius 재검색 방지)
+                const withCoords = services.filter(s => s.latitude && s.longitude);
+                if (withCoords.length > 0) {
+                  const avgLat = withCoords.reduce((sum, s) => sum + s.latitude, 0) / withCoords.length;
+                  const avgLng = withCoords.reduce((sum, s) => sum + s.longitude, 0) / withCoords.length;
+                  setMapViewportCenter({ lat: avgLat, lng: avgLng });
+                }
+              } catch (_) {
+                setItems([]);
+              } finally {
+                setLoading(false);
+              }
+              return;
+            }
+            // 최종 fallback: 시설명 keyword 검색
             setLocationKeyword(kw);
             cacheRef.current = {};
-            commitLocationSearch(
-              mapViewportCenter,
-              kw ? "keyword" : "user-triggered"
-            );
+            commitLocationSearch(mapViewportCenter, "keyword");
+            window.clearTimeout(signalRefreshTimerRef.current);
+            signalRefreshTimerRef.current = window.setTimeout(refreshPetIntentSignals, 1500);
           }}
-          onCategoryChange={(cat) => {
-            setLocationCategory(cat);
-            // setAiDismissed(false);
-            // setAiRecommendFacilities([]);
-            // setAiRequestId(null);
+          onCategoryPick={({ category: cat, groupId }) => {
+            setLocationCategory(cat || "");
+            setLocationCategoryGroupId(cat ? groupId ?? null : null);
             cacheRef.current = {};
             commitLocationSearch(
               mapViewportCenter,
               cat ? "category" : "user-triggered"
             );
           }}
+          onSignalPick={(cat) => {
+            setLocationKeyword("");
+            setLocationCategory(cat || "");
+            setLocationCategoryGroupId(null);
+            cacheRef.current = {};
+            commitLocationSearch(mapViewportCenter, "intent-signal");
+          }}
           onSortChange={(sort) => {
             setLocationSort(sort);
-            // setAiRecommendFacilities([]);
-            // setAiRequestId(null);
             cacheRef.current = {};
             commitLocationSearch(mapViewportCenter, "user-triggered");
           }}
@@ -505,147 +697,24 @@ const UnifiedPetMapPage = () => {
   const renderInfoPanel = () => {
     if (!selectedItem) return null;
     const props = { selectedItem, onClose: () => setSelectedItem(null) };
-    if (selectedItem.type === "location") return <LocationLayer {...props} />;
+    // location 상세는 하단 시트 확장으로 표시 (renderMobileBottomSheet)
     if (selectedItem.type === "meetup")
       return <MeetupLayer {...props} onRefresh={handleMeetupCreated} />;
     if (selectedItem.type === "care") return <CareLayer {...props} />;
-    if (selectedItem.type === "ai_recommend")
-      return (
-        <AiInfoPanel>
-          <AiInfoClose onClick={() => setSelectedItem(null)}>✕</AiInfoClose>
-          <AiInfoBadge>✨ AI 추천</AiInfoBadge>
-          <AiInfoName>{selectedItem.name}</AiInfoName>
-          {selectedItem.distanceM != null && (
-            <AiInfoMeta>{selectedItem.distanceM}m</AiInfoMeta>
-          )}
-          {selectedItem.subtitle && (
-            <AiInfoMeta>{selectedItem.subtitle}</AiInfoMeta>
-          )}
-        </AiInfoPanel>
-      );
     return null;
   };
 
   return (
     <PageWrapper>
-      <DomainTabHeader
-        activeLayer={activeLayer}
-        onTabChange={handleTabChange}
-      />
-
       <ContentRow>
-        {/* ── 데스크톱 전용 좌측 패널 ── */}
-        <LeftPanel>
-          <LeftPanelTop>
-            {/* location 탭: 반경 필터가 LocationControls 내부 CompactFilterRow에 통합 */}
-            {activeLayer !== "location" && (
-              <RadiusFilter
-                radius={radius}
-                onRadiusChange={handleRadiusChange}
-              />
-            )}
-            {renderLayerControls(activeLayer === "location")}
-          </LeftPanelTop>
-
-          {/* location 탭: 결과 목록 */}
-          {activeLayer === "location" && (
-            <LeftPanelResults>
-              {/* AI 추천 카드 — 재설계 전까지 비활성화
-              {!aiDismissed && userLocation && CATEGORY_TO_CONTEXT[locationCategory] && (
-                <RecommendCard
-                  lat={userLocation.lat}
-                  lng={userLocation.lng}
-                  context={CATEGORY_TO_CONTEXT[locationCategory]}
-                  onFacilitiesLoaded={handleAiRecommendLoad}
-                  variant="banner"
-                  onDismiss={() => setAiDismissed(true)}
-                />
-              )} */}
-              {loading && <PanelStatusMsg>검색 중...</PanelStatusMsg>}
-              {!loading &&
-                !error &&
-                displayItems.length === 0 &&
-                mapViewportCenter && (
-                  <PanelStatusMsg>
-                    반경 {radius}km 내 결과가 없습니다.
-                  </PanelStatusMsg>
-                )}
-              {!loading && !error && displayItems.length > 0 && (
-                <>
-                  <PanelResultHeader>
-                    <div>
-                      <PanelResultTitle>주변 시설</PanelResultTitle>
-                      <PanelResultSubtitle>
-                        {searchMode === "initial"
-                          ? "초기 검색"
-                          : "현재 검색 기준"}{" "}
-                        · 반경 {radius}km · {SORT_LABELS[locationSort]}
-                      </PanelResultSubtitle>
-                    </div>
-                    <PanelResultCount>{displayItems.length}개</PanelResultCount>
-                  </PanelResultHeader>
-                  <PanelResultList>
-                    {displayItems.map((item, index) => {
-                      const isSelected = selectedItem?.id === item.id;
-                      return (
-                        <ResultCard
-                          key={item.id}
-                          type="button"
-                          $selected={isSelected}
-                          $isAiRecommend={false}
-                          onClick={() => {
-                            handleLocationResultClick(item);
-                            // if (item.isAiRecommend)
-                            //   handleAiItemClick(item.rawAiFacility, aiRequestId);
-                          }}
-                          onMouseEnter={() => setHoveredLocationItem(item)}
-                          onMouseLeave={() =>
-                            setHoveredLocationItem((current) =>
-                              current?.id === item.id ? null : current
-                            )
-                          }
-                        >
-                          <ResultCardTop>
-                            <ResultCardTitle>
-                              {/* item.isAiRecommend && <AiItemBadge>AI</AiItemBadge> */}
-                              {item.title || item.name || `시설 ${index + 1}`}
-                            </ResultCardTitle>
-                            {item.distanceM != null ? (
-                              <ResultDistance>{item.distanceM}m</ResultDistance>
-                            ) : (
-                              item.raw?.distance != null && (
-                                <ResultDistance>
-                                  {Math.round(item.raw.distance)}m
-                                </ResultDistance>
-                              )
-                            )}
-                          </ResultCardTop>
-                          <ResultCardSubtitle>
-                            {item.subtitle ||
-                              item.raw?.address ||
-                              "주소 정보 없음"}
-                          </ResultCardSubtitle>
-                        </ResultCard>
-                      );
-                    })}
-                  </PanelResultList>
-                </>
-              )}
-            </LeftPanelResults>
-          )}
-
-        </LeftPanel>
-
-        {/* ── 지도 영역 ── */}
+        {/* ── 지도 영역 (풀블리드) ── */}
         <MapWrapper>
           {mapViewportCenter ? (
             <MapContainer
-              services={[
-                ...items,
-                // AI 추천 마커 — 재설계 전까지 비활성화
-                // ...aiRecommendFacilities.filter(...).map(...)
-              ]}
-              onServiceClick={setSelectedItem}
+              services={mapServices}
+              onServiceClick={(item) =>
+                handleLocationResultClick(item)
+              }
               userLocation={userLocation}
               mapCenter={mapViewportCenter}
               mapLevel={mapLevel}
@@ -657,19 +726,35 @@ const UnifiedPetMapPage = () => {
             <MapInitLoading>🗺️ 위치 정보를 가져오는 중...</MapInitLoading>
           )}
 
-          {/* 모바일 전용 컨트롤 오버레이 */}
-          <ControlsOverlay>
-            {renderLayerControls(true)}
-          </ControlsOverlay>
+          {/* 지도 위 상단 플로팅: 도메인 전환 + 검색/필터 (전 화면 공통) */}
+          <TopOverlay>
+            {/* 안 읽은 반려동물 소식이 있을 때만 한 번. 닫으면 알림이 읽음 처리된다. */}
+            <PetNewsBanner />
+            <DomainTabHeader
+              activeLayer={activeLayer}
+              onTabChange={handleTabChange}
+            />
+            <OverlayControls>
+              {activeLayer !== "location" && (
+                <RadiusFilter
+                  radius={radius}
+                  onRadiusChange={handleRadiusChange}
+                />
+              )}
+              {renderLayerControls(true)}
+            </OverlayControls>
+          </TopOverlay>
 
-          <MyLocationFAB
-            onClick={handleMoveToMyLocation}
-            disabled={locating}
-            title="내 위치로 이동"
-            aria-label="내 위치로 이동"
-          >
-            <span aria-hidden="true">{locating ? "⏳" : "📍"}</span>
-          </MyLocationFAB>
+          {selectedItem?.type !== "location" && (
+            <MyLocationFAB
+              onClick={handleMoveToMyLocation}
+              disabled={locating}
+              title="내 위치로 이동"
+              aria-label="내 위치로 이동"
+            >
+              <span aria-hidden="true">{locating ? "⏳" : "📍"}</span>
+            </MyLocationFAB>
+          )}
 
           {loading && <LoadingBar aria-label="데이터 조회 중" />}
 
@@ -684,12 +769,10 @@ const UnifiedPetMapPage = () => {
             <ErrorBanner onClick={() => setError(null)}>{error} ✕</ErrorBanner>
           )}
 
-          {!loading &&
-            !error &&
-            displayItems.length === 0 &&
-            mapViewportCenter && (
-              <EmptyBanner>반경 {radius}km 내 결과가 없습니다.</EmptyBanner>
-            )}
+          {/* 「갈 만한 곳」 섹션은 시트 안에서 「전체로 보라」까지 안내한다 — 겹치면 문구가 서로 어긋난다 */}
+          {emptyToast && !isGoodPlacesSection && (
+            <EmptyBanner>반경 {radius}km 내 결과가 없습니다.</EmptyBanner>
+          )}
 
           {renderInfoPanel()}
           {renderLocationResults()}
@@ -750,25 +833,47 @@ const MapInitLoading = styled.div`
   z-index: 10;
 `;
 
-/* 모바일 전용 컨트롤 오버레이 — 데스크톱은 LeftPanel이 대체 */
-const ControlsOverlay = styled.div`
-  @media (min-width: 769px) {
-    display: none;
-  }
-
+/* 지도 위 상단 플로팅 컨트롤 (전 화면 공통) — 솔리드 바 대신 떠 있는 알약 */
+const TopOverlay = styled.div`
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   z-index: 200;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  background: ${(props) => props.theme.colors.surface + "E8"};
-  border-bottom: 1px solid ${(props) => props.theme.colors.border};
-  box-shadow: 0 2px 12px ${(props) => props.theme.colors.shadow};
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 16px 0;
   pointer-events: none;
   > * {
     pointer-events: auto;
+  }
+
+  @media (max-width: 768px) {
+    padding: 12px 12px 0;
+    gap: 8px;
+  }
+`;
+
+/* 검색 + 조건(필터)을 하단 목록 시트처럼 커다란 박스에 담는다 */
+const OverlayControls = styled.div`
+  width: 100%;
+  max-width: 760px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 24px;
+  background: ${(props) => props.theme.colors.surface + "F2"};
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid ${(props) => props.theme.colors.border};
+  box-shadow: ${(props) => props.theme.shadows.xl};
+
+  @media (max-width: 768px) {
+    padding: 12px 12px;
+    border-radius: 20px;
   }
 `;
 
@@ -776,7 +881,7 @@ const ControlsOverlay = styled.div`
 const MyLocationFAB = styled.button`
   position: absolute;
   right: 20px;
-  bottom: 110px;
+  bottom: 248px; /* 데스크톱 하단 결과 시트(약 220px) 위로 */
   z-index: 300;
   width: 52px;
   height: 52px;
@@ -859,16 +964,6 @@ const CountChip = styled.div`
   }
 `;
 
-const AiBadge = styled.span`
-  margin-right: 6px;
-  background: ${(props) => props.theme.colors.ai.bg};
-  color: ${(props) => props.theme.colors.ai.text};
-  font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 8px;
-  font-size: 11px;
-`;
-
 const ErrorBanner = styled.div`
   position: absolute;
   top: 12px;
@@ -884,33 +979,43 @@ const ErrorBanner = styled.div`
   white-space: nowrap;
 `;
 
+const toastPop = keyframes`
+  from { opacity: 0; transform: translate(-50%, -50%) scale(0.94); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+`;
+
+/* 중앙 토스트 — 결과 없음 알림 (3초 후 자동 소멸) */
 const EmptyBanner = styled.div`
   position: absolute;
-  top: 12px;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  background: ${(props) => props.theme.colors.surface};
-  color: ${(props) => props.theme.colors.textSecondary};
+  transform: translate(-50%, -50%);
+  background: ${(props) => props.theme.colors.surfaceElevated + "F2"};
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: ${(props) => props.theme.colors.text};
   border: 1px solid ${(props) => props.theme.colors.border};
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 13px;
+  padding: 13px 24px;
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
   z-index: 400;
   white-space: nowrap;
+  box-shadow: ${(props) => props.theme.shadows.xl};
+  pointer-events: none;
+  animation: ${toastPop} 0.2s cubic-bezier(0, 0, 0.2, 1);
 `;
 
 const LocationResultSheet = styled.section`
-  /* 모바일 전용 — 데스크톱은 LeftPanel 내 결과 목록이 대체 */
-  @media (min-width: 769px) {
-    display: none !important;
-  }
-
+  /* A형 몰입 레이아웃: 데스크톱은 하단 풀폭 시트(가로 카드), 모바일은 하단 도킹 시트 */
   position: absolute;
   left: 16px;
-  width: 392px;
+  right: 16px;
   bottom: 16px;
+  /* 상세 확장 시 위로 커져 상세를 표시 */
+  top: ${(props) => (props.$expanded ? "150px" : "auto")};
+  height: ${(props) => (props.$expanded ? "auto" : "220px")};
   z-index: 230;
-  top: 236px;
   border-radius: 24px;
   background: ${(props) => props.theme.colors.surface + "F2"};
   backdrop-filter: blur(20px);
@@ -921,19 +1026,15 @@ const LocationResultSheet = styled.section`
   display: flex;
   flex-direction: column;
 
-  @media (min-width: 1024px) {
-    width: 392px;
-    bottom: 16px;
-  }
-
   @media (max-width: 768px) {
     left: 12px;
     right: 12px;
-    width: auto;
-    top: auto;
+    top: ${(props) => (props.$expanded ? "150px" : "auto")};
+    height: auto;
     bottom: calc(72px + env(safe-area-inset-bottom, 0px));
-    min-height: 272px;
-    max-height: calc(100dvh - 220px);
+    min-height: ${(props) => (props.$expanded ? "0" : "272px")};
+    max-height: ${(props) =>
+      props.$expanded ? "none" : "calc(100dvh - 220px)"};
     border-radius: 24px 24px 18px 18px;
   }
 `;
@@ -978,36 +1079,82 @@ const ResultSheetMeta = styled.span`
   color: ${(props) => props.theme.colors.textSecondary};
 `;
 
-const ResultList = styled.div`
+const SheetHeaderRight = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+`;
+
+const PresetRow = styled.div`
+  display: flex;
+  gap: 6px;
+`;
+
+const PresetChip = styled.button`
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid
+    ${(props) =>
+      props.$active
+        ? props.theme.colors.domain.location
+        : props.theme.colors.border};
+  background: ${(props) =>
+    props.$active
+      ? props.theme.colors.domain.location
+      : props.theme.colors.background};
+  color: ${(props) =>
+    props.$active ? "#fff" : props.theme.colors.textSecondary};
+`;
+
+const EmptyHint = styled.p`
+  margin: 0;
+  padding: 4px 2px;
+  font-size: 13px;
+  color: ${(props) => props.theme.colors.textSecondary};
+`;
+
+const ResultList = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
   flex: 1;
-  overflow-y: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   padding: 14px 16px 18px;
 
   @media (max-width: 768px) {
+    flex-direction: column;
+    overflow-x: hidden;
+    overflow-y: auto;
+    gap: 10px;
     padding-bottom: 22px;
   }
 `;
 
 const ResultCard = styled.button`
-  width: 100%;
+  width: 280px;
+  flex-shrink: 0;
   text-align: left;
+
+  @media (max-width: 768px) {
+    width: 100%;
+  }
   border: 1px solid
     ${(props) =>
       props.$selected
         ? props.theme.colors.domain.location
         : props.theme.colors.border};
-  ${(props) =>
-    props.$isAiRecommend &&
-    `border-left: 3px solid ${props.theme.colors.primary};`}
   background: ${(props) =>
     props.$selected
       ? props.theme.colors.domain.location + "1A"
       : props.theme.colors.background};
   border-radius: 18px;
-  padding: 14px 14px 13px ${(props) => (props.$isAiRecommend ? "11px" : "14px")};
+  padding: 14px 14px 13px;
   cursor: pointer;
   transition: border-color 0.15s ease, transform 0.15s ease,
     box-shadow 0.15s ease, background 0.15s ease;
@@ -1054,158 +1201,10 @@ const ResultDistance = styled.span`
   border-radius: 999px;
 `;
 
-const ResultRankBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  border-radius: 999px;
-  background: ${(props) => props.theme.colors.warningSoft};
-  color: ${(props) => props.theme.colors.warningDark};
-  font-size: 10px;
-  font-weight: 800;
-`;
-
-const AiItemBadge = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: ${(props) => props.theme.colors.primaryLight || "#eef2ff"};
-  // color: ${(props) => props.theme.colors.textSecondary}
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-`;
-
-const AiInfoPanel = styled.div`
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: ${(props) => props.theme.colors.surface};
-  border: 1.5px solid ${(props) => props.theme.colors.ai.accent};
-  border-radius: 12px;
-  padding: 14px 18px;
-  min-width: 220px;
-  max-width: 320px;
-  z-index: 500;
-  box-shadow: ${(props) => props.theme.shadows.lg};
-`;
-
-const AiInfoClose = styled.button`
-  position: absolute;
-  top: 8px;
-  right: 10px;
-  background: none;
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  color: ${(props) => props.theme.colors.textSecondary};
-  padding: 0;
-`;
-
-const AiInfoBadge = styled.span`
-  display: inline-block;
-  background: ${(props) => props.theme.colors.ai.bg};
-  color: ${(props) => props.theme.colors.ai.text};
-  font-size: 11px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 20px;
-  margin-bottom: 8px;
-`;
-
-const AiInfoName = styled.p`
-  font-size: 15px;
-  font-weight: 700;
-  color: ${(props) => props.theme.colors.text};
-  margin: 0 0 4px;
-`;
-
-const AiInfoMeta = styled.p`
-  font-size: 12px;
-  color: ${(props) => props.theme.colors.textSecondary};
-  margin: 2px 0 0;
-`;
-
-/* ── 데스크톱 2단 레이아웃 ── */
-
+/* 지도 풀블리드 래퍼 */
 const ContentRow = styled.div`
   display: flex;
-  flex-direction: row;
   flex: 1;
   overflow: hidden;
 `;
 
-const LeftPanel = styled.aside`
-  width: 320px;
-  flex-shrink: 0;
-  border-right: 1px solid ${(props) => props.theme.colors.border};
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  background: ${(props) => props.theme.colors.surface};
-
-  @media (max-width: 768px) {
-    display: none;
-  }
-`;
-
-const LeftPanelTop = styled.div`
-  flex-shrink: 0;
-  border-bottom: 1px solid ${(props) => props.theme.colors.border};
-`;
-
-const LeftPanelResults = styled.div`
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-height: 0;
-`;
-
-const PanelResultHeader = styled.div`
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid ${(props) => props.theme.colors.borderLight};
-  flex-shrink: 0;
-`;
-
-const PanelResultTitle = styled.h3`
-  margin: 0;
-  font-size: 15px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: ${(props) => props.theme.colors.text};
-`;
-
-const PanelResultSubtitle = styled.p`
-  margin: 4px 0 0;
-  font-size: 11px;
-  color: ${(props) => props.theme.colors.textSecondary};
-`;
-
-const PanelResultCount = styled.span`
-  font-size: 12px;
-  font-weight: 700;
-  color: ${(props) => props.theme.colors.textSecondary};
-  flex-shrink: 0;
-`;
-
-const PanelResultList = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px 14px 16px;
-`;
-
-const PanelStatusMsg = styled.div`
-  padding: 28px 16px;
-  text-align: center;
-  color: ${(props) => props.theme.colors.textSecondary};
-  font-size: 13px;
-`;
