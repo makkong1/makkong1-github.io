@@ -4,9 +4,9 @@
 
 - 이력서형 홈 페이지
 - Petory 프로젝트 소개 페이지
-- 도메인별 상세 페이지
+- 대표 사례(측정 방식 검증 + 고친 사례 6건)
+- 도메인별 데이터 흐름 시퀀스
 - 더미 데이터 기반 라이브 데모
-- 백엔드 아키텍처/성능/동시성 문서 허브
 
 ## Live
 
@@ -31,8 +31,11 @@
 - `/` : 이력서형 홈
 - `/portfolio/petory` : Petory 프로젝트 소개
 - `/demo` : mock 기반 라이브 데모
-- `/domains/*` : User, Board, Care, Location, Recommendation, Meetup, Chat 등 도메인 상세
-- `/docs` : 문서 링크 허브
+- `/domains/cases` : 대표 사례 (URL `?case=` 로 딥링크)
+- `/domains/flows` : 도메인별 데이터 흐름 시퀀스
+
+도메인별 상세 페이지와 문서 허브는 대표 사례로 흡수해 삭제했다. 기존 URL
+(`/domains/<도메인>`, `/docs`, `/infra`)은 사례 또는 프로젝트 소개로 리다이렉트된다.
 
 ## Tech Stack
 
