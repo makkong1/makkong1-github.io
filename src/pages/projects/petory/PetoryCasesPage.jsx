@@ -1,4 +1,4 @@
-import { Link, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { PETORY_CASES, resolvePetoryCaseSelection } from './petoryCases';
 
@@ -19,52 +19,17 @@ function Card({ children, style }) {
   );
 }
 
-function Field({ label, children }) {
-  return (
-    <p style={{ margin: '0 0 0.6rem', color: 'var(--text-secondary)', lineHeight: '1.75', fontSize: '0.92rem' }}>
-      <strong style={{ color: 'var(--text-color)' }}>{label}</strong> — {children}
-    </p>
-  );
-}
-
-function MetricsTable({ rows }) {
-  const th = { padding: '0.5rem 0.75rem', textAlign: 'left', color: 'var(--text-color)', fontSize: '0.85rem' };
-  const td = { padding: '0.5rem 0.75rem', fontSize: '0.9rem' };
-  return (
-    <div style={{ overflowX: 'auto', margin: '0.5rem 0 0' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)' }}>
-        <thead>
-          <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-            <th style={th}>지표</th>
-            <th style={th}>Before</th>
-            <th style={th}>After</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map(([label, before, after], i) => (
-            <tr key={label} style={{ borderBottom: i < rows.length - 1 ? '1px solid var(--nav-border)' : 'none' }}>
-              <td style={{ ...td, color: 'var(--text-color)' }}>{label}</td>
-              <td style={td}>{before}</td>
-              <td style={{ ...td, color: 'var(--text-color)', fontWeight: 600 }}>{after}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function StrategiesTable({ rows }) {
+function StrategiesTable({ rows, headers = ['도메인', '전략', '왜'] }) {
   const th = { padding: '0.5rem 0.75rem', textAlign: 'left', color: 'var(--text-color)', fontSize: '0.85rem' };
   const td = { padding: '0.5rem 0.75rem', fontSize: '0.88rem', verticalAlign: 'top' };
   return (
-    <div style={{ overflowX: 'auto', margin: '0.5rem 0 0' }}>
+    <div style={{ overflowX: 'auto', margin: '1rem 0 0' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse', color: 'var(--text-secondary)' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--nav-border)' }}>
-            <th style={th}>도메인</th>
-            <th style={th}>전략</th>
-            <th style={th}>왜</th>
+            {headers.map((h) => (
+              <th key={h} style={th}>{h}</th>
+            ))}
           </tr>
         </thead>
         <tbody>
@@ -81,6 +46,33 @@ function StrategiesTable({ rows }) {
   );
 }
 
+function Steps({ rows }) {
+  return (
+    <div style={{ margin: '0 0 1.4rem' }}>
+      {rows.map(({ tag, title, paras }) => (
+        <div
+          key={tag}
+          style={{
+            borderLeft: '2px solid var(--link-color)',
+            padding: '0.1rem 0 0.1rem 0.9rem',
+            margin: '0 0 1.2rem',
+          }}
+        >
+          <p style={{ margin: '0 0 0.45rem', fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-color)' }}>
+            <span style={{ color: 'var(--link-color)', marginRight: '0.4rem' }}>{tag}</span>
+            {title}
+          </p>
+          {paras.map((text) => (
+            <p key={text} style={{ margin: '0 0 0.5rem', color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.91rem' }}>
+              {text}
+            </p>
+          ))}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function PetoryCasesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const active = useMemo(() => resolvePetoryCaseSelection(searchParams), [searchParams]);
@@ -91,16 +83,9 @@ function PetoryCasesPage() {
     <div className="domain-page-wrapper" style={{ padding: '2rem 0' }}>
       <div className="domain-page-container" style={{ display: 'flex', gap: '2rem', alignItems: 'flex-start' }}>
         <div className="domain-page-content" style={{ flex: 1 }}>
-          <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>대표 리팩토링 사례</h1>
-          <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '1rem', fontSize: '0.95rem' }}>
-            프로젝트 전체에서 추린 대표 성능 개선·리팩토링 사례입니다. 각 사례는{' '}
-            <strong>배경 → 문제 → 검토한 대안 → 결정 → 검증 → 결과</strong> 순. 칩을 눌러 전환하고, URL{' '}
-            <code style={{ fontSize: '0.82em', backgroundColor: 'var(--bg-color)', padding: '0.1rem 0.35rem', borderRadius: '4px' }}>?case=</code>로 딥링크됩니다.
-          </p>
-          <p style={{ marginBottom: '1.25rem', fontSize: '0.9rem' }}>
-            <Link to="/portfolio/petory" style={{ color: 'var(--link-color)', textDecoration: 'none' }}>
-              ← Petory 프로젝트 소개
-            </Link>
+          <h1 style={{ marginBottom: '0.5rem', color: 'var(--text-color)' }}>대표 사례</h1>
+          <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', marginBottom: '1.25rem', fontSize: '0.95rem' }}>
+            측정 방식 1건 + 고친 사례 6건. 칩을 눌러 전환합니다.
           </p>
 
           {/* 셀렉터 */}
@@ -142,33 +127,32 @@ function PetoryCasesPage() {
                 fontWeight: 700,
                 color: 'var(--link-color)',
                 border: '1px solid var(--nav-border)',
-                marginBottom: '0.6rem',
+                marginBottom: '0.75rem',
               }}
             >
               {active.domain}
             </span>
-            <h2 style={{ margin: '0 0 1rem', color: 'var(--text-color)', fontSize: '1.15rem' }}>{active.title}</h2>
 
-            {active.context && <Field label="배경">{active.context}</Field>}
-            <Field label="문제">{active.problem}</Field>
-            {active.alternatives && <Field label="검토한 대안">{active.alternatives}</Field>}
-            <Field label="결정">{active.decision}</Field>
+            {/* 헤드라인 = [무엇을 어떻게] + [결과 수치] */}
+            <h2 style={{ margin: '0 0 1rem', color: 'var(--text-color)', fontSize: '1.35rem', lineHeight: '1.45' }}>
+              {active.headline}
+            </h2>
 
-            {active.strategies && (
-              <>
-                <p style={{ margin: '0.3rem 0 0', color: 'var(--text-color)', fontWeight: 600, fontSize: '0.9rem' }}>도메인별 전략</p>
-                <StrategiesTable rows={active.strategies} />
-              </>
+            {active.steps && <Steps rows={active.steps} />}
+
+            {active.bulletsTitle && (
+              <p style={{ margin: '0 0 0.5rem', color: 'var(--text-color)', fontWeight: 700, fontSize: '0.95rem' }}>
+                {active.bulletsTitle}
+              </p>
             )}
 
-            {active.verify && <Field label="검증">{active.verify}</Field>}
+            <ul style={{ margin: 0, paddingLeft: '1.1rem', color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.93rem' }}>
+              {active.bullets.map((b) => (
+                <li key={b} style={{ marginBottom: '0.45rem' }}>{b}</li>
+              ))}
+            </ul>
 
-            {active.metrics && (
-              <>
-                <p style={{ margin: '0.9rem 0 0', color: 'var(--text-color)', fontWeight: 600, fontSize: '0.9rem' }}>결과</p>
-                <MetricsTable rows={active.metrics} />
-              </>
-            )}
+            {active.strategies && <StrategiesTable rows={active.strategies} headers={active.strategyHeaders} />}
 
             {active.code && (
               <pre
@@ -181,18 +165,13 @@ function PetoryCasesPage() {
                   color: 'var(--text-secondary)',
                   fontFamily: 'monospace',
                   lineHeight: '1.65',
-                  margin: '0.9rem 0 0',
+                  margin: '1rem 0 0',
                 }}
               >
                 {active.code}
               </pre>
             )}
 
-            <p style={{ margin: '1.1rem 0 0', fontSize: '0.9rem' }}>
-              <Link to={active.domainPath} style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
-                {active.domain} 도메인 보기 →
-              </Link>
-            </p>
           </Card>
         </div>
 
