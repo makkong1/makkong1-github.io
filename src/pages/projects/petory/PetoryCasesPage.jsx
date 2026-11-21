@@ -140,17 +140,28 @@ function PetoryCasesPage() {
 
             {active.steps && <Steps rows={active.steps} />}
 
+            {active.paras?.map((text) => (
+              <p
+                key={text}
+                style={{ margin: '0 0 0.7rem', color: 'var(--text-secondary)', lineHeight: '1.85', fontSize: '0.93rem' }}
+              >
+                {text}
+              </p>
+            ))}
+
             {active.bulletsTitle && (
               <p style={{ margin: '0 0 0.5rem', color: 'var(--text-color)', fontWeight: 700, fontSize: '0.95rem' }}>
                 {active.bulletsTitle}
               </p>
             )}
 
+            {active.bullets && (
             <ul style={{ margin: 0, paddingLeft: '1.1rem', color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.93rem' }}>
               {active.bullets.map((b) => (
                 <li key={b} style={{ marginBottom: '0.45rem' }}>{b}</li>
               ))}
             </ul>
+            )}
 
             {active.strategies && <StrategiesTable rows={active.strategies} headers={active.strategyHeaders} />}
 
