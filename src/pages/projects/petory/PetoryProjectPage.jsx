@@ -367,7 +367,7 @@ ${nodeStyles}`;
             <div className="section-card">
               <div className="domain-link-grid">
               {domains.map((domain) => (
-                <Link key={domain.name} to={domain.link} className="project-card">
+                <div key={domain.name} className="project-card">
                   <h3>{domain.name}</h3>
                   <p className="project-description">{domain.description}</p>
                   <div className="tech-stack-wrapper">
@@ -375,7 +375,7 @@ ${nodeStyles}`;
                       <span key={idx} className="tech-badge">{feature}</span>
                     ))}
                   </div>
-                </Link>
+                </div>
               ))}
               </div>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '1rem', marginBottom: 0, lineHeight: 1.7 }}>
@@ -488,18 +488,13 @@ ${nodeStyles}`;
                 <h3>GitHub 저장소</h3>
                 <p style={{ fontSize: '0.9rem' }}>전체 소스 코드 및 문서</p>
               </a>
-              <Link to="/docs" className="project-card">
-                <h3>문서 모음</h3>
-                <p style={{ fontSize: '0.9rem' }}>아키텍처 및 도메인 문서</p>
+              <Link to="/domains/cases" className="project-card">
+                <h3>대표 사례</h3>
+                <p style={{ fontSize: '0.9rem' }}>측정 방식 검증 + 고친 사례 6건</p>
               </Link>
-              <Link
-                to="/domains/recommendation"
-                className="project-card"
-              >
-                <h3>Recommendation 도메인</h3>
-                <p style={{ fontSize: '0.9rem' }}>
-                  intent signal · NLP · 주변서비스 추천 카드
-                </p>
+              <Link to="/domains/flows" className="project-card">
+                <h3>데이터 흐름</h3>
+                <p style={{ fontSize: '0.9rem' }}>도메인별 시퀀스 다이어그램</p>
               </Link>
               <Link to="/demo" className="project-card">
                 <h3>라이브 데모</h3>

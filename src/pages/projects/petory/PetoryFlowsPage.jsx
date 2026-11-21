@@ -173,11 +173,10 @@ function PetoryFlowsPage() {
                   margin: 0,
                 }}
               >
-                도메인별 기술 결정과 표는 각 도메인 V2 페이지에 두고, 여기에서는
-                시퀀스만 한 화면에 묶었습니다. Recommendation은 Board·Care·
-                Location 연계(Signal)와 추천 카드 pill로 나뉩니다. Chat 탭에서는
-                Care·Missing Pet·Meetup 연계축별로 같은 인프라 패턴을 골라 볼 수
-                있습니다.
+                무엇을 왜 그렇게 고쳤는지는 대표 사례에 두고, 여기에서는 시퀀스만
+                한 화면에 묶었습니다. Recommendation은 Board·Care·Location
+                연계(Signal)와 추천 카드 pill로 나뉘고, Chat 탭에서는 Care·Missing
+                Pet·Meetup 연계축별로 같은 인프라 패턴을 골라 볼 수 있습니다.
               </p>
             </Card>
           </section>
