@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import MermaidDiagram from '../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../components/Common/TableOfContents';
-import petoryErdImage from '../../../assets/petory-erd-0131.png';
 
 function PetoryProjectPage() {
   const isDarkMode = true;
@@ -12,9 +11,8 @@ function PetoryProjectPage() {
     { id: 'why', title: '왜 이걸 했는가' },
     { id: 'architecture', title: '아키텍처' },
     { id: 'sequence-flows', title: '데이터 흐름 시퀀스' },
-    { id: 'features', title: '주요 기능' },
-    { id: 'tech-stack', title: '기술 스택' },
-    { id: 'links', title: '관련 링크' }
+    { id: 'features', title: '도메인 구성' },
+    { id: 'tech-stack', title: '기술 스택' }
   ];
 
   const nodeStyles = isDarkMode
@@ -65,26 +63,56 @@ function PetoryProjectPage() {
     CORE --> EXT
 ${nodeStyles}`;
 
-  const notificationArchitectureDiagram = `flowchart LR
-    DOMAIN["Board · Care · MissingPet\\nRecommendation"] --> NS["NotificationService"]
-    NS --> DB[("MySQL\\nnotifications")]
-    NS --> REDIS[("Redis\\nnotification:{userId}")]
-    NS --> SSE["SSE\\nSseEmitter"]
-    NS --> FCM["Firebase FCM"]
+  // 도메인 의존 방향 — backend/main/java/.../domain 의 import 를 계산한 결과(16개 패키지)
+  // 도메인 의존 방향 — backend/main/java/.../domain 의 import 를 계산한 결과(16개 패키지)
+  const domainDependencyDiagram = `flowchart LR
+    L3["읽기만 하는 쪽<br/>statistics · admin · activity · profile<br/>들어오는 참조 0"]
+    L2["업무 도메인<br/>board · care · payment · chat<br/>meetup · location · petRecommendation · report"]
+    L1["기반<br/>user · notification · file · common<br/>업무 도메인을 참조하지 않음"]
 
-    CLIENT["React · Capacitor"] --> API["NotificationController"]
-    API --> NS
-    SSE --> CLIENT
-    FCM --> CLIENT
+    L3 --> L2 --> L1
 
-    style DOMAIN fill:#1a3a1a,color:#b0d4b0,stroke:#40804a
-    style NS fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
-    style API fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
-    style DB fill:#3a1a3a,color:#e4b0e4,stroke:#904090
-    style REDIS fill:#3a1a3a,color:#e4b0e4,stroke:#904090
-    style SSE fill:#3a3010,color:#f4e6b0,stroke:#a08030
-    style FCM fill:#3a3010,color:#f4e6b0,stroke:#a08030
-    style CLIENT fill:#2a2622,color:#d0d0d0,stroke:#6b7280`;
+    subgraph CYC["남은 순환 2곳"]
+        direction TB
+        CARE["care"] <--> PAY["payment"]
+        CHAT["chat"] <--> MEET["meetup"]
+    end
+
+    L2 -.-> CYC
+
+    style L3 fill:#2a2622,color:#d0d0d0,stroke:#6b7280
+    style L2 fill:#1a3a1a,color:#b0d4b0,stroke:#40804a
+    style L1 fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
+    style CARE fill:#3a3010,color:#f4e6b0,stroke:#a08030
+    style PAY fill:#3a3010,color:#f4e6b0,stroke:#a08030
+    style CHAT fill:#3a3010,color:#f4e6b0,stroke:#a08030
+    style MEET fill:#3a3010,color:#f4e6b0,stroke:#a08030`;
+
+  // 트랜잭션 경계 — 커밋 전/후로 무엇이 갈라지는가
+  const transactionBoundaryDiagram = `flowchart LR
+    subgraph TX["Service 트랜잭션 — 되돌릴 수 있어야 하는 것만"]
+        direction LR
+        W["도메인 쓰기<br/>엔티티 저장 · 상태 전이 · 락"]
+    end
+
+    W --> C{"commit"}
+
+    C -->|"AFTER_COMMIT<br/>+ REQUIRES_NEW"| A["매출 집계 · 제재 후속<br/>실패해도 본 작업을 되돌리지 않는다"]
+    C -->|"AFTER_COMMIT<br/>+ @Async 전용 풀"| B["알림 부가 채널 Redis·SSE·FCM<br/>채널별 실패를 서로 격리"]
+    C -->|"afterCommit<br/>동기화 콜백"| D["모임 그룹 채팅방<br/>채팅방 실패가 모임을 되돌리지 않는다"]
+    C -->|"AFTER_COMMIT<br/>새 트랜잭션 없음"| E["가입 후속 메일<br/>롤백으로 되돌릴 수 없는 작업"]
+
+    W -.->|"@Async 전용 풀<br/>petIntentExecutor"| F["NLP intent 분석<br/>외부 HTTP를 트랜잭션에 넣지 않는다"]
+    W -.->|"REQUIRES_NEW<br/>별도 빈"| G["공공데이터 1,000건 배치<br/>배치 하나가 커밋 단위"]
+
+    style TX fill:#1a3a1a,color:#b0d4b0,stroke:#40804a
+    style C fill:#3a3010,color:#f4e6b0,stroke:#a08030
+    style A fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
+    style B fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
+    style D fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
+    style E fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
+    style F fill:#3a1a3a,color:#e4b0e4,stroke:#904090
+    style G fill:#3a1a3a,color:#e4b0e4,stroke:#904090`;
 
   const domains = [
     {
@@ -179,17 +207,17 @@ ${nodeStyles}`;
               <Link to="/domains/cases?case=list-n-plus-one" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="stat-number">99%</div>
                 <div className="stat-label">목록 N+1 쿼리 감소</div>
-                <div className="stat-sub">Board · 301 → 3개 (실제 커밋 worktree 실측)</div>
+                <div className="stat-sub">Board · 303문 → 3문 · 561ms → 55ms (git worktree 로 수정 직전 커밋 재현)</div>
               </Link>
               <Link to="/domains/cases?case=spatial-search" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
                 <div className="stat-number">-99.6%</div>
                 <div className="stat-label">공간검색 초기 응답 크기</div>
                 <div className="stat-sub">Location · 반경 + 공간 인덱스 · 22.4MB → 100KB (531.8 → 50.9ms)</div>
               </Link>
-              <Link to="/domains/cases?case=concurrency-strategy" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
-                <div className="stat-number">0건</div>
-                <div className="stat-label">동시성 정합성 위반 (수정 후)</div>
-                <div className="stat-sub">8개 시나리오 재현 (정원초과 · Lost Update · Stuck State) → 원자적 UPDATE / 비관적 락 전략 분리로 구조적 차단</div>
+              <Link to="/domains/cases?case=concurrency" className="stat-item" style={{ textDecoration: 'none', display: 'block' }}>
+                <div className="stat-number">5/5</div>
+                <div className="stat-label">경고 동시 5요청 성공 (수정 후)</div>
+                <div className="stat-sub">수정 전 1/5 · 4건이 데드락으로 롤백 → 락 획득 순서 교정 (git worktree 로 수정 직전 커밋 재현)</div>
               </Link>
             </div>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '1rem', marginBottom: '0.75rem' }}>
@@ -229,30 +257,6 @@ ${nodeStyles}`;
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
 
             <div className="content-card">
-              <h3>설계 근거</h3>
-              <div className="feature-points-grid">
-                <div>
-                  <h4>레이어드 아키텍처</h4>
-                  <p style={{ fontSize: '0.9rem' }}>
-                    Controller → Service → Repository → Entity 구조로 명확한 책임 분리
-                  </p>
-                </div>
-                <div>
-                  <h4>도메인 주도 설계</h4>
-                  <p style={{ fontSize: '0.9rem' }}>
-                    DDD 원칙을 따른 도메인별 패키지 구조와 명확한 경계
-                  </p>
-                </div>
-                <div>
-                  <h4>성능 최적화</h4>
-                  <p style={{ fontSize: '0.9rem' }}>
-                    N+1 문제 해결, 캐싱 전략, 배치 쿼리로 성능 향상
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="content-card">
               <h3>전체 시스템 아키텍처</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 0, lineHeight: 1.7 }}>
                 React·Capacitor → Spring Security → domain/ 패키지(핵심 7 + 공통) → MySQL·Redis.
@@ -270,73 +274,37 @@ ${nodeStyles}`;
             </div>
 
             <div className="content-card">
-              <h3>레이어드 아키텍처</h3>
-              <div className="about-text-block">
-                <p>• <strong>Controller Layer</strong>: HTTP 요청/응답 처리, 요청 검증</p>
-                <p>• <strong>Service Layer</strong>: 비즈니스 로직 구현, 트랜잭션 관리</p>
-                <p>• <strong>Repository Layer</strong>: 데이터 액세스 추상화, JPA 쿼리</p>
-                <p>• <strong>Entity Layer</strong>: 도메인 모델 정의, 연관관계 관리</p>
-              </div>
-            </div>
-
-            <div className="content-card">
-              <h3>알림 전달 아키텍처</h3>
-              <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 0, lineHeight: 1.7 }}>
-                Board·Care·Missing Pet·Recommendation에서 발생한 알림을 하나의 서비스가
-                영구 저장, 최신 목록 캐시, 실시간 전송, 모바일 푸시로 분기합니다.
+              <h3>도메인 의존 방향</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.92rem', marginBottom: '0.5rem' }}>
+                domain 패키지 16개의 import 를 계산한 결과입니다. 업무 도메인은 기반 도메인만 참조하고,
+                statistics·admin 처럼 읽기만 하는 쪽은 들어오는 참조가 0입니다.
               </p>
-              <MermaidDiagram chart={notificationArchitectureDiagram} flat />
-              <div className="feature-points-grid">
-                <div>
-                  <h4>MySQL</h4>
-                  <p style={{ fontSize: '0.9rem' }}>
-                    전체 알림 이력과 읽음 상태를 관리하는 기준 저장소
-                  </p>
-                </div>
-                <div>
-                  <h4>Redis</h4>
-                  <p style={{ fontSize: '0.9rem' }}>
-                    사용자별 최신 50개 알림을 24시간 보관하고 DB 목록과 병합
-                  </p>
-                </div>
-                <div>
-                  <h4>SSE · FCM</h4>
-                  <p style={{ fontSize: '0.9rem' }}>
-                    앱 실행 중에는 SSE, 네이티브 백그라운드에서는 FCM으로 전달
-                  </p>
-                </div>
-              </div>
-              <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.65 }}>
-                MySQL 저장과 Redis·SSE·FCM 전달은 하나의 원자적 트랜잭션으로 묶이지 않습니다.
-                현재 구조는 캐시 미스 시 DB를 기준으로 복구하며, 다중 서버 환경에서는
-                SSE 연결 라우팅과 이벤트 전달 일관성 보완이 필요합니다.
+              <MermaidDiagram chart={domainDependencyDiagram} flat />
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.92rem', marginTop: '0.5rem', marginBottom: 0 }}>
+                <strong style={{ color: 'var(--text-color)' }}>순환은 두 곳 남아 있습니다</strong> —{' '}
+                <code>care ↔ payment</code>(에스크로 엔티티가 케어 요청을 참조),{' '}
+                <code>chat ↔ meetup</code>(모임 생성이 그룹 채팅방을 만듦). 둘 다 도메인 요구에서 나온 양방향이라
+                억지로 끊지 않았습니다. 대신 그 경계의 락 획득 순서가 실제로 순환 대기를 만드는지는 따로 확인했습니다.
               </p>
             </div>
 
             <div className="content-card">
-              <h3>도메인 주도 설계 (DDD)</h3>
-              <div className="about-text-block">
-                <p>• <strong>도메인별 패키지 구조</strong>: 각 도메인은 독립적인 패키지로 구성</p>
-                <p>• <strong>명확한 경계</strong>: 도메인 간 의존성 최소화</p>
-                <p>• <strong>도메인 모델</strong>: 엔티티와 비즈니스 로직의 응집도 향상</p>
-              </div>
+              <h3>트랜잭션 경계</h3>
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.92rem', marginBottom: '0.5rem' }}>
+                트랜잭션 경계는 Service 이고, 조회 위주 서비스는 클래스 레벨 <code>readOnly=true</code> 위에서 쓰기 메서드만
+                재정의합니다. 되돌릴 수 있어야 하는 것만 안에 두고, 나머지는 밖으로 뺐습니다.
+              </p>
+              <MermaidDiagram chart={transactionBoundaryDiagram} flat />
+              <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.92rem', marginTop: '0.5rem', marginBottom: 0 }}>
+                <code>REQUIRES_NEW</code> 는 <strong style={{ color: 'var(--text-color)' }}>별도 빈</strong>으로 뺐습니다
+                (<code>ConversationCreatorService</code>, <code>LocationServiceBatchWriter</code>). 같은 클래스 안에서
+                메서드끼리 호출하면 AOP 프록시를 타지 않아 전파 설정이 조용히 무시됩니다.
+                <br />
+                단일 인스턴스를 전제로 합니다. 인스턴스를 늘리면 SSE 연결 라우팅이 먼저 깨지고,
+                스케줄러도 중복 실행됩니다.
+              </p>
             </div>
 
-            <div className="content-card" style={{ marginBottom: 0 }}>
-              <h3>도메인 간 연관관계</h3>
-              <div style={{ width: '100%', overflowX: 'auto', marginTop: '1rem' }}>
-                <img
-                  src={petoryErdImage}
-                  alt="Petory 데이터베이스 ERD"
-                  style={{
-                    width: '100%',
-                    height: 'auto',
-                    borderRadius: '8px',
-                    border: '1px solid var(--border-color)',
-                  }}
-                />
-              </div>
-            </div>
           </section>
 
           <section
@@ -363,7 +331,7 @@ ${nodeStyles}`;
 
           <section id="features" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
             <span className="eyebrow">Features</span>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>핵심 기능</h2>
+            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>도메인 구성</h2>
             <div className="section-card">
               <div className="domain-link-grid">
               {domains.map((domain) => (
@@ -381,49 +349,6 @@ ${nodeStyles}`;
               <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '1rem', marginBottom: 0, lineHeight: 1.7 }}>
                 공통: Payment(펫코인 에스크로) · Notification(SSE·FCM) · Report(신고·제재) · Statistics·Admin(Daily Summary)
               </p>
-            </div>
-          </section>
-
-          <section style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <div className="section-card">
-              <h2 style={{ textAlign: 'center' }}>주요 기능 요약</h2>
-              <div className="icon-grid">
-                <div className="icon-item">
-                  <div className="icon-emoji">💬</div>
-                  <strong>커뮤니티</strong>
-                  <p className="stat-sub">게시판, 댓글, 인기글</p>
-                </div>
-                <div className="icon-item">
-                  <div className="icon-emoji">🐾</div>
-                  <strong>펫케어</strong>
-                  <p className="stat-sub">요청/지원 매칭</p>
-                </div>
-                <div className="icon-item">
-                  <div className="icon-emoji">🔍</div>
-                  <strong>실종 찾기</strong>
-                  <p className="stat-sub">실종 동물 신고</p>
-                </div>
-                <div className="icon-item">
-                  <div className="icon-emoji">📍</div>
-                  <strong>위치 서비스</strong>
-                  <p className="stat-sub">통합 검색·리뷰</p>
-                </div>
-                <div className="icon-item">
-                  <div className="icon-emoji">✨</div>
-                  <strong>추천</strong>
-                  <p className="stat-sub">NLP intent → 추천 카드</p>
-                </div>
-                <div className="icon-item">
-                  <div className="icon-emoji">👥</div>
-                  <strong>모임</strong>
-                  <p className="stat-sub">산책 모임</p>
-                </div>
-                <div className="icon-item">
-                  <div className="icon-emoji">💬</div>
-                  <strong>채팅</strong>
-                  <p className="stat-sub">WebSocket 기반</p>
-                </div>
-              </div>
             </div>
           </section>
 
@@ -479,30 +404,6 @@ ${nodeStyles}`;
             </div>
           </section>
 
-        <section id="links" style={{ marginBottom: '3rem', scrollMarginTop: '2rem' }}>
-            <span className="eyebrow">Links</span>
-            <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>관련 링크</h2>
-            <div className="section-card">
-              <div className="domain-link-grid">
-              <a href="https://github.com/makkong1/makkong1-github.io" target="_blank" rel="noopener noreferrer" className="project-card">
-                <h3>GitHub 저장소</h3>
-                <p style={{ fontSize: '0.9rem' }}>전체 소스 코드 및 문서</p>
-              </a>
-              <Link to="/domains/cases" className="project-card">
-                <h3>대표 사례</h3>
-                <p style={{ fontSize: '0.9rem' }}>측정 방식 검증 + 고친 사례 6건</p>
-              </Link>
-              <Link to="/domains/flows" className="project-card">
-                <h3>데이터 흐름</h3>
-                <p style={{ fontSize: '0.9rem' }}>도메인별 시퀀스 다이어그램</p>
-              </Link>
-              <Link to="/demo" className="project-card">
-                <h3>라이브 데모</h3>
-                <p style={{ fontSize: '0.9rem' }}>인터랙티브 데모 체험</p>
-              </Link>
-              </div>
-            </div>
-          </section>
         </div>
         <TableOfContents sections={sections} />
       </div>
