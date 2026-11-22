@@ -3,8 +3,6 @@ import MermaidDiagram from '../../../components/Common/MermaidDiagram';
 import TableOfContents from '../../../components/Common/TableOfContents';
 
 function PetoryProjectPage() {
-  const isDarkMode = true;
-
   const sections = [
     { id: 'hero', title: '프로젝트 소개' },
     { id: 'achievements', title: '핵심 성과' },
@@ -15,104 +13,40 @@ function PetoryProjectPage() {
     { id: 'tech-stack', title: '기술 스택' }
   ];
 
-  const nodeStyles = isDarkMode
-    ? `
-    style FE fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
-    style SEC fill:#3a3010,color:#f4e6b0,stroke:#a08030
-    style CORE fill:#1a3a1a,color:#b0d4b0,stroke:#40804a
-    style MYSQL fill:#3a1a3a,color:#e4b0e4,stroke:#904090
-    style REDIS fill:#3a1a3a,color:#e4b0e4,stroke:#904090`
-    : `
-    style FE fill:#e1f5ff,stroke:#4a8fad
-    style SEC fill:#fff4e1,stroke:#a08030
-    style CORE fill:#e8f5e9,stroke:#40804a
-    style MYSQL fill:#ffe1f5,stroke:#904090
-    style REDIS fill:#ffe1f5,stroke:#904090`;
+  // 세 다이어그램 모두 PDF 포트폴리오(docs/interview/이력서/범용/petory-PDF-본문-8p.md) 와 동일본.
+  // style 지정 없음 — MermaidDiagram 이 data-theme 으로 dark/default 테마를 고른다.
+  const architectureDiagram = `flowchart LR
+    C["React 19<br/>(SPA)"]
+    C -->|"REST · WS/STOMP · SSE"| CT["Controller"]
+    CT --> SV["Service<br/>트랜잭션 경계<br/>비관적 락 · 이벤트 발행"]
+    SV --> RP["Repository<br/>Spring Data JPA<br/>(QueryDSL은 관리자 회원조회 1곳)"]
+    RP --> DB[("MySQL 8.4<br/>Flyway V1~V24<br/>공간·커버링 인덱스 · 트리거")]
+    SV -.->|"@Cacheable + TTL"| RD[("Redis · 4곳")]
+    SV -.->|"AFTER_COMMIT<br/>@Async petIntentExecutor"| NLP["FastAPI<br/>NLP 의도분석"]
+    SV -.->|"AFTER_COMMIT + @Async<br/>채널별 예외 격리 · outbox 없음"| NT["Redis 캐시 / SSE / FCM<br/>커밋 후 3채널 팬아웃"]
+    SCH["@Scheduled 배치 14개 (단일 스레드)<br/>통계 · 인기글 랭킹 · 공공데이터 동기화<br/>케어 만료 · 휴면 전환 · 제재 해제 · 모임 · 채팅방 복구<br/>실행 슬롯을 시간대로 분산"] --> SV`;
 
-  const architectureDiagram = `flowchart TB
-    subgraph CLIENT["클라이언트"]
-        FE["React SPA · Capacitor"]
-        RT["SSE · WebSocket/STOMP"]
-    end
-
-    subgraph BOOT["Spring Boot"]
-        SEC["Security · JWT"]
-        CORE["핵심 7 패키지\\nUser · Board · Care · Chat\\nLocation · petRecommendation · Meetup"]
-        COMMON["공통\\nPayment · Notification · Report\\nStatistics · Admin · Activity · File"]
-    end
-
-    subgraph STORE["데이터"]
-        MYSQL[("MySQL 8")]
-        REDIS[("Redis")]
-    end
-
-    subgraph OUT["외부"]
-        NLP["petory-nlp-server"]
-        EXT["Naver Map · OAuth · FCM · SMTP"]
-    end
-
-    FE --> SEC
-    RT --> SEC
-    SEC --> CORE
-    SEC --> COMMON
-    CORE --> MYSQL
-    COMMON --> MYSQL
-    CORE --> REDIS
-    COMMON --> REDIS
-    CORE -.-> NLP
-    CORE --> EXT
-${nodeStyles}`;
-
-  // 도메인 의존 방향 — backend/main/java/.../domain 의 import 를 계산한 결과(16개 패키지)
-  // 도메인 의존 방향 — backend/main/java/.../domain 의 import 를 계산한 결과(16개 패키지)
   const domainDependencyDiagram = `flowchart LR
-    L3["읽기만 하는 쪽<br/>statistics · admin · activity · profile<br/>들어오는 참조 0"]
-    L2["업무 도메인<br/>board · care · payment · chat<br/>meetup · location · petRecommendation · report"]
-    L1["기반<br/>user · notification · file · common<br/>업무 도메인을 참조하지 않음"]
+    T1["표현 · 집계 계층<br/>statistics (읽기 전용 집계)<br/>admin · activity · profile (쓰기 포함)"]
+    T2["업무 도메인 10 · 4-레이어(C→S→R→E)<br/>board · care · chat · meetup · location<br/>notification · payment · report · file · petRecommendation<br/>순환 2곳: care ↔ payment, chat ↔ meetup"]
+    T3["user — 사실상 말단<br/>대부분의 업무 도메인이 참조<br/>자신은 file 하나만 참조"]
+    T1 -->|"의존: 읽기"| T2
+    T2 -->|"의존: 참조(FK 등)"| T3`;
 
-    L3 --> L2 --> L1
-
-    subgraph CYC["남은 순환 2곳"]
-        direction TB
-        CARE["care"] <--> PAY["payment"]
-        CHAT["chat"] <--> MEET["meetup"]
-    end
-
-    L2 -.-> CYC
-
-    style L3 fill:#2a2622,color:#d0d0d0,stroke:#6b7280
-    style L2 fill:#1a3a1a,color:#b0d4b0,stroke:#40804a
-    style L1 fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
-    style CARE fill:#3a3010,color:#f4e6b0,stroke:#a08030
-    style PAY fill:#3a3010,color:#f4e6b0,stroke:#a08030
-    style CHAT fill:#3a3010,color:#f4e6b0,stroke:#a08030
-    style MEET fill:#3a3010,color:#f4e6b0,stroke:#a08030`;
-
-  // 트랜잭션 경계 — 커밋 전/후로 무엇이 갈라지는가
   const transactionBoundaryDiagram = `flowchart LR
-    subgraph TX["Service 트랜잭션 — 되돌릴 수 있어야 하는 것만"]
-        direction LR
-        W["도메인 쓰기<br/>엔티티 저장 · 상태 전이 · 락"]
-    end
-
-    W --> C{"commit"}
-
-    C -->|"AFTER_COMMIT<br/>+ REQUIRES_NEW"| A["매출 집계 · 제재 후속<br/>실패해도 본 작업을 되돌리지 않는다"]
-    C -->|"AFTER_COMMIT<br/>+ @Async 전용 풀"| B["알림 부가 채널 Redis·SSE·FCM<br/>채널별 실패를 서로 격리"]
-    C -->|"afterCommit<br/>동기화 콜백"| D["모임 그룹 채팅방<br/>채팅방 실패가 모임을 되돌리지 않는다"]
-    C -->|"AFTER_COMMIT<br/>새 트랜잭션 없음"| E["가입 후속 메일<br/>롤백으로 되돌릴 수 없는 작업"]
-
-    W -.->|"@Async 전용 풀<br/>petIntentExecutor"| F["NLP intent 분석<br/>외부 HTTP를 트랜잭션에 넣지 않는다"]
-    W -.->|"REQUIRES_NEW<br/>별도 빈"| G["공공데이터 1,000건 배치<br/>배치 하나가 커밋 단위"]
-
-    style TX fill:#1a3a1a,color:#b0d4b0,stroke:#40804a
-    style C fill:#3a3010,color:#f4e6b0,stroke:#a08030
-    style A fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
-    style B fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
-    style D fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
-    style E fill:#1a3a4a,color:#cce8f4,stroke:#4a8fad
-    style F fill:#3a1a3a,color:#e4b0e4,stroke:#904090
-    style G fill:#3a1a3a,color:#e4b0e4,stroke:#904090`;
+    TX["Service 트랜잭션 경계<br/>(쓰기 메서드)"]
+    TX -->|"현재 값 읽어 분기 필요"| L1["비관적 락<br/>잔액 부족 · 에스크로 상태<br/>findByIdForUpdate"]
+    TX -->|"값 증가만 · 분기 없음"| L2["원자적 UPDATE + 락 순서 교정<br/>경고 횟수 · 모임 정원"]
+    TX -->|"이 조합은 한 번만"| L3["DB UNIQUE 제약<br/>닉네임 · 소셜계정 · 신고"]
+    TX -->|"상태 전이 규칙 고정"| L4["엔티티 상태 가드 + 트리거<br/>HOLD→RELEASED/REFUNDED<br/>users AFTER UPDATE → author_visible"]
+    L1 --> CM["commit"]
+    L2 --> CM
+    L3 --> CM
+    L4 --> CM
+    CM -.->|"AFTER_COMMIT<br/>실패해도 원 트랜잭션 롤백 안 됨"| E1["결제 완료 → 매출 집계"]
+    CM -.-> E2["사용자 활동 → NLP 의도분석<br/>(전용 스레드풀)"]
+    CM -.-> E3["알림성 이벤트 → 3채널 팬아웃<br/>Redis 캐시 · SSE · FCM (채널별 격리)"]
+    CM -.-> E4["사용자 제재 → care · meetup 정리<br/>도메인 직접 참조 대신 이벤트로 파급"]`;
 
   const domains = [
     {
@@ -257,10 +191,10 @@ ${nodeStyles}`;
             <h2 style={{ marginBottom: '1rem', color: 'var(--text-color)' }}>아키텍처</h2>
 
             <div className="content-card">
-              <h3>전체 시스템 아키텍처</h3>
+              <h3>요청 처리 흐름</h3>
               <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 0, lineHeight: 1.7 }}>
-                React·Capacitor → Spring Security → domain/ 패키지(핵심 7 + 공통) → MySQL·Redis.
-                Missing Pet은 board 도메인, petRecommendation은 Board·Care·Location 이벤트 후 NLP 연동.
+                실선은 동기 요청·저장(트랜잭션 경계 = Service), 점선은 비동기(캐시·이벤트·외부 연동)입니다.
+                표준 4-레이어를 업무 도메인에서 같은 형태로 반복합니다.
               </p>
               <MermaidDiagram chart={architectureDiagram} flat />
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.65 }}>
@@ -274,7 +208,7 @@ ${nodeStyles}`;
             </div>
 
             <div className="content-card">
-              <h3>도메인 의존 방향</h3>
+              <h3>도메인 의존 계층</h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.92rem', marginBottom: '0.5rem' }}>
                 domain 패키지 16개의 import 를 계산한 결과입니다. 업무 도메인은 기반 도메인만 참조하고,
                 statistics·admin 처럼 읽기만 하는 쪽은 들어오는 참조가 0입니다.
@@ -289,7 +223,7 @@ ${nodeStyles}`;
             </div>
 
             <div className="content-card">
-              <h3>트랜잭션 경계</h3>
+              <h3>쓰기 정합성</h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.92rem', marginBottom: '0.5rem' }}>
                 트랜잭션 경계는 Service 이고, 조회 위주 서비스는 클래스 레벨 <code>readOnly=true</code> 위에서 쓰기 메서드만
                 재정의합니다. 되돌릴 수 있어야 하는 것만 안에 두고, 나머지는 밖으로 뺐습니다.
