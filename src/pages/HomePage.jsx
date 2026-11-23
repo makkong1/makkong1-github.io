@@ -201,12 +201,12 @@ function HomePage() {
           </ul>
           <p
             style={{
-              color: "var(--text-muted)",
-              lineHeight: 1.75,
-              fontSize: "0.88rem",
+              color: "var(--text-secondary)",
+              lineHeight: 1.8,
+              fontSize: "0.92rem",
               marginBottom: 0,
-              paddingTop: "0.85rem",
-              borderTop: "1px solid var(--border-color, rgba(128,128,128,0.25))",
+              paddingTop: "0.9rem",
+              borderTop: "1px solid var(--border-strong)",
             }}
           >
             Petory·LinkUp은 <strong>1인 개인 프로젝트</strong>이고{" "}
@@ -358,7 +358,7 @@ function HomePage() {
                 TMDB API 기반 영화 소개 웹 · 4인 · 2024.06~07
                 <br />
                 <span className="project-sub">
-                  <strong>서버 인증 + 프론트 접근 제어 담당.</strong>
+                  <strong>서버 인증 + 프론트 접근 제어 담당.</strong>{" "}
                   회원가입·로그인·정보수정, BCrypt 비밀번호 해싱, 이메일 중복
                   확인, 임시 비밀번호 메일 발송 → 검증 → 변경 3단계. 인증 상태를
                   브라우저 저장소에 두는 수준이었고, 같은 축을 LinkUp에서 세션,

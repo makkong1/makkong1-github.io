@@ -7,6 +7,9 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* 한글은 어절 단위로 끊어야 한다. 없으면 "응답 크" / "기를" 처럼 낱말 가운데가 잘린다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 :root {
@@ -747,8 +750,11 @@ code {
 }
 
 .stat-number {
-  font-size: 3rem;
+  /* "22.4MB → 100KB" 처럼 전/후를 같이 적는 값이 있어 3rem 고정이면 두 줄로 깨지고
+     카드끼리 라벨 높이가 어긋난다. */
+  font-size: clamp(1.45rem, 2.1vw, 2rem);
   font-weight: 800;
+  line-height: 1.25;
   color: var(--accent);
   font-feature-settings: "tnum";
   margin-bottom: 0.5rem;
