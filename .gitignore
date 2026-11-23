@@ -23,8 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
-# Interview prep (private)
-docs/interview/
+# Docs (private)
+docs/
 .superpowers/
 
 # Screenshot verification artifacts
