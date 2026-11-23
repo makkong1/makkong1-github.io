@@ -28,6 +28,12 @@ const mockDataMap = {
     });
   },
 
+  // 프로필 · 반려동물 · 알림
+  // 이 셋이 없어서 데모에서 "내 프로필" 모달에 빨간 에러 문구가 그대로 떴다.
+  'GET:/api/users/me': () => import('../mockData/profile.js').then(m => m.myProfile),
+  'GET:/api/pets': () => import('../mockData/profile.js').then(m => m.myPets),
+  'GET:/api/notifications': () => import('../mockData/profile.js').then(m => m.myNotifications),
+
   // 인증
   'POST:/api/auth/login': () => import('../mockData/auth.js').then(m => m.loginResponse),
   'POST:/api/auth/register': () => import('../mockData/auth.js').then(m => m.registerResponse),

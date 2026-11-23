@@ -31,15 +31,37 @@ const HomePage = ({ setActiveTab }) => {
   const [geo, setGeo] = useState({ coords: null, ready: false });
 
   useEffect(() => {
+    let settled = false;
+    const finish = (coords) => {
+      if (settled) return;
+      settled = true;
+      setGeo({ coords, ready: true });
+    };
+
+    // 위치 권한 프롬프트를 '거부'하면 에러 콜백이 바로 오지만, 그냥 '무시'하면
+    // 어느 콜백도 호출되지 않는다 — getCurrentPosition 의 timeout 옵션은 권한이
+    // 허용된 뒤부터 세기 때문이다. 그러면 아래 목록들이 영원히 스켈레톤으로 남는다.
+    // 벽시계 기준 워치독으로 끊고 좌표 없이 진행한다.
+    const watchdog = setTimeout(() => finish(null), 6000);
+
     if (!navigator.geolocation) {
-      setGeo({ coords: null, ready: true });
+      clearTimeout(watchdog);
+      finish(null);
       return;
     }
     navigator.geolocation.getCurrentPosition(
-      (pos) => setGeo({ coords: { lat: pos.coords.latitude, lng: pos.coords.longitude }, ready: true }),
-      () => setGeo({ coords: null, ready: true }),
+      (pos) => {
+        clearTimeout(watchdog);
+        finish({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => {
+        clearTimeout(watchdog);
+        finish(null);
+      },
       { timeout: 5000, maximumAge: 60000 }
     );
+
+    return () => clearTimeout(watchdog);
   }, []);
 
   useEffect(() => {
