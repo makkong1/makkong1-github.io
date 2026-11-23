@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 /**
  * 홈 — URL 로 제출하는 포트폴리오의 첫 화면.
  *
- * About Me 는 제출용 자소서 단축안(docs/interview/이력서/범용/제출용_자소서-단축안_humanized.md)과
+ * About Me 는 제출용 자소서 단축안(docs/이력서/제출용_자소서-단축안_v2초안.md)과
  * 같은 본문을 쓴다. 사람인·잡코리아 자소서 칸에 넣는 글과 사이트가 어긋나면 안 된다.
  *
  * "수치를 잰 방법" 4줄과 1인·미배포·Claude Code 고지는 PDF 포트폴리오 표지에 있던 것을 옮겼다.
@@ -34,12 +34,12 @@ function HomePage() {
             Petory 프로젝트 →
           </Link>
           <a
-            href="https://github.com/makkong1"
+            href="https://github.com/makkong1/Petory"
             target="_blank"
             rel="noopener noreferrer"
             className="btn-secondary"
           >
-            GitHub
+            GitHub 저장소
           </a>
           <a href="mailto:wowong123@naver.com" className="btn-secondary">
             wowong123@naver.com
@@ -182,8 +182,8 @@ function HomePage() {
           >
             <li>
               콘솔에서 손으로 쓴 SQL이 아니라, 앱을 띄워 <code>curl</code>로
-              호출해 <strong>앱이 실제 발행한 쿼리</strong>를 봅니다(엔드포인트
-              62개).
+              호출해 <strong>앱이 실제 발행한 쿼리</strong>를 봅니다(이 방식으로
+              다시 검증한 엔드포인트 62개).
             </li>
             <li>
               Before는 추정하지 않고 <code>git worktree</code>로{" "}

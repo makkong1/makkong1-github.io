@@ -21,10 +21,10 @@ function PetoryProjectPage() {
     CT --> SV["Service<br/>트랜잭션 경계<br/>비관적 락 · 이벤트 발행"]
     SV --> RP["Repository<br/>Spring Data JPA<br/>(QueryDSL은 관리자 회원조회 1곳)"]
     RP --> DB[("MySQL 8.4<br/>Flyway V1~V26<br/>공간·커버링 인덱스 · 트리거")]
-    SV -.->|"@Cacheable + TTL"| RD[("Redis · 4곳")]
+    SV -.->|"@Cacheable 2 · 직접 사용 3"| RD[("Redis · 5곳")]
     SV -.->|"AFTER_COMMIT<br/>@Async petIntentExecutor"| NLP["FastAPI<br/>NLP 의도분석"]
     SV -.->|"AFTER_COMMIT + @Async<br/>채널별 예외 격리 · outbox 없음"| NT["Redis 캐시 / SSE / FCM<br/>커밋 후 3채널 팬아웃"]
-    SCH["@Scheduled 배치 14개 (단일 스레드)<br/>통계 · 인기글 랭킹 · 공공데이터 동기화<br/>케어 만료 · 휴면 전환 · 제재 해제 · 모임 · 채팅방 복구<br/>실행 슬롯을 시간대로 분산"] --> SV`;
+    SCH["@Scheduled 도메인 배치 14개 (단일 스레드)<br/>통계 · 인기글 랭킹 · 공공데이터 동기화<br/>케어 만료 · 휴면 전환 · 제재 해제 · 모임 · 채팅방 복구<br/>실행 슬롯을 시간대로 분산<br/>+ 목록 쿼리 실행계획 감시 1 (global)"] --> SV`;
 
   const domainDependencyDiagram = `flowchart LR
     T1["표현 · 집계 계층<br/>statistics (읽기 전용 집계)<br/>admin · activity · profile (쓰기 포함)"]
@@ -203,7 +203,8 @@ function PetoryProjectPage() {
               </p>
               <MermaidDiagram chart={architectureDiagram} flat />
               <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.75rem', marginBottom: 0, lineHeight: 1.65 }}>
-                Redis: 알림 · NLP dedup · 이메일 인증 TTL (게시글 상세 캐시는 조회수 실시간 반영 때문에 현재 비활성).
+                Redis 5곳 — <code>@Cacheable</code> 2(오늘 통계 · 인기 주변서비스)와 직접 사용 3(알림 · 이메일 인증 TTL ·
+                NLP dedup). 게시글 상세 캐시는 조회수 실시간 반영 때문에 현재 비활성입니다.
                 배치·도메인 간 연동은{' '}
                 <Link to="/domains/flows" style={{ color: 'var(--link-color)', fontWeight: 600, textDecoration: 'none' }}>
                   통합 시퀀스
@@ -215,8 +216,9 @@ function PetoryProjectPage() {
             <div className="content-card">
               <h3>도메인 의존 계층</h3>
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.92rem', marginBottom: '0.5rem' }}>
-                domain 패키지 16개의 import 를 계산한 결과입니다. 업무 도메인은 기반 도메인만 참조하고,
-                statistics·admin 처럼 읽기만 하는 쪽은 들어오는 참조가 0입니다.
+                domain 패키지 16개의 import 를 계산한 결과입니다 — 업무 11(아래 10 + user) · 표현·집계 4 ·
+                common 1. 업무 도메인은 기반 도메인만 참조하고, statistics·admin 처럼 읽기만 하는 쪽은
+                들어오는 참조가 0입니다.
               </p>
               <MermaidDiagram chart={domainDependencyDiagram} flat />
               <p style={{ color: 'var(--text-secondary)', lineHeight: '1.8', fontSize: '0.92rem', marginTop: '0.5rem', marginBottom: 0 }}>
@@ -287,6 +289,9 @@ function PetoryProjectPage() {
               </div>
               <p style={{ fontSize: '0.88rem', color: 'var(--text-secondary)', marginTop: '1rem', marginBottom: 0, lineHeight: 1.7 }}>
                 공통: Payment(펫코인 에스크로) · Notification(SSE·FCM) · Report(신고·제재) · Statistics·Admin(Daily Summary)
+                <br />
+                위 카드는 기능 단위입니다. 패키지 기준으로는 Missing Pet 이 <code>board</code> 안에 있어
+                domain 패키지는 16개입니다.
               </p>
             </div>
           </section>
