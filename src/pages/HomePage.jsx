@@ -42,6 +42,26 @@ function HomePage() {
             GitHub
           </a>
         </div>
+
+        <p className="hero-contact">
+          <a href="mailto:wowong123@naver.com">wowong123@naver.com</a>
+          <span className="sep" aria-hidden="true">·</span>
+          <a
+            href="https://github.com/makkong1"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            github.com/makkong1
+          </a>
+          <span className="sep" aria-hidden="true">·</span>
+          <a
+            href="https://github.com/makkong1/Petory"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Petory 저장소
+          </a>
+        </p>
       </section>
 
       {/* 대표 성과 — 20초 훑는 사람이 먼저 보는 자리 */}
@@ -393,7 +413,7 @@ function HomePage() {
       {/* Education 섹션 */}
       <section
         id="education"
-        style={{ marginBottom: "3rem", scrollMarginTop: "2rem" }}
+        style={{ marginBottom: "1rem", scrollMarginTop: "2rem" }}
       >
         <span className="eyebrow">학력</span>
         <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
@@ -418,41 +438,6 @@ function HomePage() {
         </div>
       </section>
 
-      {/* Contact 섹션 */}
-      <section
-        id="contact"
-        style={{ marginBottom: "1rem", scrollMarginTop: "1rem" }}
-      >
-        <span className="eyebrow">연락처</span>
-        <h2 style={{ marginBottom: "1rem", color: "var(--text-color)" }}>
-          Contact
-        </h2>
-        <div className="section-card">
-          <p className="contact-info" style={{ marginBottom: "0" }}>
-            Email: <a href="mailto:wowong123@naver.com">wowong123@naver.com</a>
-            <br />
-            GitHub:{" "}
-            <a
-              href="https://github.com/makkong1"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-link"
-            >
-              Makkong1
-            </a>
-            <br />
-            Repo:{" "}
-            <a
-              href="https://github.com/makkong1/Petory"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-link"
-            >
-              github.com/makkong1/Petory
-            </a>
-          </p>
-        </div>
-      </section>
     </div>
   );
 }
