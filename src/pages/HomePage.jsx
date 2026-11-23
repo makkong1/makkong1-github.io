@@ -41,27 +41,10 @@ function HomePage() {
           >
             GitHub
           </a>
+          <a href="mailto:wowong123@naver.com" className="btn-secondary">
+            wowong123@naver.com
+          </a>
         </div>
-
-        <p className="hero-contact">
-          <a href="mailto:wowong123@naver.com">wowong123@naver.com</a>
-          <span className="sep" aria-hidden="true">·</span>
-          <a
-            href="https://github.com/makkong1"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            github.com/makkong1
-          </a>
-          <span className="sep" aria-hidden="true">·</span>
-          <a
-            href="https://github.com/makkong1/Petory"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Petory 저장소
-          </a>
-        </p>
       </section>
 
       {/* 대표 성과 — 20초 훑는 사람이 먼저 보는 자리 */}
