@@ -1,16 +1,35 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
 
 <head>
   <meta charset="UTF-8" />
-  <link rel="icon" type="image/svg+xml" href="/makkong1-github.io/vite.svg" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YeongBeom Park · Backend</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+  <!-- Pretendard dynamic subset: unicode-range 로 쪼개져 있어 쓰는 글자 범위만 내려온다.
+       자체 호스팅 단일 woff2 는 2MB 라 모든 페이지가 그걸 받고 있었다. -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+  <link rel="stylesheet"
+    href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
+
+  <title>박영범 | 백엔드 개발자 포트폴리오</title>
+  <meta name="description"
+    content="문제를 재현하고 측정하며 개선하는 백엔드 개발자 박영범의 포트폴리오. Spring Boot · JPA · MySQL 기반 Petory 프로젝트의 N+1 · 동시성 · 공간 검색 개선 사례를 전/후 실측값과 함께 정리했습니다." />
+  <meta name="author" content="박영범" />
+
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="박영범 백엔드 포트폴리오" />
+  <meta property="og:title" content="박영범 | 백엔드 개발자 포트폴리오" />
+  <meta property="og:description"
+    content="Spring Boot · JPA · MySQL. N+1 · 동시성 · 공간 검색 병목을 테스트로 재현하고 측정 → 개선 → 재검증한 사례 7건." />
+  <meta property="og:locale" content="ko_KR" />
+  <meta name="twitter:card" content="summary" />
+
   <script>
     document.documentElement.setAttribute('data-theme', 'dark');
   </script>
-  <script type="module" crossorigin src="/makkong1-github.io/assets/index-CJhIF-sN.js"></script>
-  <link rel="stylesheet" crossorigin href="/makkong1-github.io/assets/index-DwuYH4uk.css">
+  <script type="module" crossorigin src="/assets/index-BErftbhy.js"></script>
+  <link rel="stylesheet" crossorigin href="/assets/index-DASW6kih.css">
 </head>
 
 <body>
