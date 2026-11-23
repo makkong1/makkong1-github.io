@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import mermaid from 'mermaid';
 
 const MERMAID_CONFIG = {
   startOnLoad: false,
@@ -11,11 +10,21 @@ const MERMAID_CONFIG = {
   },
 };
 
+// mermaid 는 메인 번들에 넣지 않고 다이어그램이 있는 페이지에서 처음 필요할 때 받는다.
+// (홈에는 다이어그램이 없다. 정적 import 였을 때 mermaid 가 메인 청크에 들어가
+//  첫 화면에서 1.5MB 를 같이 내려받고 있었다.)
+let mermaidPromise = null;
+function loadMermaid() {
+  if (!mermaidPromise) {
+    mermaidPromise = import('mermaid').then((mod) => mod.default);
+  }
+  return mermaidPromise;
+}
+
 function MermaidDiagram({ chart, flat = false }) {
   const containerRef = useRef(null);
   const [svgContent, setSvgContent] = useState(null);
   const [error, setError] = useState(null);
-  const [isInitialized, setIsInitialized] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
@@ -36,36 +45,29 @@ function MermaidDiagram({ chart, flat = false }) {
   }, []);
 
   useEffect(() => {
-    if (!isInitialized) {
-      const theme = document.documentElement.getAttribute('data-theme');
-      mermaid.initialize({
-        ...MERMAID_CONFIG,
-        theme: theme === 'dark' ? 'dark' : 'default',
-      });
-      setIsInitialized(true);
-    }
-  }, [isInitialized]);
+    if (!chart || !containerRef.current) return;
 
-  useEffect(() => {
-    if (!isInitialized) return;
+    let cancelled = false;
 
-    mermaid.initialize({
-      ...MERMAID_CONFIG,
-      theme: isDarkMode ? 'dark' : 'default',
-    });
-  }, [isDarkMode, isInitialized]);
-
-  useEffect(() => {
-    if (!chart || !isInitialized || !containerRef.current) return;
-
+    // initialize 와 render 를 한 흐름에 둔다. 테마가 바뀔 때 두 effect 로 나누면
+    // 비동기 로딩에서 재설정보다 렌더가 먼저 끝날 수 있다.
     const renderDiagram = async () => {
       try {
         setError(null);
         setSvgContent(null);
 
-        const id = `mermaid-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const mermaid = await loadMermaid();
+        if (cancelled) return;
+
+        mermaid.initialize({
+          ...MERMAID_CONFIG,
+          theme: isDarkMode ? 'dark' : 'default',
+        });
+
+        const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 
         let { svg } = await mermaid.render(id, chart);
+        if (cancelled) return;
 
         if (isDarkMode) {
           svg = svg.replace(/fill="[^"]*"/g, (match) => {
@@ -92,13 +94,17 @@ function MermaidDiagram({ chart, flat = false }) {
 
         setSvgContent(svg);
       } catch (err) {
+        if (cancelled) return;
         console.error('Mermaid render error:', err);
         setError('다이어그램을 불러올 수 없습니다: ' + err.message);
       }
     };
 
     renderDiagram();
-  }, [chart, isInitialized, isDarkMode]);
+    return () => {
+      cancelled = true;
+    };
+  }, [chart, isDarkMode]);
 
   useEffect(() => {
     if (!svgContent || !containerRef.current) return;

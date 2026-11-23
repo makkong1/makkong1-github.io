@@ -24,5 +24,6 @@ export default defineConfig({
       },
     },
   },
-  base: '/makkong1-github.io/'  // 유저 페이지라서 / 로 두면 됨
+  // 레포 이름이 makkong1.github.io (유저 페이지)라 루트에서 서빙된다.
+  base: '/'
 })

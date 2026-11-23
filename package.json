@@ -1,9 +1,9 @@
 {
-  "name": "petory-poryfolio",
+  "name": "makkong1-portfolio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://makkong1.github.io/makkong1-github.io",
+  "homepage": "https://makkong1.github.io",
   "scripts": {
     "dev": "vite",
     "build": "vite build && node -e \"require('fs').copyFileSync('dist/index.html','dist/404.html')\"",

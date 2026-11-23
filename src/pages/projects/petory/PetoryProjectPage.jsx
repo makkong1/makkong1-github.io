@@ -20,7 +20,7 @@ function PetoryProjectPage() {
     C -->|"REST · WS/STOMP · SSE"| CT["Controller"]
     CT --> SV["Service<br/>트랜잭션 경계<br/>비관적 락 · 이벤트 발행"]
     SV --> RP["Repository<br/>Spring Data JPA<br/>(QueryDSL은 관리자 회원조회 1곳)"]
-    RP --> DB[("MySQL 8.4<br/>Flyway V1~V24<br/>공간·커버링 인덱스 · 트리거")]
+    RP --> DB[("MySQL 8.4<br/>Flyway V1~V26<br/>공간·커버링 인덱스 · 트리거")]
     SV -.->|"@Cacheable + TTL"| RD[("Redis · 4곳")]
     SV -.->|"AFTER_COMMIT<br/>@Async petIntentExecutor"| NLP["FastAPI<br/>NLP 의도분석"]
     SV -.->|"AFTER_COMMIT + @Async<br/>채널별 예외 격리 · outbox 없음"| NT["Redis 캐시 / SSE / FCM<br/>커밋 후 3채널 팬아웃"]
@@ -52,49 +52,41 @@ function PetoryProjectPage() {
     {
       name: 'User',
       description: '사용자 인증/인가, 프로필 관리, 반려동물 등록, 제재 시스템',
-      link: '/domains/user',
       features: ['JWT 인증', '소셜 로그인 (OAuth2)', '이메일 인증', '반려동물 관리', '제재 시스템']
     },
     {
       name: 'Board',
       description: '커뮤니티 게시판, 댓글, 좋아요/싫어요, 인기글 스냅샷',
-      link: '/domains/board',
       features: ['게시글 CRUD', '댓글 시스템', '조회수 관리', '인기글 스냅샷', 'N+1 최적화']
     },
     {
       name: 'Care',
       description: '펫케어 요청/지원, 채팅 기반 매칭, 거래 확정, 리뷰 시스템',
-      link: '/domains/care',
       features: ['케어 요청', '지원 매칭', '거래 확정', '채팅 연동', '리뷰 시스템']
     },
     {
       name: 'Missing Pet',
       description: '실종 동물 신고 및 관리, 위치 기반 검색, 목격 정보 댓글',
-      link: '/domains/missing-pet',
       features: ['실종 신고', '위치 기반 검색', '목격 정보 댓글', '상태 관리', '이미지 첨부']
     },
     {
       name: 'Location',
       description: '공공데이터 기반 위치 서비스, 통합 검색, 네이버맵·리뷰',
-      link: '/domains/location',
       features: ['통합 검색 분기', '반경·지역·FULLTEXT', '이 지역 검색 UX', '네이버맵 API', '리뷰·CSV 적재']
     },
     {
       name: 'Recommendation',
       description: '커뮤니티·케어·검색어 intent 분석 후 주변서비스 탭 추천 카드 → Location 카테고리 검색',
-      link: '/domains/recommendation',
       features: ['비동기 NLP', 'user_pet_intent_signal', '/pet-recommend/signals', 'petIntentExecutor', 'Location 연동']
     },
     {
       name: 'Meetup',
       description: '오프라인 모임 생성/참여, 위치 기반 검색, 상태 관리',
-      link: '/domains/meetup',
       features: ['모임 생성', '최대 인원 제한', '위치 기반 검색', '상태 관리', '채팅 연동']
     },
     {
       name: 'Chat',
       description: '실시간 채팅 시스템, WebSocket 기반 통신, 펫케어 거래 확정',
-      link: '/domains/chat',
       features: ['1:1 채팅', '그룹 채팅', '읽음 상태', '펫케어 거래 확정', 'STOMP 프로토콜']
     }
   ];
@@ -109,9 +101,19 @@ function PetoryProjectPage() {
               <h1>Petory</h1>
               <p className="subtitle">반려동물 통합 플랫폼</p>
               <p className="description">
-                반려동물 보호자를 위한 웹·모바일 통합 플랫폼. 8개 핵심 도메인과
-                결제·알림·신고 공통 기능으로 구성했습니다. 기능을 만든 뒤엔 성능·동시성 병목을
+                반려동물 보호자를 위한 웹·모바일 통합 플랫폼. 업무 도메인 11개를 표준
+                4-레이어로 반복 구성하고, 결제·알림·신고를 공통 기능으로 뒀습니다.
+                기능을 만든 뒤엔 성능·동시성 병목을
                 테스트로 재현하고 <strong>측정 → 개선 → 재검증</strong>을 반복했습니다.
+              </p>
+              <p
+                className="description"
+                style={{ fontSize: '0.88rem', opacity: 0.85, marginBottom: '1.25rem' }}
+              >
+                <strong>1</strong>인 개인 프로젝트이고 <strong>미배포</strong>(로컬 실행)입니다.
+                결제는 펫코인 시뮬레이션으로 PG는 연동하지 않았습니다. 개발 전 과정에서{' '}
+                <strong>Claude Code</strong>를 페어 프로그래밍 도구로 썼고, 측정과 원인 분석은
+                함께 했으며 무엇을 고칠지·어떻게 검증할지는 제가 정했습니다.
               </p>
               <div className="buttons-wrapper">
                 <Link
@@ -178,8 +180,11 @@ function PetoryProjectPage() {
                   <strong> 실제 사용자 흐름을 재현하는 시나리오 테스트</strong>로 문제를 드러내고 개선했습니다.
                 </p>
                 <p>
-                  포트폴리오 목적이라 실제 운영 배포는 범위 밖이지만,
-                  <strong> 언제든 배포 가능한 구조</strong>를 기준으로 설계했습니다.
+                  <strong>운영 배포는 하지 않았습니다.</strong> 그래서 부하가 몰렸을 때의
+                  동작은 모릅니다. 대신 로컬에서 재현할 수 있는 범위 — 쿼리 수, 응답 시간,
+                  응답 크기, 동시 요청의 정합성 — 만 숫자로 적고, 나머지는 미측정으로
+                  남겼습니다. 아래 아키텍처도 <strong>단일 인스턴스를 전제</strong>하며,
+                  인스턴스를 늘리면 먼저 깨지는 지점을 함께 적었습니다.
                 </p>
               </div>
             </div>
@@ -321,7 +326,8 @@ function PetoryProjectPage() {
               <div className="content-card" style={{ marginBottom: 0 }}>
                 <h3>Database · Cache · Realtime</h3>
                 <ul className="about-text-block" style={{ listStyle: 'none', padding: 0 }}>
-                  <li>• MySQL 8.0</li>
+                  <li>• MySQL 8.4 LTS</li>
+                  <li>• Flyway (V1~V26)</li>
                   <li>• Redis · Spring Cache</li>
                   <li>• SSE · Firebase FCM</li>
                 </ul>
